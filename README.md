@@ -4,10 +4,10 @@ KatWeb is a modern HTTPS server designed for the 21st century.
 Made in 100% Golang, currently a work in progress.
 
 # File System Structure
-/html/ - Document root of server.
-/ssl/ - Server HTTPS certificates.
-/error/ - Server error pages.
-/conf.json - Server config file.
+>/html/ - Document root of server.
+>/ssl/ - Server HTTPS certificates.
+>/error/ - Server error pages.
+>/conf.json - Server config file.
 
 # Config Options
 keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
