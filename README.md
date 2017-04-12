@@ -4,10 +4,10 @@ KatWeb is a modern HTTPS server designed for the 21st century.
 Made in 100% Golang, currently a work in progress.
 
 # File System Structure
->/html/ - Document root of server.
->/ssl/ - Server HTTPS certificates.
->/error/ - Server error pages.
->/conf.json - Server config file.
+- /html/ - Document root of server.
+- /ssl/ - Server HTTPS certificates.
+- /error/ - Server error pages.
+- /conf.json - Server config file.
 
 # Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
@@ -23,3 +23,17 @@ Made in 100% Golang, currently a work in progress.
 - dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
 
 Changing conf options requires a server restart to take effect.
+
+# Current and Planned Features 
+- [x] SSL Support
+- [x] HSTS Support
+- [x] JSON Config Files
+- [x] HTTP/2 and Keep-Alive
+- [x] Automatic HTTP Compression
+- [x] Dynamic Serving
+- [x] Modern Default Pages
+- [x] Logging to Console
+- [ ] Password Protected Directories
+- [ ] Dynamic Config
+
+More features are coming soon, and remember this isn't finished!
