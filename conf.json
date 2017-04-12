@@ -1,0 +1,14 @@
+{
+  "keepAliveTimeout": 30,
+  "cachingTimeout": 4,
+  "hsts": {
+    "enabled": false,
+    "includeSubDomains": true,
+    "preload": true
+  },
+  "https": true,
+  "nosniff": true,
+  "sameorigin": true,
+  "gzip": true,
+  "dynamicServing": true
+}
