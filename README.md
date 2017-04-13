@@ -36,5 +36,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Logging to Console
 - [ ] Password Protected Directories
 - [ ] Dynamic Config
+- [ ] QUIC Support
+- [ ] Auto Update
 
-More features are coming soon, and remember this isn't finished!
+Note that more features are coming soon, and not all features in this list will be implemented.
