@@ -22,6 +22,7 @@ Made in 100% Golang, currently in very early beta.
 - sameorigin - Prevents other web-sites from stealing your content using iframes.
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
 - dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
+- silent - Don't log anything. Reccomended for public websites.
 
 Changing conf options requires a server restart to take effect.
 
