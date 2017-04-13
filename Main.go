@@ -26,12 +26,12 @@ type Conf struct {
 	IFrame bool `json:"sameorigin"`
 	Zip    bool `json:"gzip"`
 	Dyn    bool `json:"dynamicServing"`
+	No     bool `json:"silent"`
 }
 
 // Redirect you to the secure version.
 func redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
-	fmt.Println(r.RemoteAddr + " - HTTPS Redirect")
 }
 
 // Check if path exists for domain, and use it instead of default if it does.
@@ -95,11 +95,15 @@ func main() {
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Header().Set("Last-Modified", time.Now().In(location).Format(http.TimeFormat))
-			fmt.Println(r.RemoteAddr + " - 404 Error")
+			if !conf.No {
+				fmt.Println(r.RemoteAddr + " - 404 Error")
+			}
 			http.ServeFile(w, r, "error/NotFound.html")
 		} else {
 			w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
-			fmt.Println(r.RemoteAddr + " - " + r.Host + r.URL.Path)
+			if !conf.No {
+				fmt.Println(r.RemoteAddr + " - " + r.Host + r.URL.Path)
+			}
 			http.ServeFile(w, r, path+r.URL.Path[1:])
 		}
 	})

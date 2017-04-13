@@ -10,5 +10,6 @@
   "nosniff": true,
   "sameorigin": true,
   "gzip": true,
-  "dynamicServing": true
+  "dynamicServing": true,
+  "silent": false
 }
