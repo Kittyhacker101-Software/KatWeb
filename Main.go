@@ -29,11 +29,6 @@ type Conf struct {
 	No     bool `json:"silent"`
 }
 
-// Redirect you to the secure version.
-func redirectToHttps(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
-}
-
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
 	_, err := os.Stat(p)
@@ -134,8 +129,10 @@ func main() {
 	}
 	// Config for HTTP Server, redirects to HTTPS
 	srvh := &http.Server{
-		Addr:         ":80",
-		Handler:      http.HandlerFunc(redirectToHttps),
+		Addr: ":80",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+		}),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
