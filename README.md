@@ -1,7 +1,8 @@
 # KatWeb
 Welcome to KatWeb HTTP Server!
 KatWeb is a modern HTTPS server designed for the 21st century.
-Made in 100% Golang, currently a work in progress.
+Made in 100% Golang, currently in very early beta.
+**PLEASE DO NOT USE THIS IN PRODUCTION!!!**
 
 # File System Structure
 - /html/ - Document root of server.
