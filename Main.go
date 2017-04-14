@@ -58,7 +58,12 @@ func main() {
 	mainHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// Check path and file info
-		var path string = detectPath(r.Host + "/")
+		var path string
+		if conf.Dyn {
+			path = detectPath(r.Host + "/")
+		} else {
+			path = "html/"
+		}
 		finfo, err := os.Stat(path + r.URL.Path[1:])
 
 		// Add important headers
@@ -149,7 +154,7 @@ func main() {
 	// This code actually starts the servers.
 	fmt.Println("KatWeb HTTP Server Started.")
 	if conf.Secure {
-		// We use a Goroutine because the HTTP and HTTPS servers need to run at the same time, because 99% of browser default to HTTP.
+		// We use a Goroutine because the HTTP and HTTPS servers need to run at the same time.
 		// If browsers defaulted to HTTPS, this wouldn't be needed.
 		if conf.HSTS.Run {
 			// HTTP Server which redirects to HTTPS
