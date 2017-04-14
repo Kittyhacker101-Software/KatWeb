@@ -21,12 +21,13 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Secure bool `json:"https"`
-	BSniff bool `json:"nosniff"`
-	IFrame bool `json:"sameorigin"`
-	Zip    bool `json:"gzip"`
-	Dyn    bool `json:"dynamicServing"`
-	No     bool `json:"silent"`
+	Secure bool   `json:"https"`
+	BSniff bool   `json:"nosniff"`
+	IFrame bool   `json:"sameorigin"`
+	Zip    bool   `json:"gzip"`
+	Dyn    bool   `json:"dynamicServing"`
+	No     bool   `json:"silent"`
+	Name   string `json:"name"`
 }
 
 // Check if path exists for domain, and use it instead of default if it does.
@@ -67,7 +68,7 @@ func main() {
 		finfo, err := os.Stat(path + r.URL.Path[1:])
 
 		// Add important headers
-		w.Header().Add("Server", "KatWeb Alpha")
+		w.Header().Add("Server", conf.Name)
 		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
 		if conf.CachTime != 0 {
 			w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")

@@ -11,5 +11,6 @@
   "sameorigin": true,
   "gzip": true,
   "dynamicServing": true,
-  "silent": false
+  "silent": false,
+  "name": "KatWeb"
 }
