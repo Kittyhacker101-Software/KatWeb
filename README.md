@@ -23,6 +23,7 @@ Made in 100% Golang, currently in very early beta.
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
 - dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
 - silent - Don't log anything. Reccomended for public websites.
+- name - The server name sent in the "Server" HTTP Header.
 
 Changing conf options requires a server restart to take effect.
 
