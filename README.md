@@ -22,6 +22,7 @@ Made in 100% Golang, currently in very early beta.
 - sameorigin - Prevents other web-sites from stealing your content using iframes.
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
 - dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
+- cacheStruct - Caches Dynamic Serving folder structure, enabling this will require you to restart the server for Dynamic Serving folders to be added/removed.
 - silent - Don't log anything. Reccomended for public websites.
 - name - The server name sent in the "Server" HTTP Header.
 
@@ -36,7 +37,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Dynamic Serving
 - [x] Modern Default Pages
 - [x] Logging to Console
-- [ ] Folder Structure Caching
+- [x] Folder Structure Caching
 - [ ] Password Protected Directories
 - [ ] Dynamic Config
 - [ ] QUIC Support
