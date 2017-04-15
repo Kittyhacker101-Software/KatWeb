@@ -32,10 +32,13 @@ type Conf struct {
 	Name   string `json:"name"`
 }
 
+// Declare some variables
 var (
-	conf   Conf
-	cacheA = []string{"html/"}
-	cacheB = []string{"ssl/", "error/"}
+	handleReq http.Handler
+	path      string
+	conf      Conf
+	cacheA    = []string{"html/"}
+	cacheB    = []string{"ssl/", "error/"}
 )
 
 // Check if path exists for domain, and use it instead of default if it does.
@@ -99,13 +102,12 @@ func main() {
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 
 		// Check path and file info
-		var path string
 		if conf.Dyn {
 			path = detectPath(r.Host + "/")
 		} else {
 			path = "html/"
 		}
-		finfo, err := os.Stat(path + r.URL.Path[1:])
+		finfo, err := os.Stat(path + r.URL.EscapedPath())
 
 		// Add important headers
 		w.Header().Add("Server", conf.Name)
@@ -143,14 +145,13 @@ func main() {
 		} else {
 			w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			if !conf.No {
-				fmt.Println(r.RemoteAddr + " - " + r.Host + r.URL.Path)
+				fmt.Println(r.RemoteAddr + " - " + r.Host + r.URL.EscapedPath())
 			}
-			http.ServeFile(w, r, path+r.URL.Path[1:])
+			http.ServeFile(w, r, path+r.URL.EscapedPath())
 		}
 	}
 
 	// HTTP Compression!!!
-	var handleReq http.Handler
 	if conf.Zip {
 		handleReq = gziphandler.GzipHandler(http.HandlerFunc(mainHandle))
 	} else {
@@ -196,7 +197,7 @@ func main() {
 	fmt.Println("KatWeb HTTP Server Started.")
 	if conf.Secure {
 		// We use a Goroutine because the HTTP and HTTPS servers need to run at the same time.
-		// If browsers defaulted to HTTPS, this wouldn't be needed.
+		// If browsers defaulted to HTTPS, this wouldn't be needed. But, it will be a long time before HTTPS is the norm.
 		if conf.HSTS.Run {
 			// HTTP Server which redirects to HTTPS
 			go srvh.ListenAndServe()
