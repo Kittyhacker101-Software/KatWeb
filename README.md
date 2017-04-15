@@ -36,6 +36,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Dynamic Serving
 - [x] Modern Default Pages
 - [x] Logging to Console
+- [ ] Folder Structure Caching
 - [ ] Password Protected Directories
 - [ ] Dynamic Config
 - [ ] QUIC Support
