@@ -39,7 +39,6 @@ Changing conf options requires a server restart to take effect.
 - [x] Logging to Console
 - [x] Folder Structure Caching
 - [ ] Password Protected Directories
-- [ ] Dynamic Config
 - [ ] QUIC Support
 - [ ] Auto Update
 
