@@ -39,6 +39,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Logging to Console
 - [x] Folder Structure Caching
 - [ ] Password Protected Directories
+- [ ] Custom Redirects
 - [ ] QUIC Support (Possible)
 
 Note that more features are coming soon, and not all features in this list will be implemented.
