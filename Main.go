@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -26,37 +27,73 @@ type Conf struct {
 	IFrame bool   `json:"sameorigin"`
 	Zip    bool   `json:"gzip"`
 	Dyn    bool   `json:"dynamicServing"`
+	DynCa  bool   `json:"cacheStruct"`
 	No     bool   `json:"silent"`
 	Name   string `json:"name"`
 }
 
+var (
+	conf   Conf
+	cacheA = []string{"html/"}
+	cacheB = []string{"ssl/", "error/"}
+)
+
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
-	_, err := os.Stat(p)
-	if err != nil {
-		return "html/"
-	} else {
-		if p == "ssl/" {
-			return "error/"
-		} else {
+	// Cache stuff into a list, so that we use the hard disk less
+	if conf.DynCa {
+		fmt.Println(cacheA)
+		fmt.Println(cacheB)
+
+		loc := sort.SearchStrings(cacheA, p)
+		if loc < len(cacheA) && cacheA[loc] == p {
 			return p
 		}
+		loc = sort.SearchStrings(cacheB, p)
+		if loc < len(cacheB) && cacheB[loc] == p {
+			return "html/"
+		}
+	} else {
+		if p == "ssl/" || p == "error/" || p == "html/" {
+			return "html/"
+		}
+	}
+
+	// If it's not in the cache, check the hard disk, and add it to the cache
+	_, err := os.Stat(p)
+	if err != nil {
+		if conf.DynCa {
+			cacheB = append(cacheB, p)
+			sort.Strings(cacheB)
+		}
+		return "html/"
+	} else {
+		if conf.DynCa {
+			cacheA = append(cacheA, p)
+			sort.Strings(cacheA)
+		}
+		return p
 	}
 }
 
 func main() {
 	// Load and parse config files
-	var conf Conf
 	fmt.Println("Loading config files...")
 	data, _ := ioutil.ReadFile("./conf.json")
 	json.Unmarshal(data, &conf)
+
 	fmt.Println("Loading server...")
 
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, _ := time.LoadLocation("UTC")
 
 	// This handles all web requests
-	mainHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mainHandle := func(w http.ResponseWriter, r *http.Request) {
+
+		//username, password, ok := r.BasicAuth()
+		//fmt.Println(username)
+		//fmt.Println(password)
+		//fmt.Println(ok)
 
 		// Check path and file info
 		var path string
@@ -107,14 +144,14 @@ func main() {
 			}
 			http.ServeFile(w, r, path+r.URL.Path[1:])
 		}
-	})
+	}
 
 	// HTTP Compression!!!
-	var handleGz http.Handler
+	var handleReq http.Handler
 	if conf.Zip {
-		handleGz = gziphandler.GzipHandler(mainHandle)
+		handleReq = gziphandler.GzipHandler(http.HandlerFunc(mainHandle))
 	} else {
-		handleGz = mainHandle
+		handleReq = http.HandlerFunc(mainHandle)
 	}
 
 	// Config for HTTPS, basicly making things a lil more secure
@@ -127,7 +164,7 @@ func main() {
 	// Config for HTTPS Server
 	srv := &http.Server{
 		Addr:         ":443",
-		Handler:      handleGz,
+		Handler:      handleReq,
 		TLSConfig:    cfg,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -143,10 +180,10 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
-	// Secondary Config for HTTP Server.
+	// Secondary config for HTTP Server
 	srvn := &http.Server{
 		Addr:         ":80",
-		Handler:      handleGz,
+		Handler:      handleReq,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
