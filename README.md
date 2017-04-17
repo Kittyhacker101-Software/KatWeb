@@ -2,7 +2,7 @@
 Welcome to KatWeb HTTP Server!
 KatWeb is a modern HTTPS server designed for the 21st century.
 Made in 100% Golang, currently in very early beta.
-**PLEASE DO NOT USE THIS IN PRODUCTION!!!**
+**PLEASE DO NOT USE THIS IN PRODUCTION, ITS NOT FINISHED!!!**
 
 ## File System Structure
 - /html/ - Document root of server.
@@ -40,6 +40,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Folder Structure Caching
 - [ ] Password Protected Directories
 - [ ] Custom Redirects
+- [ ] PHP Support (Possible)
 - [ ] QUIC Support (Possible)
 
 Note that more features are coming soon, and not all features in this list will be implemented.
