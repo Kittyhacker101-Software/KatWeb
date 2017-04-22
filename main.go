@@ -43,11 +43,8 @@ var (
 
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
-	// Cache stuff into a list, so that we use the hard disk less
+	// Cache stuff into a list, so that we use the hard disk less.
 	if conf.DynCa {
-		fmt.Println(cacheA)
-		fmt.Println(cacheB)
-
 		loc := sort.SearchStrings(cacheA, p)
 		if loc < len(cacheA) && cacheA[loc] == p {
 			return p
@@ -62,18 +59,24 @@ func detectPath(p string) string {
 		}
 	}
 
-	// If it's not in the cache, check the hard disk, and add it to the cache
+	// If it's not in the cache, check the hard disk, and add it to the cache.
 	_, err := os.Stat(p)
 	if err != nil {
 		if conf.DynCa {
 			cacheB = append(cacheB, p)
 			sort.Strings(cacheB)
+			if !conf.No {
+				fmt.Println("[Cache][NotFound] - " + p)
+			}
 		}
 		return "html/"
 	} else {
 		if conf.DynCa {
 			cacheA = append(cacheA, p)
 			sort.Strings(cacheA)
+			if !conf.No {
+				fmt.Println("[Cache][Found] - " + p)
+			}
 		}
 		return p
 	}
