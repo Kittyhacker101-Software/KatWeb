@@ -33,11 +33,12 @@ type Conf struct {
 
 // Declare some variables
 var (
-	handleReq http.Handler
-	path      string
-	conf      Conf
-	cacheA    = []string{"html/"}
-	cacheB    = []string{"ssl/", "error/"}
+	handleReq  http.Handler
+	handleHTTP http.Handler
+	path       string
+	conf       Conf
+	cacheA     = []string{"html/"}
+	cacheB     = []string{"ssl/", "error/"}
 	//cacheC           = []string{}
 	//cacheD           = []string{}
 	indexPage string = "index.html"
@@ -45,6 +46,10 @@ var (
 
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
+	if !conf.Dyn {
+		return "html/"
+	}
+
 	// Cache stuff into a list, so that we use the hard disk less.
 	if conf.DynCa {
 		loc := sort.SearchStrings(cacheA, p)
@@ -86,15 +91,13 @@ func detectPath(p string) string {
 
 func main() {
 	// Load and parse config files
-	fmt.Println("Loading config files...")
+	fmt.Println("Loading server...")
 	data, err := ioutil.ReadFile("conf.json")
 	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to load config file. Server will now stop.")
 		os.Exit(0)
 	}
 	json.Unmarshal(data, &conf)
-
-	fmt.Println("Loading server...")
 
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
@@ -106,11 +109,7 @@ func main() {
 	// This handles all web requests
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		// Check path and file info
-		if conf.Dyn {
-			path = detectPath(r.Host + "/")
-		} else {
-			path = "html/"
-		}
+		path = detectPath(r.Host + "/")
 		url := r.URL.EscapedPath()
 		finfo, err := os.Stat(path + url)
 
@@ -154,11 +153,28 @@ func main() {
 		}
 	}
 
-	// HTTP Compression!!!
+	// Choose the correct handler
 	if conf.Zip {
 		handleReq = gziphandler.GzipHandler(http.HandlerFunc(mainHandle))
 	} else {
 		handleReq = http.HandlerFunc(mainHandle)
+	}
+	if conf.Secure {
+		if conf.HSTS.Run {
+			handleHTTP = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+				if !conf.No {
+					fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+				}
+			})
+		} else {
+			// Serve unencrypted content on HTTP
+			fmt.Println("[Warn] : HSTS is disabled, causing people to use HTTP by default. Enabling it is reccomended.")
+			handleHTTP = handleReq
+		}
+	} else {
+		fmt.Println("[Warn] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is reccomended.")
+		handleHTTP = handleReq
 	}
 
 	// Config for HTTPS Server
@@ -169,23 +185,10 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
-	// Config for HTTP Server, redirects to HTTPS
+	// Config for HTTP Server
 	srvh := &http.Server{
-		Addr: ":80",
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if !conf.No {
-				fmt.Println("[Web][HSTS] : " + r.RemoteAddr)
-			}
-		}),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
-	}
-	// Secondary config for HTTP Server
-	srvn := &http.Server{
 		Addr:         ":80",
-		Handler:      handleReq,
+		Handler:      handleHTTP,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
@@ -194,19 +197,9 @@ func main() {
 	// This code actually starts the servers.
 	fmt.Println("KatWeb HTTP Server Started.")
 	if conf.Secure {
-		// We use a Goroutine because the HTTP and HTTPS servers need to run at the same time.
-		// If browsers defaulted to HTTPS, this wouldn't be needed. But, it will be a long time before HTTPS is the norm.
-		if conf.HSTS.Run {
-			// HTTP Server which redirects to HTTPS
-			go srvh.ListenAndServe()
-		} else {
-			// Serves the same content as HTTPS, but unencrypted.
-			fmt.Println("[Warn] : HSTS is disabled, causing people to use HTTP by default. Enabling it is reccomended.")
-			go srvn.ListenAndServe()
-		}
+		go srvh.ListenAndServe()
 		srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	} else {
-		fmt.Println("[Warn] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is reccomended.")
-		srvn.ListenAndServe()
+		srvh.ListenAndServe()
 	}
 }
