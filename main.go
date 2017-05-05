@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
@@ -39,6 +38,9 @@ var (
 	conf      Conf
 	cacheA    = []string{"html/"}
 	cacheB    = []string{"ssl/", "error/"}
+	//cacheC           = []string{}
+	//cacheD           = []string{}
+	indexPage string = "index.html"
 )
 
 // Check if path exists for domain, and use it instead of default if it does.
@@ -66,7 +68,7 @@ func detectPath(p string) string {
 			cacheB = append(cacheB, p)
 			sort.Strings(cacheB)
 			if !conf.No {
-				fmt.Println("[Cache][NotFound] - " + p)
+				fmt.Println("[Cache][NotFound] : " + p)
 			}
 		}
 		return "html/"
@@ -75,7 +77,7 @@ func detectPath(p string) string {
 			cacheA = append(cacheA, p)
 			sort.Strings(cacheA)
 			if !conf.No {
-				fmt.Println("[Cache][Found] - " + p)
+				fmt.Println("[Cache][Found] : " + p)
 			}
 		}
 		return p
@@ -85,9 +87,9 @@ func detectPath(p string) string {
 func main() {
 	// Load and parse config files
 	fmt.Println("Loading config files...")
-	data, err := ioutil.ReadFile("./conf.json")
+	data, err := ioutil.ReadFile("conf.json")
 	if !conf.No && err != nil {
-		fmt.Println("Unable to load config file. Server will now stop.")
+		fmt.Println("[Fatal] : Unable to load config file. Server will now stop.")
 		os.Exit(0)
 	}
 	json.Unmarshal(data, &conf)
@@ -97,20 +99,20 @@ func main() {
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
-		fmt.Println("Unable to load timezones. Server will now stop.")
+		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
 		os.Exit(0)
 	}
 
 	// This handles all web requests
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
-
 		// Check path and file info
 		if conf.Dyn {
 			path = detectPath(r.Host + "/")
 		} else {
 			path = "html/"
 		}
-		finfo, err := os.Stat(path + r.URL.EscapedPath())
+		url := r.URL.EscapedPath()
+		finfo, err := os.Stat(path + url)
 
 		// Add important headers
 		w.Header().Add("Server", conf.Name)
@@ -139,18 +141,16 @@ func main() {
 		}
 		// Check if file exists, and if it does then add modification timestamp. Then send file.
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Header().Set("Last-Modified", time.Now().In(location).Format(http.TimeFormat))
 			if !conf.No {
-				fmt.Println(r.RemoteAddr + " - 404 Error")
+				fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
 			http.ServeFile(w, r, "error/NotFound.html")
 		} else {
 			w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			if !conf.No {
-				fmt.Println(r.RemoteAddr + " - " + r.Host + r.URL.EscapedPath())
+				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
-			http.ServeFile(w, r, path+r.URL.EscapedPath())
+			http.ServeFile(w, r, path+url)
 		}
 	}
 
@@ -161,18 +161,10 @@ func main() {
 		handleReq = http.HandlerFunc(mainHandle)
 	}
 
-	// Config for HTTPS, basicly making things a lil more secure
-	cfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		NextProtos:               []string{"h2", "http/1.1"},
-	}
 	// Config for HTTPS Server
 	srv := &http.Server{
 		Addr:         ":443",
 		Handler:      handleReq,
-		TLSConfig:    cfg,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
@@ -182,6 +174,9 @@ func main() {
 		Addr: ":80",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+			if !conf.No {
+				fmt.Println("[Web][HSTS] : " + r.RemoteAddr)
+			}
 		}),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -206,10 +201,12 @@ func main() {
 			go srvh.ListenAndServe()
 		} else {
 			// Serves the same content as HTTPS, but unencrypted.
+			fmt.Println("[Warn] : HSTS is disabled, causing people to use HTTP by default. Enabling it is reccomended.")
 			go srvn.ListenAndServe()
 		}
 		srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	} else {
+		fmt.Println("[Warn] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is reccomended.")
 		srvn.ListenAndServe()
 	}
 }
