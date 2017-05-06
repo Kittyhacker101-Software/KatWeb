@@ -100,6 +100,7 @@ func updateCache() {
 		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
 				b, _ := ioutil.ReadFile(path)
+				os.Remove("cache/" + path[6:len(path)-4])
 				out, _ := os.Create("cache/" + path[6:len(path)-4])
 				defer out.Close()
 				resp, _ := http.Get(strings.TrimSpace(string(b)))
@@ -108,6 +109,9 @@ func updateCache() {
 			}
 			return nil
 		})
+		if !conf.No {
+			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
+		}
 		time.Sleep(time.Duration(conf.Cache.Up) * time.Second)
 	}
 }
