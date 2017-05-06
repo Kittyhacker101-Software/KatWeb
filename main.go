@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,14 +24,18 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Secure bool   `json:"https"`
-	BSniff bool   `json:"nosniff"`
-	IFrame bool   `json:"sameorigin"`
-	Zip    bool   `json:"gzip"`
-	Dyn    bool   `json:"dynamicServing"`
-	DynCa  bool   `json:"cacheStruct"`
-	No     bool   `json:"silent"`
-	Name   string `json:"name"`
+	Secure bool `json:"https"`
+	BSniff bool `json:"nosniff"`
+	IFrame bool `json:"sameorigin"`
+	Zip    bool `json:"gzip"`
+	Dyn    bool `json:"dynamicServing"`
+	DynCa  bool `json:"cacheStruct"`
+	No     bool `json:"silent"`
+	Cache  struct {
+		Run bool `json:"enabled"`
+		Up  int  `json:"updates"`
+	} `json:"hcache"`
+	Name string `json:"name"`
 }
 
 // Declare some variables
@@ -37,11 +44,9 @@ var (
 	handleHTTP http.Handler
 	path       string
 	conf       Conf
-	cacheA     = []string{"html/"}
-	cacheB     = []string{"ssl/", "error/"}
-	//cacheC           = []string{}
-	//cacheD           = []string{}
-	indexPage string = "index.html"
+	cacheA            = []string{"html/"}
+	cacheB            = []string{"ssl/", "error/", "cache/"}
+	indexPage  string = "index.html"
 )
 
 // Check if path exists for domain, and use it instead of default if it does.
@@ -61,7 +66,7 @@ func detectPath(p string) string {
 			return "html/"
 		}
 	} else {
-		if p == "ssl/" || p == "error/" || p == "html/" {
+		if p == "ssl/" || p == "error/" || p == "cache/" || p == "html/" {
 			return "html/"
 		}
 	}
@@ -89,6 +94,24 @@ func detectPath(p string) string {
 	}
 }
 
+// Update the Simple HTTP Cache
+func updateCache() {
+	for {
+		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
+			if !info.IsDir() && path[len(path)-4:] == ".txt" {
+				b, _ := ioutil.ReadFile(path)
+				out, _ := os.Create("cache/" + path[6:len(path)-4])
+				defer out.Close()
+				resp, _ := http.Get(strings.TrimSpace(string(b)))
+				defer resp.Body.Close()
+				io.Copy(out, resp.Body)
+			}
+			return nil
+		})
+		time.Sleep(time.Duration(conf.Cache.Up) * time.Second)
+	}
+}
+
 func main() {
 	// Load and parse config files
 	fmt.Println("Loading server...")
@@ -109,8 +132,13 @@ func main() {
 	// This handles all web requests
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		// Check path and file info
-		path = detectPath(r.Host + "/")
 		url := r.URL.EscapedPath()
+		if len(url) > 6 && conf.Cache.Run && url[:6] == "/cache" {
+			path = "cache/"
+			url = url[6:]
+		} else {
+			path = detectPath(r.Host + "/")
+		}
 		finfo, err := os.Stat(path + url)
 
 		// Add important headers
@@ -196,6 +224,9 @@ func main() {
 
 	// This code actually starts the servers.
 	fmt.Println("KatWeb HTTP Server Started.")
+	if conf.Cache.Run {
+		go updateCache()
+	}
 	if conf.Secure {
 		go srvh.ListenAndServe()
 		srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
