@@ -37,7 +37,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Dynamic Serving
 - [x] Modern Default Pages
 - [x] Logging to Console
-- [ ] RAM Caching (Partially Done)
+- [ ] Basic HTTP Cache (Coming soon)
 - [ ] Password Protected Directories
 - [ ] Custom Redirects
 - [ ] PHP Support (Possible)
