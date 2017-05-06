@@ -10,6 +10,15 @@ Made in 100% Golang, currently in very early beta.
 - /error/ - Server error pages.
 - /conf.json - Server config file.
 
+## Simple HTTP Cache
+KatWeb comes with a built in HTTP Cache that can be useful for sending files from other websites through your server!
+- To use it, you create a file called [filename].txt in the /cache folder.
+  * Example : If you want to make your file called meow.png, you make a file named meow.png.txt
+- Then, you put the link to the original source in the txt file.
+  * Example : If you want meow.png to show a nyan cat gif, you put the link to the gif (http://www.nyan.cat/cats/original.gif) in meow.png.txt.
+- Now, you can view your stuff through /cache!
+  * Example : To see meow.png, you can open localhost/cache/meow.png in your browser.
+
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
 - cachingTimeout - How many hours you want the files sent by the web-server to be cached in the browser. Setting this to zero will disable caching.
@@ -24,6 +33,9 @@ Made in 100% Golang, currently in very early beta.
 - dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
 - cacheStruct - Caches Dynamic Serving folder structure, enabling this will require you to restart the server for Dynamic Serving folders to be added/removed.
 - silent - Don't log anything. Also disables most error checking, so be careful!
+- hcache - Simple HTTP Cache. Directions below
+  * enabled - If Simple HTTP Cache should be enabled.
+  * updates - How often the HTTP Cache should update it's files in seconds.
 - name - The server name sent in the "Server" HTTP Header.
 
 Changing conf options requires a server restart to take effect.
@@ -37,7 +49,7 @@ Changing conf options requires a server restart to take effect.
 - [x] Dynamic Serving
 - [x] Modern Default Pages
 - [x] Logging to Console
-- [ ] Basic HTTP Cache (Coming soon)
+- [x] Basic HTTP Cache
 - [ ] Password Protected Directories
 - [ ] Custom Redirects
 - [ ] PHP Support (Possible)
