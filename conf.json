@@ -7,15 +7,15 @@
     "preload": true
   },
   "https": true,
-  "nosniff": false,
+  "nosniff": true,
   "sameorigin": true,
-  "gzip": false,
-  "dynamicServing": false,
+  "gzip": true,
+  "dynamicServing": true,
   "cacheStruct": false,
   "silent": false,
   "hcache": {
     "enabled": true,
-    "updates": 4
+    "updates": 240
   },
   "name": "KatWeb"
 }
