@@ -99,13 +99,18 @@ func updateCache() {
 	for {
 		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
+				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
 				b, _ := ioutil.ReadFile(path)
 				os.Remove("cache/" + path[6:len(path)-4])
 				out, _ := os.Create("cache/" + path[6:len(path)-4])
 				defer out.Close()
-				resp, _ := http.Get(strings.TrimSpace(string(b)))
-				defer resp.Body.Close()
-				io.Copy(out, resp.Body)
+				resp, err := http.Get(strings.TrimSpace(string(b)))
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+				} else {
+					defer resp.Body.Close()
+					io.Copy(out, resp.Body)
+				}
 			}
 			return nil
 		})
@@ -237,4 +242,5 @@ func main() {
 	} else {
 		srvh.ListenAndServe()
 	}
+	fmt.Println("[Fatal] : KatWeb was unable to bind to the needed ports!")
 }
