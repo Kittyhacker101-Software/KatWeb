@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+//func RemoveIndex(s []string, i int) []string {
+//	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+//	return s[:len(s)-1]
+//}
+
 // Config file structure
 type Conf struct {
 	IdleTime int `json:"keepAliveTimeout"`
@@ -96,13 +101,18 @@ func detectPath(p string) string {
 
 // Update the Simple HTTP Cache
 func updateCache() {
+	_, err := os.Stat("cache")
+	if err != nil {
+		fmt.Println("[Cache][Fatal] : Cache folder does not exist!")
+		return
+	}
 	for {
 		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
 				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
-				b, _ := ioutil.ReadFile(path)
+				b, err := ioutil.ReadFile(path)
 				os.Remove("cache/" + path[6:len(path)-4])
-				out, _ := os.Create("cache/" + path[6:len(path)-4])
+				out, err := os.Create("cache/" + path[6:len(path)-4])
 				defer out.Close()
 				resp, err := http.Get(strings.TrimSpace(string(b)))
 				if err != nil {
@@ -134,8 +144,7 @@ func main() {
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
-		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
-		os.Exit(0)
+		fmt.Println("[Warn] : Unable to load timezones. This will result in bugs or crashing and should be fixed as soon as possible.")
 	}
 
 	// This handles all web requests
