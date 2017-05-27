@@ -15,10 +15,12 @@ import (
 	"time"
 )
 
-//func RemoveIndex(s []string, i int) []string {
-//	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-//	return s[:len(s)-1]
-//}
+/* Currently unused, will be used in near future
+func RemoveIndex(s []string, i int) []string {
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	return s[:len(s)-1]
+}
+*/
 
 // Config file structure
 type Conf struct {
@@ -43,16 +45,39 @@ type Conf struct {
 	Name string `json:"name"`
 }
 
-// Declare some variables
 var (
 	handleReq  http.Handler
 	handleHTTP http.Handler
 	path       string
 	conf       Conf
-	cacheA            = []string{"html/"}
-	cacheB            = []string{"ssl/", "error/", "cache/"}
-	indexPage  string = "index.html"
+	cacheA     = []string{"html/"}
+	cacheB     = []string{"ssl/", "error/", "cache/"}
 )
+
+// Peform pre-startup checks.
+func checkIntact() {
+	_, err := os.Stat("html")
+	_, err1 := os.Stat("error")
+	if err != nil || err1 != nil {
+		fmt.Println("[Fatal] : HTML folders do not exist! Server will now stop.")
+		os.Exit(0)
+	}
+	if conf.Secure {
+		_, err = os.Stat("ssl/server.crt")
+		_, err1 = os.Stat("ssl/server.key")
+		if err != nil || err1 != nil {
+			fmt.Println("[Warn] : SSL Certs do not exist! Falling back to non-secure mode...")
+			conf.Secure = false
+		}
+	}
+	if conf.Cache.Run {
+		_, err = os.Stat("cache")
+		if err != nil {
+			fmt.Println("[Warn] : Cache folder does not exist! Disabling HTTP Cache...")
+			conf.Cache.Run = false
+		}
+	}
+}
 
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
@@ -87,39 +112,37 @@ func detectPath(p string) string {
 			}
 		}
 		return "html/"
-	} else {
-		if conf.DynCa {
-			cacheA = append(cacheA, p)
-			sort.Strings(cacheA)
-			if !conf.No {
-				fmt.Println("[Cache][Found] : " + p)
-			}
-		}
-		return p
 	}
+
+	if conf.DynCa {
+		cacheA = append(cacheA, p)
+		sort.Strings(cacheA)
+		if !conf.No {
+			fmt.Println("[Cache][Found] : " + p)
+		}
+	}
+	return p
 }
 
 // Update the Simple HTTP Cache
 func updateCache() {
-	_, err := os.Stat("cache")
-	if err != nil {
-		fmt.Println("[Cache][Fatal] : Cache folder does not exist!")
-		return
-	}
 	for {
 		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
 				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
 				b, err := ioutil.ReadFile(path)
-				os.Remove("cache/" + path[6:len(path)-4])
-				out, err := os.Create("cache/" + path[6:len(path)-4])
+				err1 := os.Remove("cache/" + path[6:len(path)-4])
+				out, err2 := os.Create("cache/" + path[6:len(path)-4])
 				defer out.Close()
-				resp, err := http.Get(strings.TrimSpace(string(b)))
-				if err != nil {
+				resp, err3 := http.Get(strings.TrimSpace(string(b)))
+				if err != nil || err1 != nil || err2 != nil || err3 != nil {
 					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 				} else {
 					defer resp.Body.Close()
-					io.Copy(out, resp.Body)
+					_, err = io.Copy(out, resp.Body)
+					if err != nil {
+						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+					}
 				}
 			}
 			return nil
@@ -132,19 +155,26 @@ func updateCache() {
 }
 
 func main() {
+	checkIntact()
+
 	// Load and parse config files
 	fmt.Println("Loading server...")
 	data, err := ioutil.ReadFile("conf.json")
-	if !conf.No && err != nil {
-		fmt.Println("[Fatal] : Unable to load config file. Server will now stop.")
+	if err != nil {
+		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
 		os.Exit(0)
 	}
-	json.Unmarshal(data, &conf)
+	err = json.Unmarshal(data, &conf)
+	if err != nil {
+		fmt.Println("[Fatal] : Unable to parse config file. Server will now stop.")
+		os.Exit(0)
+	}
 
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
-		fmt.Println("[Warn] : Unable to load timezones. This will result in bugs or crashing and should be fixed as soon as possible.")
+		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
+		os.Exit(0)
 	}
 
 	// This handles all web requests
@@ -215,11 +245,11 @@ func main() {
 			})
 		} else {
 			// Serve unencrypted content on HTTP
-			fmt.Println("[Warn] : HSTS is disabled, causing people to use HTTP by default. Enabling it is reccomended.")
+			fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
 			handleHTTP = handleReq
 		}
 	} else {
-		fmt.Println("[Warn] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is reccomended.")
+		fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
 		handleHTTP = handleReq
 	}
 
