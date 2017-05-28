@@ -53,6 +53,6 @@ Changing conf options requires a server restart to take effect.
 - [ ] Password Protected Directories
 - [ ] Custom Redirects
 - [ ] PHP Support (Possible)
-- [ ] QUIC Support (Possible)
+- [ ] File Indexing (Possible)
 
 Note that more features are coming soon, and not all features in this list will be implemented.
