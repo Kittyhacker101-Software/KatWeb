@@ -37,6 +37,7 @@ KatWeb comes with a built in system to serve different content depending on vari
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
 - dyn - Dynamic content control. Directions below
   * serving - Serve content differently by domain. Non-configured domains default to /html/
+  * passwd - Allow password protecting directories.
   * cache - Caches content rules. If enabled, the server must be restarted for any content rules to change.
 - silent - Don't log anything. Also disables most error checking, so be careful!
 - hcache - Simple HTTP Cache. Directions below
@@ -56,9 +57,9 @@ Changing conf options requires a server restart to take effect.
 - [x] Modern Default Pages
 - [x] Logging to Console
 - [x] Basic HTTP Cache
-- [ ] Password Protected Directories
-- [ ] Custom Redirects
-- [ ] PHP Support (Possible)
+- [x] Password Protected Directories
+- [ ] Custom Redirects (Coming soon)
 - [ ] File Indexing (Possible)
+- [ ] PHP Support (Possible?)
 
 Note that more features are coming soon, and not all features in this list will be implemented.
