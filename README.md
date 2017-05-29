@@ -13,11 +13,11 @@ Made in 100% Golang, currently in very early beta.
 ## Simple HTTP Cache
 KatWeb comes with a built in HTTP Cache that can be useful for sending files from other websites through your server!
 - To use it, you create a file called [filename].txt in the /cache folder.
-  * Example : If you want to make your file called meow.png, you make a file named meow.png.txt
+  * Example : If you want to make your file called example.svg, you make a file named example.svg.txt
 - Then, you put the link to the original source in the txt file.
-  * Example : If you want meow.png to show a nyan cat gif, you put the link to the gif (http://www.nyan.cat/cats/original.gif) in meow.png.txt.
+  * Example : If you want meow.png to show a nyan cat gif, you put the link to the gif (http://kittyhacker101.tk/Static/Card.svg) in example.svg.txt.
 - Now, you can view your stuff through /cache!
-  * Example : To see meow.png, you can open localhost/cache/meow.png in your browser.
+  * Example : To see example.svg, you can open localhost/cache/example.svg.txt in your browser.
 
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
