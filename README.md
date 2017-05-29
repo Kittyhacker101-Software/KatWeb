@@ -23,6 +23,8 @@ KatWeb comes with a built in HTTP Cache that can be useful for sending files fro
 KatWeb comes with a built in system to serve different content depending on various factors.
 - You can use this to send content differently by domain!
   * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there!
+- You can use this to password protect folders!
+  * Just create a file in the folder you want to protect, and name it passwd. Then put [username]:[password] in your file (Example : "admin:passwd")!
 
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
