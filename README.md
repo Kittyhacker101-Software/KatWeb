@@ -19,6 +19,11 @@ KatWeb comes with a built in HTTP Cache that can be useful for sending files fro
 - Now, you can view your stuff through /cache!
   * Example : To see meow.png, you can open localhost/cache/meow.png in your browser.
 
+## Dynamic Content Control
+KatWeb comes with a built in system to serve different content depending on various factors.
+- You can use this to send content differently by domain!
+  * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there!
+
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
 - cachingTimeout - How many hours you want the files sent by the web-server to be cached in the browser. Setting this to zero will disable caching.
@@ -30,8 +35,9 @@ KatWeb comes with a built in HTTP Cache that can be useful for sending files fro
 - nosniff - Prevents web browsers from sniffing away content types.
 - sameorigin - Prevents other web-sites from stealing your content using iframes.
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
-- dynamicServing - Serve content differently by domain. If a folder for that domain is not present, it defaults to /html/
-- cacheStruct - Caches Dynamic Serving folder structure, enabling this will require you to restart the server for Dynamic Serving folders to be added/removed.
+- dyn - Dynamic content control. Directions below
+  * serving - Serve content differently by domain. Non-configured domains default to /html/
+  * cache - Caches content rules. If enabled, the server must be restarted for any content rules to change.
 - silent - Don't log anything. Also disables most error checking, so be careful!
 - hcache - Simple HTTP Cache. Directions below
   * enabled - If Simple HTTP Cache should be enabled.
