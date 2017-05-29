@@ -12,6 +12,7 @@
   "gzip": false,
   "dyn": {
     "serving": true,
+    "redir" : true,
     "passwd" : true,
     "cache": false
   },
@@ -20,6 +21,5 @@
     "enabled": true,
     "updates": 240
   },
-  
   "name": "KatWeb"
 }

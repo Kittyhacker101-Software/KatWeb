@@ -30,8 +30,8 @@ type Conf struct {
 	IFrame bool `json:"sameorigin"`
 	Zip    bool `json:"gzip"`
 	Dyn    struct {
-		Srv bool `json:"serving"`
-		//Re   bool `json:"redir"`
+		Srv  bool `json:"serving"`
+		Re   bool `json:"redir"`
 		Pass bool `json:"passwd"`
 		Ca   bool `json:"caching"`
 	} `json:"dyn"`
@@ -102,9 +102,6 @@ func detectPath(p string) string {
 		if conf.Dyn.Ca {
 			cacheB = append(cacheB, p)
 			sort.Strings(cacheB)
-			if !conf.No {
-				fmt.Println("[Cache][NotFound] : " + p)
-			}
 		}
 		return "html/"
 	}
@@ -112,9 +109,6 @@ func detectPath(p string) string {
 	if conf.Dyn.Ca {
 		cacheA = append(cacheA, p)
 		sort.Strings(cacheA)
-		if !conf.No {
-			fmt.Println("[Cache][Found] : " + p)
-		}
 	}
 	return p
 }
@@ -237,6 +231,7 @@ func main() {
 				path = "html/"
 			}
 		}
+		// Check for Password Protection of file
 		finfo, err := os.Stat(path + url)
 		if err == nil && conf.Dyn.Pass {
 			tmp := detectPasswd(finfo, url)
@@ -245,6 +240,17 @@ func main() {
 				if len(auth) > 1 && len(auth) < 3 {
 					authg = true
 				}
+			}
+		}
+		// Check if a Redirect is present
+		if err != nil && conf.Dyn.Re {
+			b, err := ioutil.ReadFile(path + url + ".redir")
+			if err == nil {
+				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
+				if !conf.No {
+					fmt.Println("[WebRe][" + r.Host + url + "] : " + r.RemoteAddr)
+				}
+				return
 			}
 		}
 
