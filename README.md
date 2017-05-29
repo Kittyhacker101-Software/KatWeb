@@ -25,6 +25,8 @@ KatWeb comes with a built in system to serve different content depending on vari
   * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there!
 - You can use this to password protect folders!
   * Just create a file in the folder you want to protect, and name it passwd. Then put [username]:[password] in your file (Example : "admin:passwd")!
+ - You can use this to do HTTP redirects!!
+   * Just create a file which ends in .redir! Then put your link in there, and you can access it without the .redir (Example : meme.txt.redir => meme.txt)
 
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
@@ -39,6 +41,7 @@ KatWeb comes with a built in system to serve different content depending on vari
 - gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
 - dyn - Dynamic content control. Directions below
   * serving - Serve content differently by domain. Non-configured domains default to /html/
+  * redir - Allow temporary HTTP redirects.
   * passwd - Allow password protecting directories.
   * cache - Caches content rules. If enabled, the server must be restarted for any content rules to change.
 - silent - Don't log anything. Also disables most error checking, so be careful!
@@ -49,19 +52,17 @@ KatWeb comes with a built in system to serve different content depending on vari
 
 Changing conf options requires a server restart to take effect.
 
-## Current and Planned Features 
-- [x] SSL Support
-- [x] HSTS Support
-- [x] JSON Config Files
-- [x] HTTP/2 and Keep-Alive
-- [x] Automatic HTTP Compression
-- [x] Dynamic Serving
-- [x] Modern Default Pages
-- [x] Logging to Console
-- [x] Basic HTTP Cache
-- [x] Password Protected Directories
-- [ ] Custom Redirects (Coming soon)
-- [ ] File Indexing (Possible)
-- [ ] PHP Support (Possible?)
+## Features
+- SSL Support
+- HSTS Support
+- JSON Config Files
+- HTTP/2 and Keep-Alive
+- Automatic HTTP Compression
+- Dynamic Serving
+- Modern Default Pages
+- Logging to Console
+- Basic HTTP Cache
+- Password Protected Directories
+- Custom Redirects
 
 Note that more features are coming soon, and not all features in this list will be implemented.
