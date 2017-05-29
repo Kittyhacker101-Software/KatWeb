@@ -55,22 +55,22 @@ var (
 // Peform pre-startup checks.
 func checkIntact() {
 	_, err := os.Stat("html")
-	_, err1 := os.Stat("error")
-	if err != nil || err1 != nil {
-		fmt.Println("[Fatal] : HTML folders do not exist! Server will now stop.")
-		os.Exit(0)
+	if err != nil && !conf.No {
+		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
 	if conf.Secure {
 		_, err = os.Stat("ssl/server.crt")
-		_, err1 = os.Stat("ssl/server.key")
+		_, err1 := os.Stat("ssl/server.key")
 		if err != nil || err1 != nil {
-			fmt.Println("[Warn] : SSL Certs do not exist! Falling back to non-secure mode...")
+			if !conf.No {
+				fmt.Println("[Warn] : SSL Certs do not exist! Falling back to non-secure mode...")
+			}
 			conf.Secure = false
 		}
 	}
 	if conf.Cache.Run {
 		_, err = os.Stat("cache")
-		if err != nil {
+		if err != nil && !conf.No {
 			fmt.Println("[Warn] : Cache folder does not exist! Disabling HTTP Cache...")
 			conf.Cache.Run = false
 		}
@@ -161,7 +161,9 @@ func updateCache() {
 	for {
 		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
-				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
+				if !conf.No {
+					fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
+				}
 				b, err := ioutil.ReadFile(path)
 
 				err1 := os.Remove("cache/" + path[6:len(path)-4])
@@ -171,12 +173,14 @@ func updateCache() {
 				resp, err3 := http.Get(strings.TrimSpace(string(b)))
 
 				if err != nil || err1 != nil || err2 != nil || err3 != nil {
-					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+					if !conf.No {
+						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+					}
 				} else {
 					defer resp.Body.Close()
 					_, err = io.Copy(out, resp.Body)
 
-					if err != nil {
+					if err != nil && !conf.No {
 						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 					}
 				}
@@ -328,11 +332,15 @@ func main() {
 			})
 		} else {
 			// Serve unencrypted content on HTTP
-			fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+			if !conf.No {
+				fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+			}
 			handleHTTP = handleReq
 		}
 	} else {
-		fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+		if !conf.No {
+			fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+		}
 		handleHTTP = handleReq
 	}
 
