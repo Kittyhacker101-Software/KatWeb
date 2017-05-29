@@ -10,12 +10,15 @@
   "nosniff": true,
   "sameorigin": true,
   "gzip": true,
-  "dynamicServing": true,
-  "cacheStruct": false,
+  "dyn": {
+    "serving": true,
+    "cache": false
+  },
   "silent": false,
   "hcache": {
     "enabled": true,
     "updates": 240
   },
+  
   "name": "KatWeb"
 }

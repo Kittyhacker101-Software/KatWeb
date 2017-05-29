@@ -35,10 +35,15 @@ type Conf struct {
 	BSniff bool `json:"nosniff"`
 	IFrame bool `json:"sameorigin"`
 	Zip    bool `json:"gzip"`
-	Dyn    bool `json:"dynamicServing"`
-	DynCa  bool `json:"cacheStruct"`
-	No     bool `json:"silent"`
-	Cache  struct {
+	Dyn    struct {
+		Srv bool `json:"serving"`
+		// A fragment of a future feature :3
+		//Re  bool `json:"redir"`
+		//Pas bool `json:"passwd"`
+		Ca bool `json:"caching"`
+	} `json:"dyn"`
+	No    bool `json:"silent"`
+	Cache struct {
 		Run bool `json:"enabled"`
 		Up  int  `json:"updates"`
 	} `json:"hcache"`
@@ -81,12 +86,9 @@ func checkIntact() {
 
 // Check if path exists for domain, and use it instead of default if it does.
 func detectPath(p string) string {
-	if !conf.Dyn {
-		return "html/"
-	}
 
 	// Cache stuff into a list, so that we use the hard disk less.
-	if conf.DynCa {
+	if conf.Dyn.Ca {
 		loc := sort.SearchStrings(cacheA, p)
 		if loc < len(cacheA) && cacheA[loc] == p {
 			return p
@@ -104,7 +106,7 @@ func detectPath(p string) string {
 	// If it's not in the cache, check the hard disk, and add it to the cache.
 	_, err := os.Stat(p)
 	if err != nil {
-		if conf.DynCa {
+		if conf.Dyn.Ca {
 			cacheB = append(cacheB, p)
 			sort.Strings(cacheB)
 			if !conf.No {
@@ -114,7 +116,7 @@ func detectPath(p string) string {
 		return "html/"
 	}
 
-	if conf.DynCa {
+	if conf.Dyn.Ca {
 		cacheA = append(cacheA, p)
 		sort.Strings(cacheA)
 		if !conf.No {
@@ -131,15 +133,19 @@ func updateCache() {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
 				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
 				b, err := ioutil.ReadFile(path)
+
 				err1 := os.Remove("cache/" + path[6:len(path)-4])
 				out, err2 := os.Create("cache/" + path[6:len(path)-4])
+
 				defer out.Close()
 				resp, err3 := http.Get(strings.TrimSpace(string(b)))
+
 				if err != nil || err1 != nil || err2 != nil || err3 != nil {
 					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 				} else {
 					defer resp.Body.Close()
 					_, err = io.Copy(out, resp.Body)
+
 					if err != nil {
 						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 					}
@@ -185,9 +191,21 @@ func main() {
 			path = "cache/"
 			url = url[6:]
 		} else {
-			path = detectPath(r.Host + "/")
+			if conf.Dyn.Srv {
+				path = detectPath(r.Host + "/")
+			} else {
+				path = "html/"
+			}
 		}
 		finfo, err := os.Stat(path + url)
+
+		// A fragment of a future feature :3
+		//if finfo.IsDir() {
+		//	fmt.Println("Yes! : " + url)
+		//} else {
+		//	tmp := len(finfo.Name())
+		//	fmt.Println("No! : " + url[:len(url)-tmp])
+		//}
 
 		// Add important headers
 		w.Header().Add("Server", conf.Name)
