@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
@@ -14,13 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-/* Currently unused, will be used in near future
-func RemoveIndex(s []string, i int) []string {
-	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-	return s[:len(s)-1]
-}
-*/
 
 // Config file structure
 type Conf struct {
@@ -36,11 +30,10 @@ type Conf struct {
 	IFrame bool `json:"sameorigin"`
 	Zip    bool `json:"gzip"`
 	Dyn    struct {
-		Srv bool `json:"serving"`
-		// A fragment of a future feature :3
-		//Re  bool `json:"redir"`
-		//Pas bool `json:"passwd"`
-		Ca bool `json:"caching"`
+		Srv  bool `json:"serving"`
+		//Re   bool `json:"redir"`
+		Pass bool `json:"passwd"`
+		Ca   bool `json:"caching"`
 	} `json:"dyn"`
 	No    bool `json:"silent"`
 	Cache struct {
@@ -53,8 +46,8 @@ type Conf struct {
 var (
 	handleReq  http.Handler
 	handleHTTP http.Handler
-	path       string
 	conf       Conf
+	path       string
 	cacheA     = []string{"html/"}
 	cacheB     = []string{"ssl/", "error/", "cache/"}
 )
@@ -126,6 +119,49 @@ func detectPath(p string) string {
 	return p
 }
 
+// Check if a password file exists
+func detectPasswd(i os.FileInfo, p string) string {
+	var tmpl string
+	if i.IsDir() {
+		tmpl = p
+
+	} else {
+		tmp := len(i.Name())
+		tmpl = p[:len(p)-tmp]
+	}
+	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
+	if err == nil {
+		return strings.TrimSpace(string(b))
+	}
+	return "err"
+}
+
+// Ask for HTTP Auth
+func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(s) != 2 {
+		return false
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		return false
+	}
+
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		return false
+	}
+
+	if pair[0] != a[0] || pair[1] != a[1] {
+		return false
+	}
+
+	return true
+}
+
 // Update the Simple HTTP Cache
 func updateCache() {
 	for {
@@ -161,10 +197,10 @@ func updateCache() {
 }
 
 func main() {
+	fmt.Println("Loading server...")
 	checkIntact()
 
 	// Load and parse config files
-	fmt.Println("Loading server...")
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
@@ -185,6 +221,10 @@ func main() {
 
 	// This handles all web requests
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
+		var (
+			authg bool
+			auth  []string
+		)
 		// Check path and file info
 		url := r.URL.EscapedPath()
 		if len(url) > 6 && conf.Cache.Run && url[:6] == "/cache" {
@@ -198,14 +238,15 @@ func main() {
 			}
 		}
 		finfo, err := os.Stat(path + url)
-
-		// A fragment of a future feature :3
-		//if finfo.IsDir() {
-		//	fmt.Println("Yes! : " + url)
-		//} else {
-		//	tmp := len(finfo.Name())
-		//	fmt.Println("No! : " + url[:len(url)-tmp])
-		//}
+		if err == nil && conf.Dyn.Pass {
+			tmp := detectPasswd(finfo, url)
+			if tmp != "err" {
+				auth = strings.Split(tmp, ":")
+				if len(auth) > 1 && len(auth) < 3 {
+					authg = true
+				}
+			}
+		}
 
 		// Add important headers
 		w.Header().Add("Server", conf.Name)
@@ -243,7 +284,25 @@ func main() {
 			if !conf.No {
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
-			http.ServeFile(w, r, path+url)
+			if conf.Dyn.Pass {
+				if finfo.Name() == "passwd" {
+					http.ServeFile(w, r, "error/Forbidden.html")
+				} else {
+					// Ask for Auth if it is enabled
+					if authg {
+						if runAuth(w, r, auth) {
+							http.ServeFile(w, r, path+url)
+						} else {
+							// This is just temporary, until the gzip library I use gets fixed. Sorry about this.
+							http.Error(w, "401. Unauthorized. Authentication is required and has failed or has not yet been provided.", 401)
+						}
+					} else {
+						http.ServeFile(w, r, path+url)
+					}
+				}
+			} else {
+				http.ServeFile(w, r, path+url)
+			}
 		}
 	}
 

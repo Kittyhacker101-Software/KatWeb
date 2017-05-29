@@ -9,9 +9,10 @@
   "https": true,
   "nosniff": true,
   "sameorigin": true,
-  "gzip": true,
+  "gzip": false,
   "dyn": {
     "serving": true,
+    "passwd" : true,
     "cache": false
   },
   "silent": false,
