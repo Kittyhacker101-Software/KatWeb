@@ -30,7 +30,7 @@ type Conf struct {
 	IFrame bool `json:"sameorigin"`
 	Zip    bool `json:"gzip"`
 	Dyn    struct {
-		Srv  bool `json:"serving"`
+		Srv bool `json:"serving"`
 		//Re   bool `json:"redir"`
 		Pass bool `json:"passwd"`
 		Ca   bool `json:"caching"`
