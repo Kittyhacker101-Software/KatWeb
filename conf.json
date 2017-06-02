@@ -21,5 +21,7 @@
     "enabled": true,
     "updates": 240
   },
-  "name": "KatWeb"
+  "name": "KatWeb",
+  "httpPort": 80,
+  "sslPort": 443
 }

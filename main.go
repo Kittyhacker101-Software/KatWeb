@@ -40,7 +40,9 @@ type Conf struct {
 		Run bool `json:"enabled"`
 		Up  int  `json:"updates"`
 	} `json:"hcache"`
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	HTTP  int    `json:"httpPort"`
+	HTTPS int    `json:"sslPort"`
 }
 
 var (
@@ -73,6 +75,35 @@ func checkIntact() {
 		if err != nil && !conf.No {
 			fmt.Println("[Warn] : Cache folder does not exist! Disabling HTTP Cache...")
 			conf.Cache.Run = false
+		}
+	}
+	if conf.HTTP != 80 || conf.HTTPS != 443 {
+		if !conf.No && conf.Dyn.Srv {
+			fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports. Disabling Dynamic Serving...")
+			conf.Dyn.Srv = false
+		}
+	}
+
+	if !conf.Secure && !conf.No {
+		fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+	}
+
+	if conf.HSTS.Run {
+		if conf.HTTPS != 443 {
+			if !conf.No {
+				fmt.Println("[Warn] : HSTS will not work on non-standard ports. Disabling HSTS...")
+				conf.HSTS.Run = false
+			}
+		}
+		if !conf.Secure {
+			if !conf.No {
+				fmt.Println("[Warn] : HSTS will not work when HTTPS is disabled. Disabling HSTS...")
+				conf.HSTS.Run = false
+			}
+		}
+	} else {
+		if conf.Secure && !conf.No {
+			fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
 		}
 	}
 }
@@ -196,7 +227,6 @@ func updateCache() {
 
 func main() {
 	fmt.Println("Loading server...")
-	checkIntact()
 
 	// Load and parse config files
 	data, err := ioutil.ReadFile("conf.json")
@@ -209,6 +239,8 @@ func main() {
 		fmt.Println("[Fatal] : Unable to parse config file. Server will now stop.")
 		os.Exit(0)
 	}
+
+	checkIntact()
 
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
@@ -331,22 +363,15 @@ func main() {
 				}
 			})
 		} else {
-			// Serve unencrypted content on HTTP
-			if !conf.No {
-				fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
-			}
 			handleHTTP = handleReq
 		}
 	} else {
-		if !conf.No {
-			fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
-		}
 		handleHTTP = handleReq
 	}
 
 	// Config for HTTPS Server
 	srv := &http.Server{
-		Addr:         ":443",
+		Addr:         ":" + strconv.Itoa(conf.HTTPS),
 		Handler:      handleReq,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -354,7 +379,7 @@ func main() {
 	}
 	// Config for HTTP Server
 	srvh := &http.Server{
-		Addr:         ":80",
+		Addr:         ":" + strconv.Itoa(conf.HTTP),
 		Handler:      handleHTTP,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
