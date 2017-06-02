@@ -33,11 +33,11 @@ KatWeb comes with a built in system to serve different content depending on vari
 - hsts - Forces all browsers to use HTTPS for your website. Requires a valid HTTPS cert.
   * enabled - If HSTS should be enabled, requires a valid HTTPS cert.
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
-  * preload - If your site's HSTS rule should be preloaded into the preload list. Once you are in the preload list, you can't get out of it easily!
+  * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
 - https - If you wish to have an encrypted connection.
 - nosniff - Prevents web browsers from sniffing away content types.
-- sameorigin - Prevents other web-sites from stealing your content using iframes.
-- gzip - HTTP compression for files. Keep this on unless you are attempting to host on a Raspberry Pi Zero :P
+- sameorigin - Prevents other web-sites from stealing your content in various ways.
+- gzip - HTTP compression for files. Currently buggy and uses a 3rd party library.
 - dyn - Dynamic content control. Directions below
   * serving - Serve content differently by domain. Non-configured domains default to /html/
   * redir - Allow temporary HTTP redirects.
