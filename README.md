@@ -48,6 +48,8 @@ KatWeb comes with a built in system to serve different content depending on vari
   * enabled - If Simple HTTP Cache should be enabled.
   * updates - How often the HTTP Cache should update it's files in seconds.
 - name - The server name sent in the "Server" HTTP Header.
+- httpPort - The port for the HTTP server to run on.
+- sslPort - The port for the HTTPS server to run on.
 
 Changing conf options requires a server restart to take effect.
 
