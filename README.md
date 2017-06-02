@@ -35,16 +35,15 @@ KatWeb comes with a built in system to serve different content depending on vari
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
 - https - If you wish to have an encrypted connection.
-- nosniff - Prevents web browsers from sniffing away content types.
-- sameorigin - Prevents other web-sites from stealing your content in various ways.
-- gzip - HTTP compression for files. Currently buggy and uses a 3rd party library.
-- dyn - Dynamic content control. Directions below
+- protect - Prevents other web-sites from stealing your content in various ways.
+- gzip - HTTP compression for files.
+- dyn - Dynamic content control.
   * serving - Serve content differently by domain. Non-configured domains default to /html/
   * redir - Allow temporary HTTP redirects.
   * passwd - Allow password protecting directories.
   * cache - Caches content rules. If enabled, the server must be restarted for any content rules to change.
 - silent - Don't log anything. Also disables most error checking, so be careful!
-- hcache - Simple HTTP Cache. Directions below
+- hcache - Simple HTTP Cache.
   * enabled - If Simple HTTP Cache should be enabled.
   * updates - How often the HTTP Cache should update it's files in seconds.
 - name - The server name sent in the "Server" HTTP Header.
@@ -58,7 +57,7 @@ Changing conf options requires a server restart to take effect.
 - HSTS Support
 - JSON Config Files
 - HTTP/2 and Keep-Alive
-- Automatic HTTP Compression
+- HTTP Compression
 - Dynamic Serving
 - Modern Default Pages
 - Logging to Console
