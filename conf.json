@@ -7,8 +7,7 @@
     "preload": true
   },
   "https": true,
-  "nosniff": true,
-  "sameorigin": true,
+  "protect": true,
   "gzip": false,
   "dyn": {
     "serving": true,

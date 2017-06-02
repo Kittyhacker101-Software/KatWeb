@@ -1,10 +1,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/NYTimes/gziphandler"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -26,8 +26,7 @@ type Conf struct {
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
 	Secure bool `json:"https"`
-	BSniff bool `json:"nosniff"`
-	IFrame bool `json:"sameorigin"`
+	Pro    bool `json:"protect"`
 	Zip    bool `json:"gzip"`
 	Dyn    struct {
 		Srv  bool `json:"serving"`
@@ -85,7 +84,11 @@ func checkIntact() {
 	}
 
 	if !conf.Secure && !conf.No {
-		fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+		if conf.Pro || conf.Dyn.Pass {
+			fmt.Println("[Warn] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is highly recommended.")
+		} else {
+			fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+		}
 	}
 
 	if conf.HSTS.Run {
@@ -103,7 +106,11 @@ func checkIntact() {
 		}
 	} else {
 		if conf.Secure && !conf.No {
-			fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+			if conf.Pro || conf.Dyn.Pass {
+				fmt.Println("[Warn] : HSTS is disabled, causing people to use HTTP by default. Enabling it is highly recommended.")
+			} else {
+				fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+			}
 		}
 	}
 }
@@ -225,6 +232,28 @@ func updateCache() {
 	}
 }
 
+// Gzip writer (Experimental)
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			fn(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		fn(gzr, r)
+	}
+}
+
 func main() {
 	fmt.Println("Loading server...")
 
@@ -309,11 +338,10 @@ func main() {
 				w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 			}
 		}
-		if conf.BSniff {
+		if conf.Pro {
 			w.Header().Add("X-Content-Type-Options", "nosniff")
-		}
-		if conf.IFrame {
 			w.Header().Add("X-Frame-Options", "sameorigin")
+			w.Header().Add("X-XSS-Protection", "1; mode=block")
 		}
 		// Check if file exists, and if it does then add modification timestamp. Then send file.
 		if err != nil {
@@ -350,7 +378,7 @@ func main() {
 
 	// Choose the correct handler
 	if conf.Zip {
-		handleReq = gziphandler.GzipHandler(http.HandlerFunc(mainHandle))
+		handleReq = makeGzipHandler(http.HandlerFunc(mainHandle))
 	} else {
 		handleReq = http.HandlerFunc(mainHandle)
 	}
