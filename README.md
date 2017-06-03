@@ -4,9 +4,9 @@ KatWeb is a modern HTTPS server designed for the 21st century.
 **PLEASE DO NOT USE THIS IN PRODUCTION, ITS NOT FINISHED!!!**
 
 ## File System Structure
+- /cache/ - Simple HTTP Cache
 - /html/ - Document root of server.
 - /ssl/ - Server HTTPS certificates.
-- /error/ - Server error pages.
 - /conf.json - Server config file.
 
 ## Simple HTTP Cache
