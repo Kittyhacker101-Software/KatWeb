@@ -50,7 +50,7 @@ var (
 	conf       Conf
 	path       string
 	cacheA     = []string{"html/"}
-	cacheB     = []string{"ssl/", "error/", "cache/"}
+	cacheB     = []string{"ssl/", "cache/"}
 )
 
 // Peform pre-startup checks.
@@ -129,7 +129,7 @@ func detectPath(p string) string {
 			return "html/"
 		}
 	} else {
-		if p == "ssl/" || p == "error/" || p == "cache/" || p == "html/" {
+		if p == "ssl/" || p == "cache/" || p == "html/" {
 			return "html/"
 		}
 	}
@@ -232,11 +232,12 @@ func updateCache() {
 	}
 }
 
-// Gzip writer (Experimental)
+// Gzip Writer
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
 }
+
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -348,7 +349,7 @@ func main() {
 			if !conf.No {
 				fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
-			http.ServeFile(w, r, "error/NotFound.html")
+			http.Error(w, "404. Not Found. The requested resource could not be found but may be available in the future.", 404)
 		} else {
 			w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			if !conf.No {
@@ -356,14 +357,13 @@ func main() {
 			}
 			if conf.Dyn.Pass {
 				if finfo.Name() == "passwd" {
-					http.ServeFile(w, r, "error/Forbidden.html")
+					http.Error(w, "403. Forbidden. The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 				} else {
 					// Ask for Auth if it is enabled
 					if authg {
 						if runAuth(w, r, auth) {
 							http.ServeFile(w, r, path+url)
 						} else {
-							// This is just temporary, until the gzip library I use gets fixed. Sorry about this.
 							http.Error(w, "401. Unauthorized. Authentication is required and has failed or has not yet been provided.", 401)
 						}
 					} else {
