@@ -32,7 +32,7 @@ type Conf struct {
 		Srv  bool `json:"serving"`
 		Re   bool `json:"redir"`
 		Pass bool `json:"passwd"`
-		Ca   bool `json:"caching"`
+		Ca   bool `json:"cache"`
 	} `json:"dyn"`
 	No    bool `json:"silent"`
 	Cache struct {
@@ -196,8 +196,10 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 
 // Update the Simple HTTP Cache
 func updateCache() {
+	tr := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: tr}
 	for {
-		filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
+		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && path[len(path)-4:] == ".txt" {
 				if !conf.No {
 					fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
@@ -207,15 +209,16 @@ func updateCache() {
 				err1 := os.Remove("cache/" + path[6:len(path)-4])
 				out, err2 := os.Create("cache/" + path[6:len(path)-4])
 
-				defer out.Close()
-				resp, err3 := http.Get(strings.TrimSpace(string(b)))
+				resp, err3 := client.Get(strings.TrimSpace(string(b)))
+				if resp != nil {
+					defer resp.Body.Close()
+				}
 
 				if err != nil || err1 != nil || err2 != nil || err3 != nil {
 					if !conf.No {
 						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 					}
 				} else {
-					defer resp.Body.Close()
 					_, err = io.Copy(out, resp.Body)
 
 					if err != nil && !conf.No {
@@ -225,6 +228,9 @@ func updateCache() {
 			}
 			return nil
 		})
+		if err0 != nil {
+			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
+		}
 		if !conf.No {
 			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
 		}
@@ -270,14 +276,14 @@ func main() {
 		os.Exit(0)
 	}
 
-	checkIntact()
-
 	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
 		os.Exit(0)
 	}
+
+	checkIntact()
 
 	// This handles all web requests
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
