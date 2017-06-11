@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// Config file structure
+// Conf contains all the fields for the JSON Config file of the server.
 type Conf struct {
 	IdleTime int `json:"keepAliveTimeout"`
 	CachTime int `json:"cachingTimeout"`
@@ -54,7 +54,7 @@ var (
 	cacheB     = []string{"ssl/", "cache/"}
 )
 
-// Peform pre-startup checks.
+// checkIntact peforms all pre-startup checks.
 func checkIntact() {
 	_, err := os.Stat("html")
 	if err != nil {
@@ -99,10 +99,10 @@ func checkIntact() {
 	}
 }
 
-// Check if path exists for domain, and use it instead of default if it does.
+// detectPath handles dynamic content control by domain.
 func detectPath(p string) string {
 
-	// Check the cache if the domain exists
+	// We check to see if the domain is stored in the cache.
 	loc := sort.SearchStrings(cacheB, p)
 	if loc < len(cacheB) && cacheB[loc] == p {
 		return "html/"
@@ -129,7 +129,7 @@ func detectPath(p string) string {
 	return p
 }
 
-// Check if a password file exists
+// detectPasswd checks if the folder needs to be password protected.
 func detectPasswd(i os.FileInfo, p string) string {
 	var tmpl string
 	if i.IsDir() {
@@ -146,7 +146,7 @@ func detectPasswd(i os.FileInfo, p string) string {
 	return "err"
 }
 
-// Ask for HTTP Auth
+// runAuth handles HTTP Basic Authentication.
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
@@ -168,7 +168,7 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	return true
 }
 
-// Update the Simple HTTP Cache
+// updateCache handles automatically updating the Basic HTTP Cache.
 func updateCache() {
 	tr := &http.Transport{DisableKeepAlives: true}
 	client := &http.Client{Transport: tr}
@@ -211,7 +211,7 @@ func updateCache() {
 	}
 }
 
-// Gzip Writer
+// gzipResponseWriter handles the various writers needed for gzip compression.
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
@@ -220,6 +220,7 @@ type gzipResponseWriter struct {
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
+// makeGzipHandler uses those writers to gzip the content that needs to be sent.
 func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -234,10 +235,11 @@ func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// The main function handles startup and webserver logic.
 func main() {
 	fmt.Println("Loading server...")
 
-	// Load and parse config files
+	// Load the config file, and then parse it into the conf struct.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
@@ -249,25 +251,26 @@ func main() {
 		os.Exit(0)
 	}
 
-	// We must use the UTC format when using .Format(http.TimeFormat) on the time.
+	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
 		os.Exit(0)
 	}
 
-	// Make sure nothing is wrong with the config
+	// Run checkIntact to make sure the server is setup properly.
 	if !conf.No {
 		checkIntact()
 	}
 
-	// This handles all web requests
+	// mainHandle handles all HTTP Web Requests, all other handlers in here are just wrappers.
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		var (
 			authg bool = false
 			auth  []string
 		)
-		// Check path and file info
+		
+		// Get file info, and check Dynamic Content Control settings.
 		url := r.URL.EscapedPath()
 		if conf.Cache.Run && len(url) > 6 && url[:6] == "/cache" {
 			path = "cache/"
@@ -279,7 +282,8 @@ func main() {
 				path = "html/"
 			}
 		}
-		// Check for Password Protection of file
+		
+		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
 		if err == nil && conf.Dyn.Pass {
 			tmp := detectPasswd(finfo, url)
@@ -290,7 +294,8 @@ func main() {
 				}
 			}
 		}
-		// Check if a Redirect is present
+		
+		// Check if a redirect is present, and apply the redirect if needed.
 		if err != nil && conf.Dyn.Re {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
@@ -302,7 +307,7 @@ func main() {
 			}
 		}
 
-		// Add important headers
+		// Add all headers from server configuration.
 		w.Header().Add("Server", conf.Name)
 		if conf.IdleTime != 0 {
 			w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
@@ -315,7 +320,7 @@ func main() {
 					w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains")
 				}
 			} else {
-				// Preload requires includeSubDomains!
+				// HSTS Preload requires includeSubDomains.
 				w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 			}
 		}
@@ -324,7 +329,7 @@ func main() {
 			w.Header().Add("X-Frame-Options", "sameorigin")
 			w.Header().Add("X-XSS-Protection", "1; mode=block")
 		}
-		// Check if file exists, and if it does then add modification timestamp. Then send file.
+		// Add modifications timestamps, then send data.
 		if err != nil {
 			if !conf.No {
 				fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -344,7 +349,7 @@ func main() {
 				if finfo.Name() == "passwd" {
 					http.Error(w, "403. Forbidden. The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 				} else {
-					// Ask for Auth if it is enabled
+					// Ask for Authentication if it is required.
 					if runAuth(w, r, auth) {
 						http.ServeFile(w, r, path+url)
 					} else {
@@ -357,7 +362,7 @@ func main() {
 		}
 	}
 
-	// Choose the correct handler
+	// Choose the correct wrappers for the handler based on server configuration.
 	if conf.Zip {
 		handleReq = makeGzipHandler(http.HandlerFunc(mainHandle))
 	} else {
@@ -374,7 +379,7 @@ func main() {
 		handleHTTP = handleReq
 	}
 
-	// Config for HTTPS Server
+	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTPS),
 		Handler:      handleReq,
@@ -382,7 +387,7 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
-	// Config for HTTP Server
+	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTP),
 		Handler:      handleHTTP,
@@ -391,7 +396,7 @@ func main() {
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
 
-	// This code actually starts the servers.
+	// Run HTTP Cache auto update, and start the HTTP/HTTPS servers.
 	fmt.Println("KatWeb HTTP Server Started.")
 	if conf.Cache.Run {
 		go updateCache()
