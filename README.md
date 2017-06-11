@@ -1,7 +1,7 @@
 ## KatWeb
 Welcome to KatWeb HTTP Server!
 KatWeb is a modern HTTPS server designed for the 21st century.
-**PLEASE DO NOT USE THIS IN PRODUCTION, ITS NOT FINISHED!!!**
+**This program is still in beta and not production ready!!!**
 
 ## File System Structure
 - /cache/ - Simple HTTP Cache
