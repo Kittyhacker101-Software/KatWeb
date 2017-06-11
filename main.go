@@ -220,6 +220,7 @@ type gzipResponseWriter struct {
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
+
 // makeGzipHandler uses those writers to gzip the content that needs to be sent.
 func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -266,10 +267,10 @@ func main() {
 	// mainHandle handles all HTTP Web Requests, all other handlers in here are just wrappers.
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		var (
-			authg bool = false
+			authg bool
 			auth  []string
 		)
-		
+
 		// Get file info, and check Dynamic Content Control settings.
 		url := r.URL.EscapedPath()
 		if conf.Cache.Run && len(url) > 6 && url[:6] == "/cache" {
@@ -282,7 +283,7 @@ func main() {
 				path = "html/"
 			}
 		}
-		
+
 		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
 		if err == nil && conf.Dyn.Pass {
@@ -294,7 +295,7 @@ func main() {
 				}
 			}
 		}
-		
+
 		// Check if a redirect is present, and apply the redirect if needed.
 		if err != nil && conf.Dyn.Re {
 			b, err := ioutil.ReadFile(path + url + ".redir")
