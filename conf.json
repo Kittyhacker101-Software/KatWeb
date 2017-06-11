@@ -8,7 +8,7 @@
   },
   "https": true,
   "protect": true,
-  "gzip": false,
+  "gzip": true,
   "dyn": {
     "serving": true,
     "redir" : true,
