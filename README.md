@@ -28,13 +28,13 @@ KatWeb comes with a built in system to serve different content depending on vari
    * Just create a file which ends in .redir! Then put your link in there, and you can access it without the .redir (Example : meme.txt.redir => meme.txt)
 
 ## Config Options
-- keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Must be greater than zero!
+- keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Setting this to zero will disable keep-alive.
 - cachingTimeout - How many hours you want the files sent by the web-server to be cached in the browser. Setting this to zero will disable caching.
 - hsts - Forces all browsers to use HTTPS for your website. Requires a valid HTTPS cert.
   * enabled - If HSTS should be enabled, requires a valid HTTPS cert.
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
-- https - If you wish to have an encrypted connection.
+- https - Allows an encrypted connection. Enabling this is highly reccomended!
 - protect - Prevents other web-sites from stealing your content in various ways.
 - gzip - HTTP compression for files.
 - dyn - Dynamic content control.
