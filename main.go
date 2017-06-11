@@ -201,7 +201,7 @@ func updateCache() {
 			}
 			return nil
 		})
-		if err0 != nil {
+		if err0 != nil && !conf.No {
 			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
 		}
 		if !conf.No {
@@ -242,21 +242,21 @@ func main() {
 
 	// Load the config file, and then parse it into the conf struct.
 	data, err := ioutil.ReadFile("conf.json")
-	if err != nil {
+	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
-		os.Exit(0)
+		os.Exit(1)
 	}
 	err = json.Unmarshal(data, &conf)
-	if err != nil {
+	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to parse config file. Server will now stop.")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if !conf.No && err != nil {
 		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Run checkIntact to make sure the server is setup properly.
@@ -408,5 +408,8 @@ func main() {
 	} else {
 		srvh.ListenAndServe()
 	}
-	fmt.Println("[Fatal] : KatWeb was unable to bind to the needed ports!")
+
+	if !conf.No {
+		fmt.Println("[Fatal] : KatWeb was unable to start!")
+	}
 }
