@@ -338,7 +338,7 @@ func main() {
 		// Add modifications timestamps, then send data.
 		if err != nil {
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
-			http.Error(w, "404. Not Found. The requested resource could not be found but may be available in the future.", 404)
+			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
 		} else {
 			if conf.CachTime != 0 {
 				w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
@@ -349,13 +349,13 @@ func main() {
 
 			if authg {
 				if finfo.Name() == "passwd" {
-					http.Error(w, "403. Forbidden. The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
+					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 				} else {
 					// Ask for Authentication if it is required.
 					if runAuth(w, r, auth) {
 						http.ServeFile(w, r, path+url)
 					} else {
-						http.Error(w, "401. Unauthorized. Authentication is required and has failed or has not yet been provided.", 401)
+						http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
 					}
 				}
 			} else {
