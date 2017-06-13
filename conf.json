@@ -8,13 +8,6 @@
   },
   "protect": true,
   "gzip": true,
-  "dyn": {
-    "serving": true,
-    "redir" : true,
-    "passwd" : true,
-    "cache": false
-  },
-  "silent": false,
   "hcache": {
     "enabled": true,
     "updates": 240

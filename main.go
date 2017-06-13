@@ -27,15 +27,8 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Pro bool `json:"protect"`
-	Zip bool `json:"gzip"`
-	Dyn struct {
-		Srv  bool `json:"serving"`
-		Re   bool `json:"redir"`
-		Pass bool `json:"passwd"`
-		Ca   bool `json:"cache"`
-	} `json:"dyn"`
-	No    bool `json:"silent"`
+	Pro   bool `json:"protect"`
+	Zip   bool `json:"gzip"`
 	Cache struct {
 		Run bool `json:"enabled"`
 		Up  int  `json:"updates"`
@@ -86,10 +79,7 @@ func checkIntact() {
 	}
 
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
-		if conf.Dyn.Srv {
-			fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
-			conf.Dyn.Srv = false
-		}
+		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
 	}
 
 	_, err = os.Stat("ssl/server.crt")
@@ -125,17 +115,13 @@ func detectPath(p string) string {
 	// If it's not in the cache, check the hard disk, and add it to the cache.
 	_, err := os.Stat(p)
 	if err != nil {
-		if conf.Dyn.Ca {
-			cacheB = append(cacheB, p)
-			sort.Strings(cacheB)
-		}
+		cacheB = append(cacheB, p)
+		sort.Strings(cacheB)
 		return "html/"
 	}
 
-	if conf.Dyn.Ca {
-		cacheA = append(cacheA, p)
-		sort.Strings(cacheA)
-	}
+	cacheA = append(cacheA, p)
+	sort.Strings(cacheA)
 	return p
 }
 
@@ -193,9 +179,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if !conf.No {
-				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
-			}
+			fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
 		})
 	} else {
 		tmpH = tmpR
@@ -210,9 +194,7 @@ func updateCache() {
 	for {
 		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && len(path) > 4 && path[len(path)-4:] == ".txt" {
-				if !conf.No {
-					fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
-				}
+				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
 				b, err := ioutil.ReadFile(path)
 
 				err1 := os.Remove("cache/" + path[6:len(path)-4])
@@ -224,22 +206,19 @@ func updateCache() {
 				}
 
 				if err != nil || err1 != nil || err2 != nil || err3 != nil {
-					if !conf.No {
-						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
-					}
+					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 				} else {
 					_, err = io.Copy(out, resp.Body)
-					if err != nil && !conf.No {
+					if err != nil {
 						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
 					}
 				}
 			}
 			return nil
 		})
-		if err0 != nil && !conf.No {
+		if err0 != nil {
 			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
-		}
-		if !conf.No {
+		} else {
 			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
 		}
 		time.Sleep(time.Duration(conf.Cache.Up) * time.Second)
@@ -277,27 +256,24 @@ func main() {
 
 	// Load the config file, and then parse it into the conf struct.
 	data, err := ioutil.ReadFile("conf.json")
-	if !conf.No && err != nil {
+	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
 		os.Exit(1)
 	}
 	err = json.Unmarshal(data, &conf)
-	if !conf.No && err != nil {
+	if err != nil {
 		fmt.Println("[Fatal] : Unable to parse config file. Server will now stop.")
 		os.Exit(1)
 	}
 
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
-	if !conf.No && err != nil {
+	if err != nil {
 		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
 		os.Exit(1)
 	}
 
-	// Run checkIntact to make sure the server is setup properly.
-	if !conf.No {
-		checkIntact()
-	}
+	checkIntact()
 
 	// mainHandle handles all HTTP Web Requests, all other handlers in here are just wrappers.
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
@@ -312,16 +288,12 @@ func main() {
 			path = "cache/"
 			url = url[6:]
 		} else {
-			if conf.Dyn.Srv {
-				path = detectPath(r.Host + "/")
-			} else {
-				path = "html/"
-			}
+			path = detectPath(r.Host + "/")
 		}
 
 		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
-		if err == nil && conf.Dyn.Pass {
+		if err == nil {
 			tmp := detectPasswd(finfo, url)
 			if tmp != "err" {
 				auth = strings.Split(tmp, ":")
@@ -332,13 +304,11 @@ func main() {
 		}
 
 		// Check if a redirect is present, and apply the redirect if needed.
-		if err != nil && conf.Dyn.Re {
+		if err != nil {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
 				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
-				if !conf.No {
-					fmt.Println("[WebRe][" + r.Host + url + "] : " + r.RemoteAddr)
-				}
+				fmt.Println("[WebRe][" + r.Host + url + "] : " + r.RemoteAddr)
 				return
 			}
 		}
@@ -367,9 +337,7 @@ func main() {
 		}
 		// Add modifications timestamps, then send data.
 		if err != nil {
-			if !conf.No {
-				fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
-			}
+			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 			http.Error(w, "404. Not Found. The requested resource could not be found but may be available in the future.", 404)
 		} else {
 			if conf.CachTime != 0 {
@@ -377,9 +345,7 @@ func main() {
 				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 				w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			}
-			if !conf.No {
-				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
-			}
+			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 
 			if authg {
 				if finfo.Name() == "passwd" {
@@ -426,8 +392,5 @@ func main() {
 
 	go srvh.ListenAndServe()
 	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
-
-	if !conf.No {
-		fmt.Println("[Fatal] : KatWeb was unable to start!")
-	}
+	fmt.Println("[Fatal] : KatWeb was unable to start!")
 }
