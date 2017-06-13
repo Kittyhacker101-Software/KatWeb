@@ -27,10 +27,9 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Secure bool `json:"https"`
-	Pro    bool `json:"protect"`
-	Zip    bool `json:"gzip"`
-	Dyn    struct {
+	Pro bool `json:"protect"`
+	Zip bool `json:"gzip"`
+	Dyn struct {
 		Srv  bool `json:"serving"`
 		Re   bool `json:"redir"`
 		Pass bool `json:"passwd"`
@@ -93,28 +92,20 @@ func checkIntact() {
 		}
 	}
 
-	if conf.Secure {
-		_, err = os.Stat("ssl/server.crt")
-		_, err1 := os.Stat("ssl/server.key")
-		if err != nil || err1 != nil {
-			fmt.Println("[Warn] : SSL Certs do not exist!")
-			conf.Secure = false
-			conf.HSTS.Run = false
-		}
+	_, err = os.Stat("ssl/server.crt")
+	_, err1 := os.Stat("ssl/server.key")
+	if err != nil || err1 != nil {
+		fmt.Println("[Fatal] : SSL Certs do not exist!")
+		os.Exit(1)
+	}
 
-		if conf.HSTS.Run {
-			if conf.HTTPS != 443 {
-				fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
-				conf.HSTS.Run = false
-			}
-		} else {
-			fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+	if conf.HSTS.Run {
+		if conf.HTTPS != 443 {
+			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
+			conf.HSTS.Run = false
 		}
 	} else {
-		if conf.HSTS.Run {
-			conf.HSTS.Run = false
-		}
-		fmt.Println("[Info] : HTTPS is disabled, allowing hackers to intercept your connection. Enabling it is recommended.")
+		fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
 	}
 }
 
@@ -198,7 +189,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	} else {
 		tmpR = http.HandlerFunc(origin)
 	}
-	if conf.Secure && conf.HSTS.Run {
+	if conf.HSTS.Run {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
@@ -432,12 +423,9 @@ func main() {
 	if conf.Cache.Run {
 		go updateCache()
 	}
-	if conf.Secure {
-		go srvh.ListenAndServe()
-		srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
-	} else {
-		srvh.ListenAndServe()
-	}
+
+	go srvh.ListenAndServe()
+	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 
 	if !conf.No {
 		fmt.Println("[Fatal] : KatWeb was unable to start!")
