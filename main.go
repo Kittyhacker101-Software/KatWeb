@@ -171,9 +171,9 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 		tmpH http.Handler
 	)
 	if conf.Zip {
-		tmpR = makeGzipHandler(http.HandlerFunc(origin))
+		tmpR = makeGzipHandler(origin)
 	} else {
-		tmpR = http.HandlerFunc(origin)
+		tmpR = origin
 	}
 	if conf.HSTS.Run {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
