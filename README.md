@@ -34,7 +34,6 @@ KatWeb comes with a built in system to serve different content depending on vari
   * enabled - If HSTS should be enabled, requires a valid HTTPS cert.
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
-- https - Allows an encrypted connection. Enabling this is highly reccomended!
 - protect - Prevents other web-sites from stealing your content in various ways.
 - gzip - HTTP compression for files.
 - dyn - Dynamic content control.
