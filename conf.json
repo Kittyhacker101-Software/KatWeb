@@ -6,7 +6,6 @@
     "includeSubDomains": true,
     "preload": true
   },
-  "https": true,
   "protect": true,
   "gzip": true,
   "dyn": {
