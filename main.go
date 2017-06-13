@@ -3,6 +3,7 @@ package main
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -53,6 +54,24 @@ var (
 	cacheA     = []string{"html/"}
 	cacheB     = []string{"ssl/", "cache/"}
 )
+
+// tlsc provides a SSL config that is more secure than Golang's default.
+var tlsc = &tls.Config{
+	PreferServerCipherSuites: true,
+	CurvePreferences: []tls.CurveID{
+		tls.CurveP256,
+		tls.X25519,
+	},
+	MinVersion: tls.VersionTLS12,
+	CipherSuites: []uint16{
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	},
+}
 
 // checkIntact peforms all pre-startup checks.
 func checkIntact() {
@@ -166,6 +185,31 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	}
 
 	return true
+}
+
+// wrapLoad chooses the correct wrappers based on server configuration.
+func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
+	var (
+		tmpR http.Handler
+		tmpH http.Handler
+	)
+	if conf.Zip {
+		tmpR = makeGzipHandler(http.HandlerFunc(origin))
+	} else {
+		tmpR = http.HandlerFunc(origin)
+	}
+	if conf.Secure && conf.HSTS.Run {
+		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Connection", "close")
+			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+			if !conf.No {
+				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+			}
+		})
+	} else {
+		tmpH = tmpR
+	}
+	return tmpR, tmpH
 }
 
 // updateCache handles automatically updating the Basic HTTP Cache.
@@ -363,27 +407,13 @@ func main() {
 		}
 	}
 
-	// Choose the correct wrappers for the handler based on server configuration.
-	if conf.Zip {
-		handleReq = makeGzipHandler(http.HandlerFunc(mainHandle))
-	} else {
-		handleReq = http.HandlerFunc(mainHandle)
-	}
-	if conf.Secure && conf.HSTS.Run {
-		handleHTTP = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if !conf.No {
-				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
-			}
-		})
-	} else {
-		handleHTTP = handleReq
-	}
+	handleReq, handleHTTP = wrapLoad(mainHandle)
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTPS),
 		Handler:      handleReq,
+		TLSConfig:    tlsc,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
