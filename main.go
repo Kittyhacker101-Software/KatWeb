@@ -284,7 +284,7 @@ func main() {
 
 		// Get file info, and check Dynamic Content Control settings.
 		url := r.URL.EscapedPath()
-		if conf.Cache.Run && len(url) > 6 && url[:6] == "/cache" {
+		if strings.HasPrefix(url, "/cache") {
 			path = "cache/"
 			url = url[6:]
 		} else {
