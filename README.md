@@ -21,7 +21,7 @@ KatWeb comes with a built in HTTP Cache that can be useful for sending files fro
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
 - You can use this to send content differently by domain!
-  * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there! This requires a restary to take effect!
+  * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there! This requires a restart to take effect!
 - You can use this to password protect folders!
   * Just create a file in the folder you want to protect, and name it passwd. Then put [username]:[password] in your file (Example : "admin:passwd")!
  - You can use this to do HTTP redirects!!
