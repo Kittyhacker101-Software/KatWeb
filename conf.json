@@ -1,8 +1,10 @@
 {
   "keepAliveTimeout": 30,
   "cachingTimeout": 4,
+  "streamTimeout": 5,
   "hsts": {
     "enabled": false,
+    "mixedssl": true,
     "includeSubDomains": true,
     "preload": true
   },
@@ -10,7 +12,7 @@
   "gzip": true,
   "hcache": {
     "enabled": true,
-    "updates": 240
+    "updates": 2
   },
   "name": "KatWeb",
   "httpPort": 80,

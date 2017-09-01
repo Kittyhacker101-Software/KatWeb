@@ -22,8 +22,10 @@ import (
 type Conf struct {
 	IdleTime int `json:"keepAliveTimeout"`
 	CachTime int `json:"cachingTimeout"`
+	DatTime  int `json:"streamTimeout"`
 	HSTS     struct {
 		Run bool `json:"enabled"`
+		Mix bool `json:"mixedssl"`
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
@@ -89,13 +91,19 @@ func checkIntact() {
 		os.Exit(1)
 	}
 
-	if conf.HSTS.Run {
+	if conf.HSTS.Run || conf.HSTS.Mix {
 		if conf.HTTPS != 443 {
 			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
 			conf.HSTS.Run = false
+			conf.HSTS.Mix = false
 		}
 	} else {
-		fmt.Println("[Info] : HSTS is disabled, causing people to use HTTP by default. Enabling it is recommended.")
+		fmt.Println("[Info] : HSTS is disabled, causing visitors to use HTTP by default. Enabling it is recommended.")
+	}
+
+	if conf.HSTS.Run && conf.HSTS.Mix {
+		fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
+		conf.HSTS.Mix = false
 	}
 }
 
@@ -189,6 +197,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 
 // updateCache handles automatically updating the Basic HTTP Cache.
 func updateCache() {
+	fmt.Println("KatWeb HTTP Cache Started.")
 	tr := &http.Transport{DisableKeepAlives: true}
 	client := &http.Client{Transport: tr}
 	for {
@@ -221,7 +230,7 @@ func updateCache() {
 		} else {
 			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
 		}
-		time.Sleep(time.Duration(conf.Cache.Up) * time.Second)
+		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
 	}
 }
 
@@ -257,19 +266,19 @@ func main() {
 	// Load the config file, and then parse it into the conf struct.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to read config file. Server will now stop.")
+		fmt.Println("[Fatal] : Unable to read config file!")
 		os.Exit(1)
 	}
 	err = json.Unmarshal(data, &conf)
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to parse config file. Server will now stop.")
+		fmt.Println("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
 
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to load timezones. Server will now stop.")
+		fmt.Println("[Fatal] : Unable to load timezones!")
 		os.Exit(1)
 	}
 
@@ -335,6 +344,9 @@ func main() {
 			w.Header().Add("X-Frame-Options", "sameorigin")
 			w.Header().Add("X-XSS-Protection", "1; mode=block")
 		}
+		if conf.HSTS.Mix {
+			w.Header().Add("Alt-Svc", `h2=":443"; ma=`+strconv.Itoa(conf.IdleTime))
+		}
 		// Add modifications timestamps, then send data.
 		if err != nil {
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -345,20 +357,23 @@ func main() {
 				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 				w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			}
-			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 
 			if authg {
 				if finfo.Name() == "passwd" {
+					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 				} else {
 					// Ask for Authentication if it is required.
 					if runAuth(w, r, auth) {
+						fmt.Println("[Web][" + r.Host + r.URL.String() + "] : " + r.RemoteAddr)
 						http.ServeFile(w, r, path+url)
 					} else {
+						fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
 						http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
 					}
 				}
 			} else {
+				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 				http.ServeFile(w, r, path+url)
 			}
 		}
@@ -371,25 +386,25 @@ func main() {
 		Addr:         ":" + strconv.Itoa(conf.HTTPS),
 		Handler:      handleReq,
 		TLSConfig:    tlsc,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
+		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTP),
 		Handler:      handleHTTP,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
+		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
 
 	// Run HTTP Cache auto update, and start the HTTP/HTTPS servers.
-	fmt.Println("KatWeb HTTP Server Started.")
 	if conf.Cache.Run {
 		go updateCache()
 	}
 
+	fmt.Println("KatWeb HTTP Server Started.")
 	go srvh.ListenAndServe()
 	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	fmt.Println("[Fatal] : KatWeb was unable to start!")
