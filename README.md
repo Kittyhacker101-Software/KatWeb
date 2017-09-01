@@ -30,15 +30,17 @@ KatWeb comes with a built in system to serve different content depending on vari
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Setting this to zero will disable keep-alive.
 - cachingTimeout - How many hours you want the files sent by the web-server to be cached in the browser. Setting this to zero will disable caching.
+- streamTimeout - The max length of time an HTTP connection can stay open in seconds. Setting this higher than 5 is reccomended for sites which transfer files larger than 100KB.
 - hsts - Forces all browsers to use HTTPS for your website. Requires a valid HTTPS cert.
   * enabled - If HSTS should be enabled, requires a valid HTTPS cert.
+  * mixedssl - Uses the Alt-Svc header to tell browsers that an SSL connection is available.
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
 - protect - Prevents other web-sites from stealing your content in various ways.
 - gzip - HTTP compression for files.
 - hcache - Simple HTTP Cache.
   * enabled - If Simple HTTP Cache should be enabled.
-  * updates - How often the HTTP Cache should update it's files in seconds.
+  * updates - How often the HTTP Cache should update it's files in minutes.
 - name - The server name sent in the "Server" HTTP Header.
 - httpPort - The port for the HTTP server to run on.
 - sslPort - The port for the HTTPS server to run on.
@@ -57,3 +59,4 @@ Changing conf options requires a server restart to take effect.
 - Basic HTTP Cache
 - Password Protected Directories
 - Custom Redirects
+- Opportunistic Encryption
