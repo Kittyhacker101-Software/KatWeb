@@ -305,17 +305,7 @@ func main() {
 			}
 		}
 
-		// Check if a redirect is present, and apply the redirect if needed.
-		if err != nil {
-			b, err := ioutil.ReadFile(path + url + ".redir")
-			if err == nil {
-				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
-				fmt.Println("[Web302][" + r.Host + url + "] : " + r.RemoteAddr)
-				return
-			}
-		}
-
-		// Add all headers from server configuration.
+		// Add important headers
 		w.Header().Add("Server", conf.Name)
 		if conf.IdleTime != 0 {
 			w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
@@ -334,12 +324,18 @@ func main() {
 		} else if conf.HSTS.Mix {
 			w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
 		}
-		if conf.Pro {
-			w.Header().Add("X-Content-Type-Options", "nosniff")
-			w.Header().Add("X-Frame-Options", "sameorigin")
-			w.Header().Add("X-XSS-Protection", "1; mode=block")
+
+		// Check if a redirect is present, and apply the redirect if needed.
+		if err != nil {
+			b, err := ioutil.ReadFile(path + url + ".redir")
+			if err == nil {
+				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
+				fmt.Println("[Web302][" + r.Host + url + "] : " + r.RemoteAddr)
+				return
+			}
 		}
-		// Add modifications timestamps, then send data.
+
+		// Add file headers, then send data.
 		if err != nil {
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
@@ -347,6 +343,11 @@ func main() {
 			if conf.CachTime != 0 {
 				w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
 				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
+			}
+			if conf.Pro {
+				w.Header().Add("X-Content-Type-Options", "nosniff")
+				w.Header().Add("X-Frame-Options", "sameorigin")
+				w.Header().Add("X-XSS-Protection", "1; mode=block")
 			}
 
 			if authg {
