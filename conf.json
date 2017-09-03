@@ -12,7 +12,7 @@
   "gzip": true,
   "hcache": {
     "enabled": true,
-    "updates": 2
+    "updates": 10
   },
   "name": "KatWeb",
   "httpPort": 80,
