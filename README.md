@@ -2,6 +2,7 @@
 Welcome to KatWeb HTTP Server!
 KatWeb is a simple static file HTTPS server designed for the 21st century.
 This program is used in production on the kittyhacker101.tk servers!
+Note : Putting KatWeb behind a CDN or reverse proxy is recommended for production setups, but not required.
 
 ## File System Structure
 - /KatWeb/cache/ - Simple HTTP Cache.
