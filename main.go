@@ -60,8 +60,6 @@ var tlsc = &tls.Config{
 	CipherSuites: []uint16{
 		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 	},
@@ -278,8 +276,8 @@ func main() {
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to load timezones!")
-		os.Exit(1)
+		fmt.Println("[Warn] : Unable to load timezones!")
+		conf.CachTime = 0
 	}
 
 	checkIntact()
@@ -355,7 +353,6 @@ func main() {
 			if conf.CachTime != 0 {
 				w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
 				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
-				w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 			}
 
 			if authg {
@@ -365,7 +362,7 @@ func main() {
 				} else {
 					// Ask for Authentication if it is required.
 					if runAuth(w, r, auth) {
-						fmt.Println("[Web][" + r.Host + r.URL.String() + "] : " + r.RemoteAddr)
+						fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 						http.ServeFile(w, r, path+url)
 					} else {
 						fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -373,6 +370,7 @@ func main() {
 					}
 				}
 			} else {
+				w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 				http.ServeFile(w, r, path+url)
 			}
