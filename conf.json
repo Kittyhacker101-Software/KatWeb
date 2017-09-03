@@ -4,7 +4,7 @@
   "streamTimeout": 5,
   "hsts": {
     "enabled": false,
-    "mixedssl": true,
+    "mixedssl": false,
     "includeSubDomains": true,
     "preload": true
   },
