@@ -365,9 +365,6 @@ func main() {
 					}
 				}
 			} else {
-				if conf.CachTime != 0 {
-					w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
-				}
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 				http.ServeFile(w, r, path+url)
 			}
