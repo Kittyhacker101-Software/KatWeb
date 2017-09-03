@@ -1,27 +1,27 @@
 ## KatWeb
 Welcome to KatWeb HTTP Server!
-KatWeb is a static file HTTPS server designed for the 21st century.
+KatWeb is a simple static file HTTPS server designed for the 21st century.
 This program is used in production on the kittyhacker101.tk servers!
 
 ## File System Structure
-- /cache/ - Simple HTTP Cache.
-- /html/ - Document root of server.
-- /ssl/ - Server HTTPS certificates.
-- /conf.json - Server config file.
+- /KatWeb/cache/ - Simple HTTP Cache.
+- /KatWeb/html/ - Document root of server.
+- /KatWeb/ssl/ - Server HTTPS certificates.
+- /KatWeb/conf.json - Server config file.
 
 ## Simple HTTP Cache
 KatWeb comes with a built in HTTP Cache that can be useful for sending files from other websites through your server!
-- To use it, you create a file called [filename].txt in the /cache folder.
-  * Example : If you want to make your file called example.svg, you make a file named example.svg.txt
+- To use it, you create a file called [filename].txt in the /KatWeb/cache folder.
+  * If you want to make your file called example.svg, you make a file named example.svg.txt
 - Then, you put the link to the original source in the txt file.
-  * Example : If you want meow.png to show a nyan cat gif, you put the link to the gif (http://kittyhacker101.tk/Static/Card.svg) in example.svg.txt.
-- Now, you can view your stuff through /cache!
-  * Example : To see example.svg, you can open localhost/cache/example.svg.txt in your browser.
+  * If you want example.svg to show the Kittyhacker101 Software card logo, you put the link to the gif (http://kittyhacker101.tk/Static/Card.svg) in example.svg.txt.
+- Now, you can view your stuff through /KatWeb/cache!
+  * To see example.svg, you can open localhost/cache/example.svg.txt in your browser.
 
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
 - You can use this to send content differently by domain!
-  * Just create a new folder with the domain name in the / folder (not /html, the layer below it). Then put your content in there! This requires a restart to take effect!
+  * Just create a new folder with the domain name in the /KatWeb/ folder. Then put your content in there! This requires a restart to take effect!
 - You can use this to password protect folders!
   * Just create a file in the folder you want to protect, and name it passwd. Then put [username]:[password] in your file (Example : "admin:passwd")!
  - You can use this to do HTTP redirects!!
