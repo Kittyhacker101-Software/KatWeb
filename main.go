@@ -89,19 +89,14 @@ func checkIntact() {
 		os.Exit(1)
 	}
 
-	if conf.HSTS.Run || conf.HSTS.Mix {
+	if conf.HSTS.Run {
 		if conf.HTTPS != 443 {
 			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
 			conf.HSTS.Run = false
+		} else if conf.HSTS.Mix {
+			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
 			conf.HSTS.Mix = false
 		}
-	} else {
-		fmt.Println("[Info] : HSTS is disabled, causing visitors to use HTTP by default. Enabling it is recommended.")
-	}
-
-	if conf.HSTS.Run && conf.HSTS.Mix {
-		fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
-		conf.HSTS.Mix = false
 	}
 }
 
@@ -315,7 +310,7 @@ func main() {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
 				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
-				fmt.Println("[WebRe][" + r.Host + url + "] : " + r.RemoteAddr)
+				fmt.Println("[Web302][" + r.Host + url + "] : " + r.RemoteAddr)
 				return
 			}
 		}
@@ -336,14 +331,13 @@ func main() {
 				// HSTS Preload requires includeSubDomains.
 				w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 			}
+		} else if conf.HSTS.Mix {
+			w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
 		}
 		if conf.Pro {
 			w.Header().Add("X-Content-Type-Options", "nosniff")
 			w.Header().Add("X-Frame-Options", "sameorigin")
 			w.Header().Add("X-XSS-Protection", "1; mode=block")
-		}
-		if conf.HSTS.Mix {
-			w.Header().Add("Alt-Svc", `h2=":443"; ma=`+strconv.Itoa(conf.IdleTime))
 		}
 		// Add modifications timestamps, then send data.
 		if err != nil {
@@ -370,7 +364,9 @@ func main() {
 					}
 				}
 			} else {
-				w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
+				if conf.CachTime != 0 {
+					w.Header().Set("Last-Modified", finfo.ModTime().In(location).Format(http.TimeFormat))
+				}
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 				http.ServeFile(w, r, path+url)
 			}
