@@ -133,8 +133,7 @@ func detectPasswd(i os.FileInfo, p string) string {
 		tmpl = p
 
 	} else {
-		tmp := len(i.Name())
-		tmpl = p[:len(p)-tmp]
+		tmpl = strings.TrimSuffix(p, i.Name())
 	}
 	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
 	if err == nil {
