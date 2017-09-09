@@ -193,7 +193,11 @@ func updateCache() {
 	tr := &http.Transport{DisableKeepAlives: true}
 	client := &http.Client{Transport: tr}
 	for {
-		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
+		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, errw error) error {
+			if errw != nil {
+				fmt.Println("[Cache][Warn] : Unable to walk filepath!")
+				return nil
+			}
 			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
 				fmt.Println("[Cache][HTTP] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
 				b, err := ioutil.ReadFile(path)
