@@ -195,12 +195,12 @@ func updateCache() {
 	client := &http.Client{Transport: tr}
 	for {
 		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, _ error) error {
-			if !info.IsDir() && len(path) > 4 && path[len(path)-4:] == ".txt" {
-				fmt.Println("[Cache][HTTP] : Updating " + path[6:len(path)-4] + "...")
+			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
+				fmt.Println("[Cache][HTTP] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
 				b, err := ioutil.ReadFile(path)
 
-				err1 := os.Remove("cache/" + path[6:len(path)-4])
-				out, err2 := os.Create("cache/" + path[6:len(path)-4])
+				err1 := os.Remove(strings.TrimSuffix(path, ".txt"))
+				out, err2 := os.Create(strings.TrimSuffix(path, ".txt"))
 
 				resp, err3 := client.Get(strings.TrimSpace(string(b)))
 				if resp != nil {
@@ -208,11 +208,11 @@ func updateCache() {
 				}
 
 				if err != nil || err1 != nil || err2 != nil || err3 != nil {
-					fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+					fmt.Println("[Cache][Warn] : Unable to update " + strings.TrimSuffix(path, ".txt") + "!")
 				} else {
 					_, err = io.Copy(out, resp.Body)
 					if err != nil {
-						fmt.Println("[Cache][Warn] : Unable to update " + path[6:len(path)-4] + "!")
+						fmt.Println("[Cache][Warn] : Unable to update " + strings.TrimSuffix(path, ".txt") + "!")
 					}
 				}
 			}
@@ -288,7 +288,7 @@ func main() {
 		url := r.URL.EscapedPath()
 		if strings.HasPrefix(url, "/cache") {
 			path = "cache/"
-			url = url[6:]
+			url = strings.TrimPrefix(url, "/cache")
 		} else {
 			path = detectPath(r.Host + "/")
 		}
