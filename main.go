@@ -73,7 +73,7 @@ func checkIntact() {
 	}
 
 	_, err = os.Stat("cache")
-	if err != nil {
+	if err != nil && conf.Cache.Run {
 		fmt.Println("[Warn] : Cache folder does not exist!")
 		conf.Cache.Run = false
 	}
@@ -354,15 +354,12 @@ func main() {
 				if finfo.Name() == "passwd" {
 					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
+				} else if runAuth(w, r, auth) {
+					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
+					http.ServeFile(w, r, path+url)
 				} else {
-					// Ask for Authentication if it is required.
-					if runAuth(w, r, auth) {
-						fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
-						http.ServeFile(w, r, path+url)
-					} else {
-						fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
-						http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
-					}
+					fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
+					http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
 				}
 			} else {
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
