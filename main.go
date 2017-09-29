@@ -202,15 +202,15 @@ func updateCache() {
 				fmt.Println("[Cache][HTTP] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
 				b, err := ioutil.ReadFile(path)
 
-				err1 := os.Remove(strings.TrimSuffix(path, ".txt"))
-				out, err2 := os.Create(strings.TrimSuffix(path, ".txt"))
+				os.Remove(strings.TrimSuffix(path, ".txt"))
+				out, err1 := os.Create(strings.TrimSuffix(path, ".txt"))
 
-				resp, err3 := client.Get(strings.TrimSpace(string(b)))
+				resp, err2 := client.Get(strings.TrimSpace(string(b)))
 				if resp != nil {
 					defer resp.Body.Close()
 				}
 
-				if err != nil || err1 != nil || err2 != nil || err3 != nil {
+				if err != nil || err1 != nil || err2 != nil {
 					fmt.Println("[Cache][Warn] : Unable to update " + strings.TrimSuffix(path, ".txt") + "!")
 				} else {
 					_, err = io.Copy(out, resp.Body)
