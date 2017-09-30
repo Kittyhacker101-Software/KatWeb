@@ -11,11 +11,11 @@ Note : Putting KatWeb behind a CDN or reverse proxy is recommended for productio
 - /KatWeb/conf.json - Server config file.
 
 ## Simple HTTP Cache
-KatWeb comes with a built in HTTP Cache that can be useful for sending files from other websites through your server!
+KatWeb comes with a built in HTTP cache that can be useful for sending files from other websites through your server!
 Text files containing URLs in the /cache folder will be downloaded and a cached version will be stored. You can then access the file through /cache/filename(without the .txt extention).
 
-## Simple HTTP Proxy
-KatWeb comes with a built in HTTP Proxy which allows sending data from other web servers! Once setup, an existing web server can be accessed through /proxy (Note : A /proxy folder must exist on the existing server for content to be served)
+## Simple HTTP Reverse-Proxy
+KatWeb comes with a built in HTTP reverse-proxy which allows sending data from other web servers! Once setup, an existing web server can be accessed through /proxy (Note : A /proxy folder must exist on the existing server for content to be served)
 
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
@@ -60,4 +60,4 @@ Changing conf options requires a server restart to take effect.
 - Password Protected Directories
 - Custom Redirects
 - Opportunistic Encryption
-- Reverse Proxy
+- HTTP Reverse Proxy
