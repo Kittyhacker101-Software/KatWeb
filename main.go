@@ -78,10 +78,12 @@ func checkIntact() {
 		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
 
-	_, err = os.Stat("cache")
-	if err != nil && conf.Cache.Run {
-		fmt.Println("[Warn] : Cache folder does not exist!")
-		conf.Cache.Run = false
+	if conf.Cache.Run {
+		_, err = os.Stat("cache")
+		if err != nil {
+			fmt.Println("[Warn] : Cache folder does not exist!")
+			conf.Cache.Run = false
+		}
 	}
 
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
@@ -313,21 +315,24 @@ func main() {
 
 		// Get file info, and check Dynamic Content Control settings.
 		url := r.URL.EscapedPath()
-		if strings.HasPrefix(url, "/cache") {
-			path = "cache/"
-			url = strings.TrimPrefix(url, "/cache")
-		} else if conf.Proxy.Run && strings.HasPrefix(url, "/proxy") {
-			// No headers are added, we will depend on the proxied server to provide those.
-			director := func(req *http.Request) {
-				req = r
-				req.URL.Scheme = conf.Proxy.Type
-				req.URL.Host = conf.Proxy.Host
+		path = detectPath(r.Host + "/")
+		if path == "html/" {
+			if strings.HasPrefix(url, "/cache") {
+				path = "cache/"
+				url = strings.TrimPrefix(url, "/cache")
+			} else if conf.Proxy.Run && strings.HasPrefix(url, "/proxy") {
+				// No headers are added, we will depend on the proxied server to provide those.
+				director := func(req *http.Request) {
+					req = r
+					req.URL.Scheme = conf.Proxy.Type
+					req.URL.Host = conf.Proxy.Host
+				}
+				proxy := &httputil.ReverseProxy{Director: director}
+				proxy.ServeHTTP(w, r)
+				url = strings.TrimPrefix(url, "/proxy")
+				fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
+				return
 			}
-			proxy := &httputil.ReverseProxy{Director: director}
-			proxy.ServeHTTP(w, r)
-			return
-		} else {
-			path = detectPath(r.Host + "/")
 		}
 
 		// Enable password protection of a folder if needed.
