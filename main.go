@@ -316,7 +316,7 @@ func main() {
 		// Get file info, and check Dynamic Content Control settings.
 		url := r.URL.EscapedPath()
 		path = detectPath(r.Host + "/")
-		if path == "html/" {
+		if strings.HasPrefix(path, "html") {
 			if strings.HasPrefix(url, "/cache") {
 				path = "cache/"
 				url = strings.TrimPrefix(url, "/cache")
@@ -329,7 +329,6 @@ func main() {
 				}
 				proxy := &httputil.ReverseProxy{Director: director}
 				proxy.ServeHTTP(w, r)
-				url = strings.TrimPrefix(url, "/proxy")
 				fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
 				return
 			}
