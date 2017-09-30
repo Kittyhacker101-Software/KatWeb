@@ -14,6 +14,11 @@
     "enabled": true,
     "updates": 10
   },
+  "proxy": {
+    "enabled": false,
+    "type": "https",
+    "host": "localhost:8181"
+  },
   "name": "KatWeb",
   "httpPort": 80,
   "sslPort": 443

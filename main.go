@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -35,6 +36,11 @@ type Conf struct {
 		Run bool `json:"enabled"`
 		Up  int  `json:"updates"`
 	} `json:"hcache"`
+	Proxy struct {
+		Run  bool   `json:"enabled"`
+		Type string `json:"type"`
+		Host string `json:"host"`
+	} `json:"proxy"`
 	Name  string `json:"name"`
 	HTTP  int    `json:"httpPort"`
 	HTTPS int    `json:"sslPort"`
@@ -96,6 +102,11 @@ func checkIntact() {
 		} else if conf.HSTS.Mix {
 			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
 			conf.HSTS.Mix = false
+		}
+	} else {
+		if conf.Zip && conf.Proxy.Run {
+			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
+			conf.Zip = false
 		}
 	}
 }
@@ -292,6 +303,15 @@ func main() {
 		if strings.HasPrefix(url, "/cache") {
 			path = "cache/"
 			url = strings.TrimPrefix(url, "/cache")
+		} else if strings.HasPrefix(url, "/proxy") && conf.Proxy.Run {
+			director := func(req *http.Request) {
+				req = r
+				req.URL.Scheme = conf.Proxy.Type
+				req.URL.Host = conf.Proxy.Host
+			}
+			proxy := &httputil.ReverseProxy{Director: director}
+			proxy.ServeHTTP(w, r)
+			return
 		} else {
 			path = detectPath(r.Host + "/")
 		}
@@ -332,7 +352,7 @@ func main() {
 		if err != nil {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
-				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusTemporaryRedirect)
+				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
 				fmt.Println("[Web302][" + r.Host + url + "] : " + r.RemoteAddr)
 				return
 			}
