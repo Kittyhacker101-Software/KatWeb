@@ -12,21 +12,16 @@ Note : Putting KatWeb behind a CDN or reverse proxy is recommended for productio
 
 ## Simple HTTP Cache
 KatWeb comes with a built in HTTP Cache that can be useful for sending files from other websites through your server!
-- To use it, you create a file called [filename].txt in the /KatWeb/cache folder.
-  * If you want to make your file called example.svg, you make a file named example.svg.txt
-- Then, you put the link to the original source in the txt file.
-  * If you want example.svg to show the Kittyhacker101 Software card logo, you put the link to the gif (http://kittyhacker101.tk/Static/Card.svg) in example.svg.txt.
-- Now, you can view your stuff through /KatWeb/cache!
-  * To see example.svg, you can open localhost/cache/example.svg.txt in your browser.
+Text files containing URLs in the /cache folder will be downloaded and a cached version will be stored. You can then access the file through /cache/filename(without the .txt extention).
+
+## Simple HTTP Proxy
+KatWeb comes with a built in HTTP Proxy which allows sending data from other web servers! Once setup, an existing web server can be accessed through /proxy (Note : A /proxy folder must exist on the existing server for content to be served)
 
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
-- You can use this to send content differently by domain!
-  * Just create a new folder with the domain name in the /KatWeb/ folder. Then put your content in there! This requires a restart to take effect!
-- You can use this to password protect folders!
-  * Just create a file in the folder you want to protect, and name it passwd. Then put [username]:[password] in your file (Example : "admin:passwd")!
- - You can use this to do HTTP redirects!!
-   * Just create a file which ends in .redir! Then put your link in there, and you can access it without the .redir (Example : meme.txt.redir => meme.txt)
+ - Folders in /KatWeb with a domain name will serve different content for that domain.
+ - Files named passwd and containing the format [username]:[password] can be used to protect files
+ - Files containing a URL and .redir allow permanent HTTP redirects.
 
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Setting this to zero will disable keep-alive.
@@ -42,6 +37,10 @@ KatWeb comes with a built in system to serve different content depending on vari
 - hcache - Simple HTTP Cache.
   * enabled - If Simple HTTP Cache should be enabled.
   * updates - How often the HTTP Cache should update it's files in minutes.
+- proxy - Simple HTTP Proxy.
+  * enabled - If Simple HTTP Proxy should be enabled.
+  * type - If the server being proxied is using HTTP or HTTPS.
+  * host - The port and domain of the server being proxied.
 - name - The server name sent in the "Server" HTTP Header.
 - httpPort - The port for the HTTP server to run on.
 - sslPort - The port for the HTTPS server to run on.
@@ -61,3 +60,4 @@ Changing conf options requires a server restart to take effect.
 - Password Protected Directories
 - Custom Redirects
 - Opportunistic Encryption
+- Reverse Proxy
