@@ -213,21 +213,33 @@ func updateCache() {
 				fmt.Println("[Cache][HTTP] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
 				b, err := ioutil.ReadFile(path)
 
-				os.Remove(strings.TrimSuffix(path, ".txt"))
-				out, err1 := os.Create(strings.TrimSuffix(path, ".txt"))
-
-				resp, err2 := client.Get(strings.TrimSpace(string(b)))
-				if resp != nil {
-					defer resp.Body.Close()
-				}
-
-				if err != nil || err1 != nil || err2 != nil {
-					fmt.Println("[Cache][Warn] : Unable to update " + strings.TrimSuffix(path, ".txt") + "!")
-				} else {
-					_, err = io.Copy(out, resp.Body)
+				if err == nil {
+					err := os.Remove(strings.TrimSuffix(path, ".txt"))
 					if err != nil {
-						fmt.Println("[Cache][Warn] : Unable to update " + strings.TrimSuffix(path, ".txt") + "!")
+						fmt.Println("[Cache][Warn] : Unable to delete " + strings.TrimSuffix(path, ".txt") + "!")
 					}
+					
+					out, err := os.Create(strings.TrimSuffix(path, ".txt"))
+
+					if err == nil {
+						resp, err := client.Get(strings.TrimSpace(string(b)))
+						if resp != nil {
+							defer resp.Body.Close()
+						}
+
+						if err == nil {
+							_, err = io.Copy(out, resp.Body)
+							if err != nil {
+								fmt.Println("[Cache][Warn] : Unable to write " + strings.TrimSuffix(path, ".txt") + "!")
+							}
+						} else {
+							fmt.Println("[Cache][Warn] : Unable to download " + strings.TrimSuffix(path, ".txt") + "!")
+						}
+					} else {
+						fmt.Println("[Cache][Warn] : Unable to create " + strings.TrimSuffix(path, ".txt") + "!")
+					}
+				} else {
+					fmt.Println("[Cache][Warn] : Unable to read " + path + "!")
 				}
 			}
 			return nil
@@ -303,7 +315,8 @@ func main() {
 		if strings.HasPrefix(url, "/cache") {
 			path = "cache/"
 			url = strings.TrimPrefix(url, "/cache")
-		} else if strings.HasPrefix(url, "/proxy") && conf.Proxy.Run {
+		} else if conf.Proxy.Run && strings.HasPrefix(url, "/proxy") {
+			// No headers are added, we will depend on the proxied server to provide those.
 			director := func(req *http.Request) {
 				req = r
 				req.URL.Scheme = conf.Proxy.Type
