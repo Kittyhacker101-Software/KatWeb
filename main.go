@@ -338,7 +338,7 @@ func main() {
 			tmp := detectPasswd(finfo, url)
 			if tmp != "err" {
 				auth = strings.Split(tmp, ":")
-				if len(auth) == 3 {
+				if len(auth) == 2 {
 					authg = true
 				}
 			}
