@@ -296,7 +296,7 @@ func main() {
 	}
 
 	checkIntact()
-	
+
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if err != nil {
@@ -338,7 +338,7 @@ func main() {
 			tmp := detectPasswd(finfo, url)
 			if tmp != "err" {
 				auth = strings.Split(tmp, ":")
-				if len(auth) > 1 && len(auth) < 3 {
+				if len(auth) == 3 {
 					authg = true
 				}
 			}
@@ -376,8 +376,8 @@ func main() {
 
 		// Add file headers, then send data.
 		if err != nil {
-			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
+			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 		} else {
 			if conf.CachTime != 0 {
 				w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
@@ -391,18 +391,18 @@ func main() {
 
 			if authg {
 				if finfo.Name() == "passwd" {
-					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
+					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 				} else if runAuth(w, r, auth) {
-					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 					http.ServeFile(w, r, path+url)
+					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 				} else {
-					fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
 					http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
+					fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
 				}
 			} else {
-				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 				http.ServeFile(w, r, path+url)
+				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
 		}
 	}
