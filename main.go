@@ -145,7 +145,7 @@ func detectPath(p string) string {
 	return p
 }
 
-// detectPasswd checks if the folder needs to be password protected (Note : Please optimize this someday).
+// detectPasswd checks if the folder needs to be password protected.
 func detectPasswd(i os.FileInfo, p string) string {
 	var tmpl string
 	if i.IsDir() {
