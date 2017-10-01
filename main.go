@@ -88,6 +88,11 @@ func checkIntact() {
 		}
 	}
 
+	if conf.IdleTime == 0 && conf.HSTS.Mix {
+		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
+		conf.HSTS.Mix = false
+	}
+
 	if conf.HSTS.Run {
 		if conf.HSTS.Mix {
 			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
