@@ -140,7 +140,7 @@ func detectPath(p string) string {
 	return p
 }
 
-// detectPasswd checks if the folder needs to be password protected.
+// detectPasswd checks if the folder needs to be password protected (Note : Please optimize this someday).
 func detectPasswd(i os.FileInfo, p string) string {
 	var tmpl string
 	if i.IsDir() {
@@ -180,24 +180,21 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 
 // wrapLoad chooses the correct wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
-	var (
-		tmpR http.Handler
-		tmpH http.Handler
-	)
+	tmpR := origin
+
 	if conf.Zip {
 		tmpR = makeGzipHandler(origin)
-	} else {
-		tmpR = origin
 	}
+
+	tmpH := tmpR
 	if conf.HSTS.Run {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
 			fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
 		})
-	} else {
-		tmpH = tmpR
 	}
+
 	return tmpR, tmpH
 }
 
@@ -298,14 +295,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	checkIntact()
+	
 	// UTC time is required for HTTP Caching headers.
 	location, err := time.LoadLocation("UTC")
 	if err != nil {
 		fmt.Println("[Warn] : Unable to load timezones!")
 		conf.CachTime = 0
 	}
-
-	checkIntact()
 
 	// mainHandle handles all HTTP Web Requests, all other handlers in here are just wrappers.
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
