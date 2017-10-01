@@ -73,9 +73,31 @@ var tlsc = &tls.Config{
 
 // checkIntact peforms all pre-startup checks.
 func checkIntact() {
-	_, err := os.Stat("html")
-	if err != nil {
-		fmt.Println("[Warn] : HTML folder does not exist!")
+	_, err := os.Stat("ssl/server.crt")
+	_, err1 := os.Stat("ssl/server.key")
+	if err != nil || err1 != nil {
+		fmt.Println("[Fatal] : SSL Certs do not exist!")
+		os.Exit(1)
+	}
+
+	if conf.HTTP != 80 || conf.HTTPS != 443 {
+		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
+		if conf.HSTS.Run {
+			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
+			conf.HSTS.Run = false
+		}
+	}
+
+	if conf.HSTS.Run {
+		if conf.HSTS.Mix {
+			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
+			conf.HSTS.Mix = false
+		}
+	} else {
+		if conf.Zip && conf.Proxy.Run {
+			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
+			conf.Zip = false
+		}
 	}
 
 	if conf.Cache.Run {
@@ -86,30 +108,9 @@ func checkIntact() {
 		}
 	}
 
-	if conf.HTTP != 80 || conf.HTTPS != 443 {
-		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
-	}
-
-	_, err = os.Stat("ssl/server.crt")
-	_, err1 := os.Stat("ssl/server.key")
-	if err != nil || err1 != nil {
-		fmt.Println("[Fatal] : SSL Certs do not exist!")
-		os.Exit(1)
-	}
-
-	if conf.HSTS.Run {
-		if conf.HTTPS != 443 {
-			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
-			conf.HSTS.Run = false
-		} else if conf.HSTS.Mix {
-			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
-			conf.HSTS.Mix = false
-		}
-	} else {
-		if conf.Zip && conf.Proxy.Run {
-			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
-			conf.Zip = false
-		}
+	_, err = os.Stat("html")
+	if err != nil {
+		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
 }
 
