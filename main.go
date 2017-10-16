@@ -112,11 +112,26 @@ func checkIntact() {
 			conf.Cache.Run = false
 		}
 	}
+	
+	conf.Proxy.Type = strings.ToLower(conf.Proxy.Type)
+	if conf.Proxy.Run && conf.Proxy.Type != "http" && conf.Proxy.Type != "https" {
+		fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
+		conf.Zip = false
+	}
 
 	_, err = os.Stat("html")
 	if err != nil {
 		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
+
+	if conf.DatTime <= 4 {
+		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
+	}
+	
+	if conf.Cache.Run && conf.Cache.Up <= 0 {
+		conf.Cache.Run = false
+	}
+
 }
 
 // detectPath handles dynamic content control by domain.
@@ -350,7 +365,9 @@ func main() {
 		}
 
 		// Add important headers
-		w.Header().Add("Server", conf.Name)
+		if conf.Name != "" {
+			w.Header().Add("Server", conf.Name)
+		}
 		if conf.IdleTime != 0 {
 			w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
 		}
