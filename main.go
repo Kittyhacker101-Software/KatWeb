@@ -119,7 +119,7 @@ func checkIntact() {
 	conf.Proxy.Type = strings.ToLower(conf.Proxy.Type)
 	if conf.Proxy.Run && conf.Proxy.Type != "http" && conf.Proxy.Type != "https" {
 		fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
-		conf.Zip.Run = false
+		conf.Proxy.Run = false
 	}
 
 	_, err = os.Stat("html")
