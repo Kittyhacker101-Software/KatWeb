@@ -34,6 +34,8 @@ KatWeb comes with a built in system to serve different content depending on vari
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
 - protect - Prevents other web-sites from stealing your content in various ways.
 - gzip - HTTP compression for files.
+  * enabled - If gzip should be enabled.
+  * level - Compression level for gzip (Between 1 and 9)
 - hcache - Simple HTTP Cache.
   * enabled - If Simple HTTP Cache should be enabled.
   * updates - How often the HTTP Cache should update it's files in minutes.
