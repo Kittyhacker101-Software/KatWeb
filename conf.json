@@ -9,7 +9,10 @@
     "preload": true
   },
   "protect": true,
-  "gzip": true,
+  "gzip": {
+    "enabled": true,
+    "level": 6
+  },
   "hcache": {
     "enabled": true,
     "updates": 10

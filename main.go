@@ -30,8 +30,11 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Pro   bool `json:"protect"`
-	Zip   bool `json:"gzip"`
+	Pro bool `json:"protect"`
+	Zip struct {
+		Run bool `json:"enabled"`
+		Lvl int  `json:"level"`
+	} `json:"gzip"`
 	Cache struct {
 		Run bool `json:"enabled"`
 		Up  int  `json:"updates"`
@@ -99,9 +102,9 @@ func checkIntact() {
 			conf.HSTS.Mix = false
 		}
 	} else {
-		if conf.Zip && conf.Proxy.Run {
+		if conf.Zip.Run && conf.Proxy.Run {
 			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
-			conf.Zip = false
+			conf.Zip.Run = false
 		}
 	}
 
@@ -112,11 +115,11 @@ func checkIntact() {
 			conf.Cache.Run = false
 		}
 	}
-	
+
 	conf.Proxy.Type = strings.ToLower(conf.Proxy.Type)
 	if conf.Proxy.Run && conf.Proxy.Type != "http" && conf.Proxy.Type != "https" {
 		fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
-		conf.Zip = false
+		conf.Zip.Run = false
 	}
 
 	_, err = os.Stat("html")
@@ -127,7 +130,7 @@ func checkIntact() {
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
 	}
-	
+
 	if conf.Cache.Run && conf.Cache.Up <= 0 {
 		conf.Cache.Run = false
 	}
@@ -202,7 +205,7 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
 
-	if conf.Zip {
+	if conf.Zip.Run {
 		tmpR = makeGzipHandler(origin)
 	}
 
@@ -292,7 +295,12 @@ func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Encoding", "gzip")
-		gz := gzip.NewWriter(w)
+		gz, err := gzip.NewWriterLevel(w, conf.Zip.Lvl)
+		if err != nil {
+			fmt.Println("[Warn] : Unable to make gzip writer using configured compression value!")
+			conf.Zip.Lvl = -1
+			gz = gzip.NewWriter(w)
+		}
 		defer gz.Close()
 		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		fn(gzr, r)
