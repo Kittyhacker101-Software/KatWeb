@@ -26,7 +26,7 @@ KatWeb comes with a built in system to serve different content depending on vari
 ## Config Options
 - keepAliveTimeout - The max length of time a keep-alive connection can stay open in seconds. Setting this to zero will disable keep-alive.
 - cachingTimeout - How many hours you want the files sent by the web-server to be cached in the browser. Setting this to zero will disable caching.
-- streamTimeout - The max length of time an HTTP connection can stay open in seconds. Setting this higher than 5 is reccomended for sites which transfer files larger than 100KB.
+- streamTimeout - The max length of time an HTTP connection can stay open in seconds. Setting this higher than 20 is reccomended for sites which transfer large files.
 - hsts - Forces all browsers to use HTTPS for your website. Requires a valid HTTPS cert.
   * enabled - If HSTS should be enabled, requires a valid HTTPS cert.
   * mixedssl - Uses the Alt-Svc header to tell browsers that an SSL connection is available.
