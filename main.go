@@ -13,7 +13,6 @@ import (
 	"net/http/httputil"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -54,8 +53,6 @@ var (
 	handleHTTP http.Handler
 	conf       Conf
 	path       string
-	cacheA     = []string{"html/"}
-	cacheB     = []string{"ssl/", "cache/"}
 )
 
 // tlsc provides a SSL config that is more secure than Golang's default.
@@ -152,33 +149,17 @@ func checkIntact() {
 
 // detectPath handles dynamic content control by domain.
 func detectPath(p string) string {
-
-	// Check to see if the domain is stored in the cache.
-	loc := sort.SearchStrings(cacheB, p)
-	if loc < len(cacheB) && cacheB[loc] == p {
-		return "html/"
-	}
-	loc = sort.SearchStrings(cacheA, p)
-	if loc < len(cacheA) && cacheA[loc] == p {
-		return p
-	}
-
-	// If the cache doesn't contain the domain, check the hard disk, and update the cache.
 	_, err := os.Stat(p)
 	if err != nil {
-		cacheB = append(cacheB, p)
-		sort.Strings(cacheB)
 		return "html/"
 	}
-
-	cacheA = append(cacheA, p)
-	sort.Strings(cacheA)
 	return p
 }
 
 // detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
-func detectPasswd(i os.FileInfo, p string) string {
+func detectPasswd(i os.FileInfo, p string) []string {
 	var tmpl string
+	var tmpa []string
 	if i.IsDir() {
 		tmpl = p
 
@@ -187,9 +168,12 @@ func detectPasswd(i os.FileInfo, p string) string {
 	}
 	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
 	if err == nil {
-		return strings.TrimSpace(string(b))
+		tmpa = strings.Split(strings.TrimSpace(string(b)), ":")
+		if len(tmpa) == 2 {
+			return tmpa
+		}
 	}
-	return "err"
+	return []string{"err"}
 }
 
 // runAuth uses provided information to run HTTP authentication on a request.
@@ -206,7 +190,7 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 		return false
 	}
 
-	pair := strings.SplitN(string(b), ":", 2)
+	pair := strings.Split(string(b), ":")
 	if len(pair) != 2 || pair[0] != a[0] || pair[1] != a[1] {
 		return false
 	}
@@ -376,12 +360,9 @@ func main() {
 		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
 		if err == nil {
-			tmp := detectPasswd(finfo, url)
-			if tmp != "err" {
-				auth = strings.Split(tmp, ":")
-				if len(auth) == 2 {
-					authg = true
-				}
+			auth = detectPasswd(finfo, url)
+			if auth[0] != "err" {
+				authg = true
 			}
 		}
 
