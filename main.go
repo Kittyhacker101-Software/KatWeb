@@ -69,10 +69,12 @@ var tlsc = &tls.Config{
 	},
 	MinVersion: tls.VersionTLS12,
 	CipherSuites: []uint16{
+		/* Note : Comment out the bottom two ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
+		If you enable this, the server will not start unless you disable HTTP/2 in srv. */
 		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-		//tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-		//tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+		/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, */
 		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 	},
@@ -351,7 +353,7 @@ func main() {
 				path = "cache/"
 				url = strings.TrimPrefix(url, "/cache")
 			} else if conf.Proxy.Run && strings.HasPrefix(url, "/proxy") {
-				// No headers are added, we will depend on the proxied server to provide those.
+				// No additional headers are added, we will depend on the proxied server to provide those.
 				director := func(req *http.Request) {
 					req = r
 					req.URL.Scheme = conf.Proxy.Type
@@ -384,6 +386,8 @@ func main() {
 			w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
 		}
 		if conf.HSTS.Run {
+			/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
+			If there is a legitimate use case for it, then I might consider adding it in the future. */
 			if conf.HSTS.Sub {
 				if conf.HSTS.Pre {
 					w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
@@ -395,6 +399,7 @@ func main() {
 				w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 			}
 		} else if conf.HSTS.Mix {
+			// Note : You will want to disable HSTS Mixed if you disable HTTP/2.
 			w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
 		}
 
@@ -402,13 +407,16 @@ func main() {
 		if err != nil {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
+				/* These redirects are set as permanent, because it's unlikely that anyone would use the webserver to setup a temporary redirect.
+				If you wanted a temporary redirect, then why not just use HTML for it instead? */
 				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
-				fmt.Println("[Web302][" + r.Host + url + "] : " + r.RemoteAddr)
+				fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
 				return
 			}
 		}
 
-		// Add file headers, then send data.
+		// Add file headers, then send data. Add HTTP errors if required.
+		// I may consider allowing changing of the error text in the future, but it's unlikely to be used.
 		if err != nil {
 			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -418,6 +426,8 @@ func main() {
 				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 			}
 			if conf.Pro {
+				/* This code will prevent other sites from directly pulling your content.
+				Might cause issues if your site spans multiple domains. */
 				w.Header().Add("X-Content-Type-Options", "nosniff")
 				w.Header().Add("X-Frame-Options", "sameorigin")
 				w.Header().Add("X-XSS-Protection", "1; mode=block")
@@ -451,6 +461,8 @@ func main() {
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
+		/* Uncomment this snippet of code if you wish to disable HTTP/2.
+		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0) */
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
