@@ -469,6 +469,8 @@ func main() {
 	fmt.Println("KatWeb HTTP Server Started.")
 	go srvh.ListenAndServe()
 	err = srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
-	fmt.Println("[Fatal] : KatWeb was unable to start!")
-	fmt.Println(err)
+	fmt.Println("[Fatal] : KatWeb was unable to start! If possible, debugging info may be printed below.")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
