@@ -80,7 +80,7 @@ var tlsc = &tls.Config{
 	},
 }
 
-// checkIntact peforms all pre-startup checks.
+// checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
 	_, err := os.Stat("ssl/server.crt")
 	_, err1 := os.Stat("ssl/server.key")
@@ -88,6 +88,8 @@ func checkIntact() {
 		fmt.Println("[Fatal] : SSL Certs do not exist!")
 		os.Exit(1)
 	}
+
+	// Functional warnings which tweak configuration to allow KatWeb to continue running.
 
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
 		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
@@ -98,6 +100,7 @@ func checkIntact() {
 	}
 
 	if conf.IdleTime == 0 && conf.HSTS.Mix {
+		// This could be fixed if I used seprate configuration options for them, but I would prefer to keep it as the same option for simpilcity.
 		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
 		conf.HSTS.Mix = false
 	}
@@ -114,6 +117,8 @@ func checkIntact() {
 		}
 	}
 
+	// Functional warnings which are handled by golang, but are tweaked in here for a better user experience.
+
 	if conf.Cache.Run {
 		_, err = os.Stat("cache")
 		if err != nil {
@@ -127,6 +132,8 @@ func checkIntact() {
 		fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
 		conf.Proxy.Run = false
 	}
+
+	// Non-functional warnings (don't tweak configuration), or silent configuration tweaks (don't provide any warning).
 
 	_, err = os.Stat("html")
 	if err != nil {
@@ -146,7 +153,7 @@ func checkIntact() {
 // detectPath handles dynamic content control by domain.
 func detectPath(p string) string {
 
-	// We check to see if the domain is stored in the cache.
+	// Check to see if the domain is stored in the cache.
 	loc := sort.SearchStrings(cacheB, p)
 	if loc < len(cacheB) && cacheB[loc] == p {
 		return "html/"
@@ -156,7 +163,7 @@ func detectPath(p string) string {
 		return p
 	}
 
-	// If it's not in the cache, check the hard disk, and add it to the cache.
+	// If the cache doesn't contain the domain, check the hard disk, and update the cache.
 	_, err := os.Stat(p)
 	if err != nil {
 		cacheB = append(cacheB, p)
@@ -169,7 +176,7 @@ func detectPath(p string) string {
 	return p
 }
 
-// detectPasswd checks if the folder needs to be password protected.
+// detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
 func detectPasswd(i os.FileInfo, p string) string {
 	var tmpl string
 	if i.IsDir() {
@@ -185,7 +192,7 @@ func detectPasswd(i os.FileInfo, p string) string {
 	return "err"
 }
 
-// runAuth handles HTTP Basic Authentication.
+// runAuth uses provided information to run HTTP authentication on a request.
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
@@ -227,7 +234,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	return tmpR, tmpH
 }
 
-// updateCache handles automatically updating the Basic HTTP Cache.
+// updateCache automatically updates the Basic HTTP Cache.
 func updateCache() {
 	fmt.Println("KatWeb HTTP Cache Started.")
 	tr := &http.Transport{DisableKeepAlives: true}
@@ -283,7 +290,7 @@ func updateCache() {
 	}
 }
 
-// gzipResponseWriter handles the various writers needed for gzip compression.
+// gzipResponseWriter handles required structs and writers for gzip compression.
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
@@ -293,7 +300,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-// makeGzipHandler uses those writers to gzip the content that needs to be sent.
+// makeGzipHandler compresses requests using gzip.
 func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -315,7 +322,7 @@ func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 
 // The main function handles startup and webserver logic.
 func main() {
-	fmt.Println("Loading server...")
+	fmt.Println("Loading KatWeb...")
 
 	// Load the config file, and then parse it into the conf struct.
 	data, err := ioutil.ReadFile("conf.json")
@@ -338,7 +345,7 @@ func main() {
 		conf.CachTime = 0
 	}
 
-	// mainHandle handles all HTTP Web Requests, all other handlers in here are just wrappers.
+	// mainHandle handles all HTTP Web Requests sent to KatWeb.
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		var (
 			authg bool
