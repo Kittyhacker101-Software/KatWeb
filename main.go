@@ -62,13 +62,17 @@ var (
 var tlsc = &tls.Config{
 	PreferServerCipherSuites: true,
 	CurvePreferences: []tls.CurveID{
+		tls.CurveP521,
+		tls.CurveP384,
 		tls.CurveP256,
 		tls.X25519,
 	},
 	MinVersion: tls.VersionTLS12,
 	CipherSuites: []uint16{
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		//tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		//tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 	},
@@ -464,6 +468,7 @@ func main() {
 
 	fmt.Println("KatWeb HTTP Server Started.")
 	go srvh.ListenAndServe()
-	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
+	err = srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	fmt.Println("[Fatal] : KatWeb was unable to start!")
+	fmt.Println(err)
 }
