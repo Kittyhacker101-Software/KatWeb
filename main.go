@@ -221,10 +221,13 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 // updateCache automatically updates the Basic HTTP Cache.
 func updateCache() {
 	fmt.Println("KatWeb HTTP Cache Started.")
-	tr := &http.Transport{DisableKeepAlives: true}
+	tr := &http.Transport{
+		DisableKeepAlives: true,
+		IdleConnTimeout:   30 * time.Second,
+	}
 	client := &http.Client{Transport: tr}
 	for {
-		err0 := filepath.Walk("cache/", func(path string, info os.FileInfo, errw error) error {
+		err := filepath.Walk("cache/", func(path string, info os.FileInfo, errw error) error {
 			if errw != nil {
 				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
 				return nil
@@ -265,7 +268,7 @@ func updateCache() {
 			}
 			return nil
 		})
-		if err0 != nil {
+		if err != nil {
 			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
 		} else {
 			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
