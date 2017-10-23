@@ -4,7 +4,7 @@ package main
 import (
 	"compress/gzip"
 	"crypto/tls"
-	"encoding/base64"
+	//"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -180,22 +180,12 @@ func detectPasswd(i os.FileInfo, p string) []string {
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-	if len(s) != 2 {
-		return false
+	user, pass, _ := r.BasicAuth()
+	if user == a[0] && pass == a[1] {
+		return true
 	}
 
-	b, err := base64.StdEncoding.DecodeString(s[1])
-	if err != nil {
-		return false
-	}
-
-	pair := strings.Split(string(b), ":")
-	if len(pair) != 2 || pair[0] != a[0] || pair[1] != a[1] {
-		return false
-	}
-
-	return true
+	return false
 }
 
 // wrapLoad chooses the correct wrappers based on server configuration.
