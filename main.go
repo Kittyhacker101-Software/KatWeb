@@ -58,19 +58,22 @@ var (
 var tlsc = &tls.Config{
 	PreferServerCipherSuites: true,
 	CurvePreferences: []tls.CurveID{
+		/* These cipher curves use a lot of CPU, only enable them if you really care about security.
 		tls.CurveP521,
-		tls.CurveP384,
+		tls.CurveP384, */
 		tls.CurveP256,
 		tls.X25519,
 	},
 	MinVersion: tls.VersionTLS12,
 	CipherSuites: []uint16{
-		/* Note : Comment out the bottom two ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
-		If you enable this, the server will not start unless you disable HTTP/2 in srv. */
+		/* Note : Comment out the bottom four ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
+		If you enable this, the server will not start unless you disable HTTP/2 in srv, and requests will use slightly more CPU. */
 		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 		/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, */
+		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 	},
@@ -165,6 +168,7 @@ func detectPasswd(i os.FileInfo, p string) []string {
 	} else {
 		tmpl = strings.TrimSuffix(p, i.Name())
 	}
+
 	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
 	if err == nil {
 		tmpa = strings.Split(strings.TrimSpace(string(b)), ":")
