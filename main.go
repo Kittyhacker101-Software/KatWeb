@@ -4,7 +4,6 @@ package main
 import (
 	"compress/gzip"
 	"crypto/tls"
-	//"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
