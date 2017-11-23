@@ -56,11 +56,11 @@ var (
 
 // tlsc provides a SSL config that is more secure than Golang's default.
 var tlsc = &tls.Config{
+	NextProtos:               []string{"h2", "http/1.1"},
 	PreferServerCipherSuites: true,
 	CurvePreferences: []tls.CurveID{
-		/* These cipher curves use a lot of CPU, only enable them if you really care about security.
 		tls.CurveP521,
-		tls.CurveP384, */
+		tls.CurveP384,
 		tls.CurveP256,
 		tls.X25519,
 	},
@@ -79,13 +79,7 @@ var tlsc = &tls.Config{
 
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
-	_, err := os.Stat("ssl/server.crt")
-	_, err1 := os.Stat("ssl/server.key")
-	if err != nil || err1 != nil {
-		fmt.Println("[Fatal] : SSL Certs do not exist!")
-		os.Exit(1)
-	}
-
+	var err error
 	// Functional warnings which tweak configuration to allow KatWeb to continue running.
 
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
