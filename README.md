@@ -12,10 +12,10 @@ Note : Putting KatWeb behind a CDN or reverse proxy is recommended for productio
 
 ## Simple HTTP Cache
 KatWeb comes with a built in HTTP cache that can be useful for sending files from other websites through your server!
-Text files containing URLs in the /cache folder will be downloaded and a cached version will be stored. You can then access the file through /cache/filename(without the .txt extention).
+Text files containing URLs in the cache folder will be downloaded and a cached version will be stored. You can then access the file through /[cache folder]/filename(without the .txt extention).
 
 ## Simple HTTP Reverse-Proxy
-KatWeb comes with a built in HTTP reverse-proxy which allows sending data from other web servers! Once setup, an existing web server can be accessed through /proxy (Note : A /proxy folder must exist on the existing server for content to be served)
+KatWeb comes with a built in HTTP reverse-proxy which allows sending data from other web servers! Once setup, an existing web server can be accessed through the proxy folder (Note : A proxy folder must exist on the existing server for content to be served)
 
 ## Dynamic Content Control
 KatWeb comes with a built in system to serve different content depending on various factors.
@@ -38,9 +38,11 @@ KatWeb comes with a built in system to serve different content depending on vari
   * level - Compression level for gzip (Between 1 and 9)
 - hcache - Simple HTTP Cache.
   * enabled - If Simple HTTP Cache should be enabled.
+  * location - Location of the HTTP Cache's folder
   * updates - How often the HTTP Cache should update it's files in minutes.
 - proxy - Simple HTTP Proxy.
   * enabled - If Simple HTTP Proxy should be enabled.
+  * location - URL path of the HTTP Proxy. 
   * type - If the server being proxied is using HTTP or HTTPS.
   * host - The port and domain of the server being proxied.
 - name - The server name sent in the "Server" HTTP Header.
