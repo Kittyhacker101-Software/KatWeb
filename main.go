@@ -113,7 +113,7 @@ func checkIntact() {
 	// Functional warnings which are handled by golang, but are tweaked in here for a better user experience.
 
 	if conf.Cache.Run {
-		_, err = os.Stat("cache")
+		_, err = os.Stat(conf.Cache.Loc)
 		if err != nil {
 			fmt.Println("[Warn] : Cache folder does not exist!")
 			conf.Cache.Run = false
@@ -146,10 +146,11 @@ func checkIntact() {
 // detectPath handles dynamic content control by domain.
 func detectPath(p string) string {
 	_, err := os.Stat(p)
-	if err != nil {
-		return "html/"
+	if err == nil && p != "ssl" {
+		return p
 	}
-	return p
+
+	return "html/"
 }
 
 // detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
@@ -214,7 +215,7 @@ func updateCache() {
 	}
 	client := &http.Client{Transport: tr}
 	for {
-		err := filepath.Walk("cache/", func(path string, info os.FileInfo, errw error) error {
+		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, errw error) error {
 			if errw != nil {
 				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
 				return nil
@@ -330,9 +331,9 @@ func main() {
 		url := r.URL.EscapedPath()
 		path = detectPath(r.Host + "/")
 		if strings.HasPrefix(path, "html") {
-			if strings.HasPrefix(url, "/cache") {
-				path = "cache/"
-				url = strings.TrimPrefix(url, "/cache")
+			if strings.HasPrefix(url, "/"+conf.Cache.Loc) {
+				path = conf.Cache.Loc + "/"
+				url = strings.TrimPrefix(url, "/"+conf.Cache.Loc)
 			} else if conf.Proxy.Run && strings.HasPrefix(url, "/"+conf.Proxy.Loc) {
 				// No additional headers are added, we will depend on the proxied server to provide those.
 				director := func(req *http.Request) {
