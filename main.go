@@ -34,11 +34,13 @@ type Conf struct {
 		Lvl int  `json:"level"`
 	} `json:"gzip"`
 	Cache struct {
-		Run bool `json:"enabled"`
-		Up  int  `json:"updates"`
+		Run bool   `json:"enabled"`
+		Loc string `json:"location"`
+		Up  int    `json:"updates"`
 	} `json:"hcache"`
 	Proxy struct {
 		Run  bool   `json:"enabled"`
+		Loc  string `json:"location"`
 		Type string `json:"type"`
 		Host string `json:"host"`
 	} `json:"proxy"`
@@ -331,7 +333,7 @@ func main() {
 			if strings.HasPrefix(url, "/cache") {
 				path = "cache/"
 				url = strings.TrimPrefix(url, "/cache")
-			} else if conf.Proxy.Run && strings.HasPrefix(url, "/proxy") {
+			} else if conf.Proxy.Run && strings.HasPrefix(url, "/"+conf.Proxy.Loc) {
 				// No additional headers are added, we will depend on the proxied server to provide those.
 				director := func(req *http.Request) {
 					req = r

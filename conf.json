@@ -15,10 +15,12 @@
   },
   "hcache": {
     "enabled": true,
+    "location": "cache",
     "updates": 10
   },
   "proxy": {
     "enabled": false,
+    "location": "proxy",
     "type": "https",
     "host": "localhost:8181"
   },
