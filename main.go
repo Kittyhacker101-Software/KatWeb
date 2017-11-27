@@ -49,35 +49,42 @@ type Conf struct {
 	HTTPS int    `json:"sslPort"`
 }
 
-var (
-	handleReq  http.Handler
-	handleHTTP http.Handler
-	conf       Conf
-	path       string
-)
-
-// tlsc provides a SSL config that is more secure than Golang's default.
-var tlsc = &tls.Config{
-	NextProtos:               []string{"h2", "http/1.1"},
-	PreferServerCipherSuites: true,
-	CurvePreferences: []tls.CurveID{
-		tls.CurveP521,
-		tls.CurveP384,
-		tls.CurveP256,
-		tls.X25519,
-	},
-	MinVersion: tls.VersionTLS12,
-	CipherSuites: []uint16{
-		/* Note : Comment out the bottom two ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
-		If you enable this, the server will not start unless you disable HTTP/2 in srv, and requests will use slightly more CPU. */
-		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-		/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, */
-		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	},
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
 }
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+var (
+	conf Conf
+	path string
+
+	// tlsc provides a SSL config that is more secure than Golang's default.
+	tlsc = &tls.Config{
+		NextProtos:               []string{"h2", "http/1.1"},
+		PreferServerCipherSuites: true,
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP521,
+			tls.CurveP384,
+			tls.CurveP256,
+			tls.X25519,
+		},
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			/* Note : Comment out the bottom two ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
+			If you enable this, the server will not start unless you disable HTTP/2 in srv, and requests will use slightly more CPU. */
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, */
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
+)
 
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
@@ -121,9 +128,11 @@ func checkIntact() {
 	}
 
 	conf.Proxy.Type = strings.ToLower(conf.Proxy.Type)
-	if conf.Proxy.Run && conf.Proxy.Type != "http" && conf.Proxy.Type != "https" {
-		fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
-		conf.Proxy.Run = false
+	if conf.Proxy.Run {
+		if conf.Proxy.Type != "http" || conf.Proxy.Type != "https" {
+			fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
+			conf.Proxy.Run = false
+		}
 	}
 
 	// Non-functional warnings (don't tweak configuration), or silent configuration tweaks (don't provide any warning).
@@ -140,7 +149,6 @@ func checkIntact() {
 	if conf.Cache.Run && conf.Cache.Up <= 0 {
 		conf.Cache.Run = false
 	}
-
 }
 
 // detectPath handles dynamic content control by domain.
@@ -156,17 +164,16 @@ func detectPath(p string) string {
 // detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
 func detectPasswd(i os.FileInfo, p string) []string {
 	var tmpl string
-	var tmpa []string
+
 	if i.IsDir() {
 		tmpl = p
-
 	} else {
 		tmpl = strings.TrimSuffix(p, i.Name())
 	}
 
 	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
 	if err == nil {
-		tmpa = strings.Split(strings.TrimSpace(string(b)), ":")
+		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
 		if len(tmpa) == 2 {
 			return tmpa
 		}
@@ -186,10 +193,29 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	return false
 }
 
+// makeGzipHandler compresses requests using gzip.
+func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			fn(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz, err := gzip.NewWriterLevel(w, conf.Zip.Lvl)
+		if err != nil {
+			fmt.Println("[Warn] : Unable to make gzip writer using configured compression value!")
+			conf.Zip.Lvl = -1
+			gz = gzip.NewWriter(w)
+		}
+		defer gz.Close()
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		fn(gzr, r)
+	}
+}
+
 // wrapLoad chooses the correct wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
-
 	if conf.Zip.Run {
 		tmpR = makeGzipHandler(origin)
 	}
@@ -209,14 +235,16 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 // updateCache automatically updates the Basic HTTP Cache.
 func updateCache() {
 	fmt.Println("KatWeb HTTP Cache Started.")
+
 	tr := &http.Transport{
 		DisableKeepAlives: true,
 		IdleConnTimeout:   30 * time.Second,
 	}
 	client := &http.Client{Transport: tr}
+
 	for {
-		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, errw error) error {
-			if errw != nil {
+		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
 				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
 				return nil
 			}
@@ -256,42 +284,13 @@ func updateCache() {
 			}
 			return nil
 		})
+
 		if err != nil {
 			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
 		} else {
 			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
 		}
 		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
-	}
-}
-
-// gzipResponseWriter handles required structs and writers for gzip compression.
-type gzipResponseWriter struct {
-	io.Writer
-	http.ResponseWriter
-}
-
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
-}
-
-// makeGzipHandler compresses requests using gzip.
-func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			fn(w, r)
-			return
-		}
-		w.Header().Set("Content-Encoding", "gzip")
-		gz, err := gzip.NewWriterLevel(w, conf.Zip.Lvl)
-		if err != nil {
-			fmt.Println("[Warn] : Unable to make gzip writer using configured compression value!")
-			conf.Zip.Lvl = -1
-			gz = gzip.NewWriter(w)
-		}
-		defer gz.Close()
-		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
-		fn(gzr, r)
 	}
 }
 
@@ -430,7 +429,7 @@ func main() {
 		}
 	}
 
-	handleReq, handleHTTP = wrapLoad(mainHandle)
+	handleReq, handleHTTP := wrapLoad(mainHandle)
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
@@ -456,9 +455,9 @@ func main() {
 	if conf.Cache.Run {
 		go updateCache()
 	}
+	go srvh.ListenAndServe()
 
 	fmt.Println("KatWeb HTTP Server Started.")
-	go srvh.ListenAndServe()
 	err = srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	fmt.Println("[Fatal] : KatWeb was unable to start! If possible, debugging info may be printed below.")
 	if err != nil {
