@@ -165,7 +165,7 @@ func detectPath(p string, l string) (string, string) {
 }
 
 // detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
-func detectPasswd(i os.FileInfo, p string) []string {
+func detectPasswd(i os.FileInfo, p string, dp string) []string {
 	var tmpl string
 
 	if i.IsDir() {
@@ -174,7 +174,7 @@ func detectPasswd(i os.FileInfo, p string) []string {
 		tmpl = strings.TrimSuffix(p, i.Name())
 	}
 
-	b, err := ioutil.ReadFile(path + tmpl + "/passwd")
+	b, err := ioutil.ReadFile(dp + tmpl + "passwd")
 	if err == nil {
 		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
 		if len(tmpa) == 2 {
@@ -382,7 +382,7 @@ func main() {
 		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
 		if err == nil {
-			auth = detectPasswd(finfo, url)
+			auth = detectPasswd(finfo, url, path)
 			if auth[0] != "err" {
 				authg = true
 			}
