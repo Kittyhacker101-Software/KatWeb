@@ -10,7 +10,7 @@
   },
   "protect": true,
   "gzip": {
-    "enabled": true,
+    "enabled": false,
     "level": 6
   },
   "hcache": {
@@ -19,10 +19,9 @@
     "updates": 10
   },
   "proxy": {
-    "enabled": false,
+    "enabled": true,
     "location": "proxy",
-    "type": "https",
-    "host": "localhost:8181"
+    "host": "https://localhost:8181"
   },
   "name": "KatWeb",
   "httpPort": 80,

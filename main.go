@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,12 +42,11 @@ type Conf struct {
 	Proxy struct {
 		Run  bool   `json:"enabled"`
 		Loc  string `json:"location"`
-		Type string `json:"type"`
-		Host string `json:"host"`
+		URL string `json:"host"`
 	} `json:"proxy"`
-	Name  string `json:"name"`
-	HTTP  int    `json:"httpPort"`
-	HTTPS int    `json:"sslPort"`
+	Name     string `json:"name"`
+	HTTP     int    `json:"httpPort"`
+	HTTPS    int    `json:"sslPort"`
 }
 
 type gzipResponseWriter struct {
@@ -56,6 +56,10 @@ type gzipResponseWriter struct {
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
+}
+
+func director(r *http.Request) {
+	r.URL, _ = url.Parse(conf.Proxy.URL)
 }
 
 var (
@@ -127,14 +131,6 @@ func checkIntact() {
 		}
 	}
 
-	conf.Proxy.Type = strings.ToLower(conf.Proxy.Type)
-	if conf.Proxy.Run {
-		if conf.Proxy.Type != "http" || conf.Proxy.Type != "https" {
-			fmt.Println("[Warn] : HTTP Reverse Proxy will only work with HTTP or HTTPS connections.")
-			conf.Proxy.Run = false
-		}
-	}
-
 	// Non-functional warnings (don't tweak configuration), or silent configuration tweaks (don't provide any warning).
 
 	_, err = os.Stat("html")
@@ -152,13 +148,21 @@ func checkIntact() {
 }
 
 // detectPath handles dynamic content control by domain.
-func detectPath(p string) string {
+func detectPath(p string, l string) (string, string) {
 	_, err := os.Stat(p)
 	if err == nil && p != "ssl" {
-		return p
+		return p, l
 	}
 
-	return "html/"
+	if conf.Cache.Run && strings.HasPrefix(l, "/"+conf.Cache.Loc) {
+		return conf.Cache.Loc, strings.TrimPrefix(l, "/"+conf.Cache.Loc)
+	}
+
+	if conf.Proxy.Run && strings.HasPrefix(l, "/"+conf.Proxy.Loc) {
+		return conf.Proxy.Loc, l
+	}
+
+	return "html/", l
 }
 
 // detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
@@ -327,24 +331,13 @@ func main() {
 		)
 
 		// Get file info, and check Dynamic Content Control settings.
-		url := r.URL.EscapedPath()
-		path = detectPath(r.Host + "/")
-		if strings.HasPrefix(path, "html") {
-			if strings.HasPrefix(url, "/"+conf.Cache.Loc) {
-				path = conf.Cache.Loc + "/"
-				url = strings.TrimPrefix(url, "/"+conf.Cache.Loc)
-			} else if conf.Proxy.Run && strings.HasPrefix(url, "/"+conf.Proxy.Loc) {
-				// No additional headers are added, we will depend on the proxied server to provide those.
-				director := func(req *http.Request) {
-					req = r
-					req.URL.Scheme = conf.Proxy.Type
-					req.URL.Host = conf.Proxy.Host
-				}
-				proxy := &httputil.ReverseProxy{Director: director}
-				proxy.ServeHTTP(w, r)
-				fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
-				return
-			}
+		path, url := detectPath(r.Host+"/", r.URL.EscapedPath())
+		if path == conf.Proxy.Loc {
+			// No additional headers are added, we will depend on the proxied server to provide those.
+			proxy := &httputil.ReverseProxy{Director: director}
+			proxy.ServeHTTP(w, r)
+			fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
+			return
 		}
 
 		// Enable password protection of a folder if needed.
