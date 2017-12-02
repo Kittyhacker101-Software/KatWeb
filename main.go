@@ -91,9 +91,6 @@ var (
 
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
-	var err error
-	// Functional warnings which tweak configuration to allow KatWeb to continue running.
-
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
 		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
 		if conf.HSTS.Run {
@@ -102,28 +99,26 @@ func checkIntact() {
 		}
 	}
 
-	if conf.IdleTime == 0 && conf.HSTS.Mix {
-		// This could be fixed if I used seprate configuration options for them, but I would prefer to keep it as the same option for simpilcity.
-		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
-		conf.HSTS.Mix = false
-	}
-
 	if conf.HSTS.Run {
 		if conf.HSTS.Mix {
 			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
-			conf.HSTS.Mix = false
 		}
 	} else {
 		if conf.Zip.Run && conf.Proxy.Run {
 			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
 			conf.Zip.Run = false
 		}
+		if conf.IdleTime == 0 && conf.HSTS.Mix {
+			// This could be fixed if I used seprate configuration options for them, but I would prefer to keep it as the same option for simpilcity.
+			fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
+			conf.HSTS.Mix = false
+		}
 	}
 
 	// Functional warnings which are handled by golang, but are tweaked in here for a better user experience.
 
 	if conf.Cache.Run {
-		_, err = os.Stat(conf.Cache.Loc)
+		_, err := os.Stat(conf.Cache.Loc)
 		if err != nil {
 			fmt.Println("[Warn] : Cache folder does not exist!")
 			conf.Cache.Run = false
@@ -133,9 +128,7 @@ func checkIntact() {
 		}
 	}
 
-	// Non-functional warnings (don't tweak configuration), or silent configuration tweaks (don't provide any warning).
-
-	_, err = os.Stat("html")
+	_, err := os.Stat("html")
 	if err != nil {
 		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
