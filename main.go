@@ -40,13 +40,13 @@ type Conf struct {
 		Up  int    `json:"updates"`
 	} `json:"hcache"`
 	Proxy struct {
-		Run  bool   `json:"enabled"`
-		Loc  string `json:"location"`
+		Run bool   `json:"enabled"`
+		Loc string `json:"location"`
 		URL string `json:"host"`
 	} `json:"proxy"`
-	Name     string `json:"name"`
-	HTTP     int    `json:"httpPort"`
-	HTTPS    int    `json:"sslPort"`
+	Name  string `json:"name"`
+	HTTP  int    `json:"httpPort"`
+	HTTPS int    `json:"sslPort"`
 }
 
 type gzipResponseWriter struct {

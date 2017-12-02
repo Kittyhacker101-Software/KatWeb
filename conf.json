@@ -10,7 +10,7 @@
   },
   "protect": true,
   "gzip": {
-    "enabled": false,
+    "enabled": true,
     "level": 6
   },
   "hcache": {
@@ -19,7 +19,7 @@
     "updates": 10
   },
   "proxy": {
-    "enabled": true,
+    "enabled": false,
     "location": "proxy",
     "host": "https://localhost:8181"
   },
