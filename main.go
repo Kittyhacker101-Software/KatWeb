@@ -149,17 +149,17 @@ func checkIntact() {
 
 // detectPath handles dynamic content control by domain.
 func detectPath(p string, l string) (string, string) {
-	_, err := os.Stat(p)
-	if err == nil && p != "ssl" {
-		return p, l
-	}
-
 	if conf.Cache.Run && strings.HasPrefix(l, "/"+conf.Cache.Loc) {
 		return conf.Cache.Loc, strings.TrimPrefix(l, "/"+conf.Cache.Loc)
 	}
 
 	if conf.Proxy.Run && strings.HasPrefix(l, "/"+conf.Proxy.Loc) {
 		return conf.Proxy.Loc, l
+	}
+
+	_, err := os.Stat(p)
+	if err == nil && p != "ssl" {
+		return p, l
 	}
 
 	return "html/", l
@@ -195,6 +195,47 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	}
 
 	return false
+}
+
+// loadHeaders adds headers from the server configuration to the request.
+func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
+	if conf.Name != "" {
+		w.Header().Add("Server", conf.Name)
+	}
+	if conf.IdleTime != 0 {
+		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
+	}
+	if conf.HSTS.Run {
+		/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
+		If there is a legitimate use case for it, then I might consider adding it in the future. */
+		if conf.HSTS.Sub {
+			if conf.HSTS.Pre {
+				w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
+			} else {
+				w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains")
+			}
+		} else {
+			// HSTS Preload requires includeSubDomains.
+			w.Header().Add("Strict-Transport-Security", "max-age=31536000")
+		}
+	} else if conf.HSTS.Mix {
+		// Note : You will want to disable HSTS Mixed if you disable HTTP/2.
+		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
+	}
+
+	if exists {
+		if conf.Pro {
+			/* This code will prevent other sites from directly pulling your content.
+			Might cause issues if your site spans multiple domains. */
+			w.Header().Add("X-Content-Type-Options", "nosniff")
+			w.Header().Add("X-Frame-Options", "sameorigin")
+			w.Header().Add("X-XSS-Protection", "1; mode=block")
+		}
+		if conf.CachTime != 0 {
+			w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
+			w.Header().Set("Expires", time.Now().In(l).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
+		}
+	}
 }
 
 // makeGzipHandler compresses requests using gzip.
@@ -302,7 +343,7 @@ func updateCache() {
 func main() {
 	fmt.Println("Loading KatWeb...")
 
-	// Load the config file, and then parse it into the conf struct.
+	// Load the config file, and then parse it into the conf struct. Then, peform additional checks on it.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file!")
@@ -313,7 +354,6 @@ func main() {
 		fmt.Println("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
-
 	checkIntact()
 
 	// UTC time is required for HTTP Caching headers.
@@ -349,30 +389,7 @@ func main() {
 			}
 		}
 
-		// Add important headers
-		if conf.Name != "" {
-			w.Header().Add("Server", conf.Name)
-		}
-		if conf.IdleTime != 0 {
-			w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
-		}
-		if conf.HSTS.Run {
-			/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
-			If there is a legitimate use case for it, then I might consider adding it in the future. */
-			if conf.HSTS.Sub {
-				if conf.HSTS.Pre {
-					w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
-				} else {
-					w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains")
-				}
-			} else {
-				// HSTS Preload requires includeSubDomains.
-				w.Header().Add("Strict-Transport-Security", "max-age=31536000")
-			}
-		} else if conf.HSTS.Mix {
-			// Note : You will want to disable HSTS Mixed if you disable HTTP/2.
-			w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
-		}
+		loadHeaders(w, err == nil, location)
 
 		// Check if a redirect is present, and apply the redirect if needed.
 		if err != nil {
@@ -392,18 +409,6 @@ func main() {
 			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 		} else {
-			if conf.CachTime != 0 {
-				w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
-				w.Header().Set("Expires", time.Now().In(location).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
-			}
-			if conf.Pro {
-				/* This code will prevent other sites from directly pulling your content.
-				Might cause issues if your site spans multiple domains. */
-				w.Header().Add("X-Content-Type-Options", "nosniff")
-				w.Header().Add("X-Frame-Options", "sameorigin")
-				w.Header().Add("X-XSS-Protection", "1; mode=block")
-			}
-
 			if authg {
 				if finfo.Name() == "passwd" {
 					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
