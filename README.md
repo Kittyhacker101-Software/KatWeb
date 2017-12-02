@@ -43,8 +43,7 @@ KatWeb comes with a built in system to serve different content depending on vari
 - proxy - Simple HTTP Proxy.
   * enabled - If Simple HTTP Proxy should be enabled.
   * location - URL path of the HTTP Proxy. 
-  * type - If the server being proxied is using HTTP or HTTPS.
-  * host - The port and domain of the server being proxied.
+  * host - The url of the location being proxied.
 - name - The server name sent in the "Server" HTTP Header.
 - httpPort - The port for the HTTP server to run on.
 - sslPort - The port for the HTTPS server to run on.
