@@ -128,6 +128,9 @@ func checkIntact() {
 		if err != nil {
 			fmt.Println("[Warn] : Cache folder does not exist!")
 			conf.Cache.Run = false
+		} else if conf.Cache.Up <= 0 {
+			fmt.Println("[Warn] : Cache folder cannot update too fast!")
+			conf.Cache.Run = false
 		}
 	}
 
@@ -140,10 +143,6 @@ func checkIntact() {
 
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
-	}
-
-	if conf.Cache.Run && conf.Cache.Up <= 0 {
-		conf.Cache.Run = false
 	}
 }
 
