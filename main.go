@@ -64,7 +64,6 @@ func director(r *http.Request) {
 
 var (
 	conf Conf
-	path string
 
 	// tlsc provides a SSL config that is more secure than Golang's default.
 	tlsc = &tls.Config{
