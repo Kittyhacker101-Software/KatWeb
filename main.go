@@ -59,6 +59,8 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 }
 
 func director(r *http.Request) {
+	/* This never returns an error for some reason, so why bother handling it?
+	Not to mention, there's not any real way to handle an error here anyways. */
 	r.URL, _ = url.Parse(conf.Proxy.URL)
 }
 
@@ -77,8 +79,8 @@ var (
 		},
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{
-			/* Note : Comment out the bottom two ciphers and uncomment the middle two if you want to get 100% on SSL Labs.
-			If you enable this, the server will not start unless you disable HTTP/2 in srv, and requests will use slightly more CPU. */
+			/* Note : Comment the bottom two ciphers and uncomment the middle two, for a 100% score in SSL Labs.
+			If you enable this, the server will not start unless you disable HTTP/2 in srv. */
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
@@ -109,13 +111,10 @@ func checkIntact() {
 			conf.Zip.Run = false
 		}
 		if conf.IdleTime == 0 && conf.HSTS.Mix {
-			// This could be fixed if I used seprate configuration options for them, but I would prefer to keep it as the same option for simpilcity.
 			fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
 			conf.HSTS.Mix = false
 		}
 	}
-
-	// Functional warnings which are handled by golang, but are tweaked in here for a better user experience.
 
 	if conf.Cache.Run {
 		_, err := os.Stat(conf.Cache.Loc)
@@ -386,7 +385,7 @@ func main() {
 		if err != nil {
 			b, err := ioutil.ReadFile(path + url + ".redir")
 			if err == nil {
-				/* These redirects are set as permanent, because it's unlikely that anyone would use the webserver to setup a temporary redirect.
+				/* These redirects are set as permanent, it's rare for server-side temporary redirects to be set.
 				If you wanted a temporary redirect, then why not just use HTML for it instead? */
 				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
 				fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -394,8 +393,8 @@ func main() {
 			}
 		}
 
-		// Add file headers, then send data. Add HTTP errors if required.
-		// I may consider allowing changing of the error text in the future, but it's unlikely to be used.
+		/* Add file headers, then send data. Add HTTP errors if required.
+		I may consider allowing changing of the error text in the future, but it's unlikely to be used. */
 		if err != nil {
 			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
 			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
