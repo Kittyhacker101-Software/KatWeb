@@ -273,7 +273,7 @@ func updateCache() {
 
 	tr := &http.Transport{
 		DisableKeepAlives: true,
-		IdleConnTimeout:   30 * time.Second,
+		IdleConnTimeout:   time.Duration(conf.IdleTime) * time.Second,
 	}
 	client := &http.Client{Transport: tr}
 
