@@ -1,4 +1,4 @@
-// KatWeb HTTP Server
+// KatWeb by kittyhacker101
 package main
 
 import (
@@ -263,7 +263,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 
 // updateCache automatically updates the Basic HTTP Cache.
 func updateCache() {
-	fmt.Println("KatWeb HTTP Cache Started.")
+	fmt.Println("KatWeb Cache Started.")
 
 	tr := &http.Transport{
 		DisableKeepAlives: true,
@@ -442,7 +442,7 @@ func main() {
 	}
 	go srvh.ListenAndServe()
 
-	fmt.Println("KatWeb HTTP Server Started.")
+	fmt.Println("KatWeb Server Started.")
 	err = srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	fmt.Println("[Fatal] : KatWeb was unable to start! If possible, debugging info may be printed below.")
 	if err != nil {
