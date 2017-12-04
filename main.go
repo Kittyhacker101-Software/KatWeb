@@ -135,8 +135,10 @@ func detectPath(p string, l string) (string, string) {
 		return conf.Cache.Loc, strings.TrimPrefix(l, "/"+conf.Cache.Loc)
 	}
 
-	if conf.Proxy.Run && strings.HasPrefix(l, "/"+conf.Proxy.Loc) {
-		return conf.Proxy.Loc, l
+	if conf.Proxy.Run {
+		if strings.HasPrefix(l, "/"+conf.Proxy.Loc) || strings.TrimSuffix(p, "/") == conf.Proxy.Loc {
+			return conf.Proxy.Loc, l
+		}
 	}
 
 	_, err := os.Stat(p)
