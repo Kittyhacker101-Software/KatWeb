@@ -14,14 +14,14 @@
     "level": 6
   },
   "hcache": {
-    "enabled": true,
+    "enabled": false,
     "location": "cache",
     "updates": 10
   },
   "proxy": {
     "enabled": false,
     "location": "proxy",
-    "host": "https://localhost:8181"
+    "host": "http://192.168.1.1"
   },
   "name": "KatWeb",
   "httpPort": 80,
