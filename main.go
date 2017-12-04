@@ -103,19 +103,9 @@ func checkIntact() {
 		}
 	}
 
-	if conf.HSTS.Run {
-		if conf.HSTS.Mix {
-			fmt.Println("[Warn] : Mixed SSL and HSTS can not be both enabled!")
-		}
-	} else {
-		if conf.Zip.Run && conf.Proxy.Run {
-			fmt.Println("[Warn] : HTTP Reverse Proxy will not work with Gzip!")
-			conf.Zip.Run = false
-		}
-		if conf.IdleTime == 0 && conf.HSTS.Mix {
-			fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
-			conf.HSTS.Mix = false
-		}
+	if conf.HSTS.Mix && conf.IdleTime == 0 {
+		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
+		conf.HSTS.Mix = false
 	}
 
 	if conf.Cache.Run {
@@ -277,7 +267,10 @@ func updateCache() {
 		DisableKeepAlives: true,
 		IdleConnTimeout:   time.Duration(conf.IdleTime) * time.Second,
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(conf.DatTime) * time.Second,
+	}
 
 	for {
 		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
