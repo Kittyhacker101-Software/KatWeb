@@ -132,7 +132,7 @@ func checkIntact() {
 // detectPath handles dynamic content control by domain.
 func detectPath(p string, l string) (string, string) {
 	if conf.Cache.Run && strings.HasPrefix(l, "/"+conf.Cache.Loc) {
-		return conf.Cache.Loc, strings.TrimPrefix(l, "/"+conf.Cache.Loc)
+		return conf.Cache.Loc + "/", strings.TrimPrefix(l, "/"+conf.Cache.Loc)
 	}
 
 	if conf.Proxy.Run {
