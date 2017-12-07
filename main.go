@@ -142,7 +142,7 @@ func detectPath(p string, l string) (string, string) {
 	}
 
 	_, err := os.Stat(p)
-	if err == nil && p != "ssl" {
+	if err == nil && p != "ssl/" {
 		return p, l
 	}
 
@@ -410,6 +410,7 @@ func main() {
 			} else {
 				http.ServeFile(w, r, path+url)
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+				fmt.Println(path + " - " + url)
 			}
 		}
 	}
