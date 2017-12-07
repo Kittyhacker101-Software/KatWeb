@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"os"
+)
 
 func TestPathCache(t *testing.T) {
 	conf.Cache.Run = true
@@ -67,5 +70,17 @@ func TestPathHTML(t *testing.T) {
 	}
 	if url != "/example.html" {
 		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/example.html")
+	}
+}
+
+func TestPasswd(t *testing.T) {
+	finfo, err := os.Stat("html/DemoPass/passwd")
+	if err != nil  {
+		t.Fatalf("Unable to run test, testing file unreadable!")
+	}
+
+	auth := detectPasswd(finfo, "/DemoPass/passwd", "html/")
+	if len(auth) != 2 || auth[0] != "admin" || auth[1] != "passwd" {
+		t.Errorf("Auth was incorrect, got: %s, want: %s.", auth, []string{"admin", "passwd"})
 	}
 }
