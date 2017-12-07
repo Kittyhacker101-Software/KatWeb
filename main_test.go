@@ -1,3 +1,8 @@
+/* KatWeb by kittyhacker101
+This file contains unit tests for KatWeb.
+Note that this will only test internal functions used within KatWeb at the moment. Manual testing is still highly recommended.
+Current functions tested : detectPath, detectPasswd
+Todo function tests : runAuth, loadHeaders (possibly), makeGzipHandler (possibly), wrapLoad (if required)*/
 package main
 
 import (
