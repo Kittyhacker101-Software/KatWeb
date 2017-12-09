@@ -2,7 +2,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -49,15 +48,6 @@ type Conf struct {
 	HTTPS int    `json:"sslPort"`
 }
 
-type gzipResponseWriter struct {
-	io.Writer
-	http.ResponseWriter
-}
-
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
-}
-
 func director(r *http.Request) {
 	u := r.URL.EscapedPath()
 
@@ -93,53 +83,6 @@ var (
 	}
 )
 
-/* DetectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
-This function is a KatWeb API, and changes to it's functionality will appear in the changelog.
-Inputs are (finfo, url, path)
-Output will be provided in a string array, with [username, password] format.
-If an error occures, ["err"] will be the output.*/
-func DetectPasswd(finfo os.FileInfo, url string, path string) []string {
-	var tmp string
-
-	if finfo.IsDir() {
-		tmp = url
-	} else {
-		tmp = strings.TrimSuffix(url, finfo.Name())
-	}
-
-	b, err := ioutil.ReadFile(path + tmp + "passwd")
-	if err == nil {
-		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
-		if len(tmpa) == 2 {
-			return tmpa
-		}
-	}
-
-	return []string{"err"}
-}
-
-/* DetectPath allows dynamic content control by domain.
-This function is a KatWeb API, and changes to it's functionality will appear in the changelog.
-Inputs are (r.Host+"/", r.URL.EscapedPath()). Outputs are path and url.*/
-func DetectPath(path string, url string) (string, string) {
-	if conf.Cache.Run && strings.HasPrefix(url, "/"+conf.Cache.Loc) {
-		return conf.Cache.Loc + "/", strings.TrimPrefix(url, "/"+conf.Cache.Loc)
-	}
-
-	if conf.Proxy.Run {
-		if strings.HasPrefix(url, "/"+conf.Proxy.Loc) || strings.TrimSuffix(path, "/") == conf.Proxy.Loc {
-			return conf.Proxy.Loc, url
-		}
-	}
-
-	_, err := os.Stat(path)
-	if err == nil && path != "ssl/" {
-		return path, url
-	}
-
-	return "html/", url
-}
-
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
@@ -174,18 +117,6 @@ func checkIntact() {
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
 	}
-}
-
-// runAuth uses provided information to run HTTP authentication on a request.
-func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-
-	user, pass, _ := r.BasicAuth()
-	if user == a[0] && pass == a[1] {
-		return true
-	}
-
-	return false
 }
 
 // loadHeaders adds headers from the server configuration to the request.
@@ -229,31 +160,11 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
-// makeGzipHandler compresses requests using gzip.
-func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			fn(w, r)
-			return
-		}
-		w.Header().Set("Content-Encoding", "gzip")
-		gz, err := gzip.NewWriterLevel(w, conf.Zip.Lvl)
-		if err != nil {
-			fmt.Println("[Warn] : Unable to make gzip writer using configured compression value!")
-			conf.Zip.Lvl = -1
-			gz = gzip.NewWriter(w)
-		}
-		defer gz.Close()
-		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
-		fn(gzr, r)
-	}
-}
-
 // wrapLoad chooses the correct wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
 	if conf.Zip.Run {
-		tmpR = makeGzipHandler(origin)
+		tmpR = MakeGzipHandler(origin, conf.Zip.Lvl)
 	}
 
 	tmpH := tmpR
@@ -407,7 +318,7 @@ func main() {
 				if finfo.Name() == "passwd" {
 					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
-				} else if runAuth(w, r, auth) {
+				} else if RunAuth(w, r, auth) {
 					http.ServeFile(w, r, path+url)
 					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 				} else {

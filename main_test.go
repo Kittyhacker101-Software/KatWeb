@@ -1,6 +1,7 @@
 /* KatWeb by kittyhacker101
-This file contains unit tests for KatWeb.
-Note that this will only KatWeb APIs at the moment. Manual testing is still highly recommended.*/
+This file contains unit tests for KatWeb APIs.
+Currently tested APIs : DetectPath, DetectPasswd
+Untested APIs : MakeGzipHandler, RunAuth */
 package main
 
 import (
