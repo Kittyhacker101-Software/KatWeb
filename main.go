@@ -57,7 +57,8 @@ func director(r *http.Request) {
 }
 
 var (
-	conf Conf
+	conf     Conf
+	location *time.Location
 
 	// tlsc provides a SSL config that is more secure than Golang's default.
 	tlsc = &tls.Config{
@@ -244,6 +245,70 @@ func updateCache() {
 	}
 }
 
+// mainHandle handles all HTTP Web Requests sent to KatWeb.
+func mainHandle(w http.ResponseWriter, r *http.Request) {
+	var (
+		authg bool
+		auth  []string
+	)
+
+	// Get file info, and check Dynamic Content Control settings.
+	path, url := DetectPath(r.Host+"/", r.URL.EscapedPath())
+	if path == conf.Proxy.Loc {
+		// No additional headers are added, we will depend on the proxied server to provide those.
+		proxy := &httputil.ReverseProxy{Director: director}
+		proxy.ServeHTTP(w, r)
+		fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
+	}
+
+	// Enable password protection of a folder if needed.
+	finfo, err := os.Stat(path + url)
+	if err == nil {
+		auth = DetectPasswd(finfo, url, path)
+		if auth[0] != "err" {
+			authg = true
+		}
+	}
+
+	loadHeaders(w, err == nil, location)
+
+	// Check if a redirect is present, and apply the redirect if needed.
+	if err != nil {
+		b, err := ioutil.ReadFile(path + url + ".redir")
+		if err == nil {
+			/* These redirects are set as permanent, it's rare for server-side temporary redirects to be set.
+			If you wanted a temporary redirect, then why not just use HTML for it instead? */
+			http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
+			fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+			return
+		}
+	}
+
+	/* Add file headers, then send data. Add HTTP errors if required.
+	I may consider allowing changing of the error text in the future, but it's unlikely to be used. */
+	if err != nil {
+		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
+		fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
+	} else {
+		if authg {
+			if finfo.Name() == "passwd" {
+				http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
+				fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
+			} else if RunAuth(w, r, auth) {
+				http.ServeFile(w, r, path+url)
+				fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
+			} else {
+				http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
+				fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
+			}
+		} else {
+			http.ServeFile(w, r, path+url)
+			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+		}
+	}
+}
+
 // The main function handles startup and webserver logic.
 func main() {
 	fmt.Println("Loading KatWeb...")
@@ -262,74 +327,10 @@ func main() {
 	checkIntact()
 
 	// UTC time is required for HTTP Caching headers.
-	location, err := time.LoadLocation("UTC")
+	location, err = time.LoadLocation("UTC")
 	if err != nil {
 		fmt.Println("[Warn] : Unable to load timezones!")
 		conf.CachTime = 0
-	}
-
-	// mainHandle handles all HTTP Web Requests sent to KatWeb.
-	mainHandle := func(w http.ResponseWriter, r *http.Request) {
-		var (
-			authg bool
-			auth  []string
-		)
-
-		// Get file info, and check Dynamic Content Control settings.
-		path, url := DetectPath(r.Host+"/", r.URL.EscapedPath())
-		if path == conf.Proxy.Loc {
-			// No additional headers are added, we will depend on the proxied server to provide those.
-			proxy := &httputil.ReverseProxy{Director: director}
-			proxy.ServeHTTP(w, r)
-			fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
-			return
-		}
-
-		// Enable password protection of a folder if needed.
-		finfo, err := os.Stat(path + url)
-		if err == nil {
-			auth = DetectPasswd(finfo, url, path)
-			if auth[0] != "err" {
-				authg = true
-			}
-		}
-
-		loadHeaders(w, err == nil, location)
-
-		// Check if a redirect is present, and apply the redirect if needed.
-		if err != nil {
-			b, err := ioutil.ReadFile(path + url + ".redir")
-			if err == nil {
-				/* These redirects are set as permanent, it's rare for server-side temporary redirects to be set.
-				If you wanted a temporary redirect, then why not just use HTML for it instead? */
-				http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
-				fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
-				return
-			}
-		}
-
-		/* Add file headers, then send data. Add HTTP errors if required.
-		I may consider allowing changing of the error text in the future, but it's unlikely to be used. */
-		if err != nil {
-			http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
-			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
-		} else {
-			if authg {
-				if finfo.Name() == "passwd" {
-					http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
-					fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
-				} else if RunAuth(w, r, auth) {
-					http.ServeFile(w, r, path+url)
-					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
-				} else {
-					http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
-					fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
-				}
-			} else {
-				http.ServeFile(w, r, path+url)
-				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
-			}
-		}
 	}
 
 	handleReq, handleHTTP := wrapLoad(mainHandle)

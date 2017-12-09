@@ -5,6 +5,8 @@ Untested APIs : MakeGzipHandler, RunAuth */
 package main
 
 import (
+	//"net/http"
+	//"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -88,3 +90,9 @@ func TestPasswd(t *testing.T) {
 		t.Errorf("Auth was incorrect, got: %s, want: %s.", auth, []string{"admin", "passwd"})
 	}
 }
+
+/* func TestGzipHandler(t *testing.T) {
+	mainHandle := func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello world!")
+	}
+} */
