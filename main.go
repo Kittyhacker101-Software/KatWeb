@@ -328,7 +328,6 @@ func main() {
 			} else {
 				http.ServeFile(w, r, path+url)
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
-				fmt.Println(path + " - " + url)
 			}
 		}
 	}
