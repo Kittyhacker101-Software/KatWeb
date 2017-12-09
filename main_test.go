@@ -1,19 +1,17 @@
 /* KatWeb by kittyhacker101
 This file contains unit tests for KatWeb.
-Note that this will only test internal functions used within KatWeb at the moment. Manual testing is still highly recommended.
-Current functions tested : detectPath, detectPasswd
-Todo function tests : runAuth, loadHeaders (possibly), makeGzipHandler (possibly), wrapLoad (if required)*/
+Note that this will only KatWeb APIs at the moment. Manual testing is still highly recommended.*/
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestPathCache(t *testing.T) {
 	conf.Cache.Run = true
 	conf.Cache.Loc = "cache"
-	path, url := detectPath("example.com/", "/"+conf.Cache.Loc+"/example.html")
+	path, url := DetectPath("example.com/", "/"+conf.Cache.Loc+"/example.html")
 	if path != conf.Cache.Loc+"/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Cache.Loc+"/")
 	}
@@ -25,7 +23,7 @@ func TestPathCache(t *testing.T) {
 func TestPathCacheHost(t *testing.T) {
 	conf.Cache.Run = true
 	conf.Cache.Loc = "cache"
-	path, url := detectPath(conf.Cache.Loc+"/", "/example.html")
+	path, url := DetectPath(conf.Cache.Loc+"/", "/example.html")
 	if path != conf.Cache.Loc+"/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Cache.Loc+"/")
 	}
@@ -37,7 +35,7 @@ func TestPathCacheHost(t *testing.T) {
 func TestPathProxy(t *testing.T) {
 	conf.Proxy.Run = true
 	conf.Proxy.Loc = "proxy"
-	path, url := detectPath("example.com/", "/"+conf.Proxy.Loc+"/example.html")
+	path, url := DetectPath("example.com/", "/"+conf.Proxy.Loc+"/example.html")
 	if path != conf.Proxy.Loc {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Proxy.Loc)
 	}
@@ -49,7 +47,7 @@ func TestPathProxy(t *testing.T) {
 func TestPathProxyHost(t *testing.T) {
 	conf.Proxy.Run = true
 	conf.Proxy.Loc = "proxy"
-	path, url := detectPath(conf.Proxy.Loc+"/", "/example.html")
+	path, url := DetectPath(conf.Proxy.Loc+"/", "/example.html")
 	if path != conf.Proxy.Loc {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Proxy.Loc)
 	}
@@ -59,7 +57,7 @@ func TestPathProxyHost(t *testing.T) {
 }
 
 func TestPathSSL(t *testing.T) {
-	path, url := detectPath("ssl/", "/example.html")
+	path, url := DetectPath("ssl/", "/example.html")
 	if path != "html/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "html/")
 	}
@@ -69,7 +67,7 @@ func TestPathSSL(t *testing.T) {
 }
 
 func TestPathHTML(t *testing.T) {
-	path, url := detectPath("html/", "/example.html")
+	path, url := DetectPath("html/", "/example.html")
 	if path != "html/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "html/")
 	}
@@ -80,11 +78,11 @@ func TestPathHTML(t *testing.T) {
 
 func TestPasswd(t *testing.T) {
 	finfo, err := os.Stat("html/DemoPass/passwd")
-	if err != nil  {
+	if err != nil {
 		t.Fatalf("Unable to run test, testing file unreadable!")
 	}
 
-	auth := detectPasswd(finfo, "/DemoPass/passwd", "html/")
+	auth := DetectPasswd(finfo, "/DemoPass/passwd", "html/")
 	if len(auth) != 2 || auth[0] != "admin" || auth[1] != "passwd" {
 		t.Errorf("Auth was incorrect, got: %s, want: %s.", auth, []string{"admin", "passwd"})
 	}

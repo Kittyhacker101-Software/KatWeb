@@ -93,6 +93,53 @@ var (
 	}
 )
 
+/* DetectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
+This function is a KatWeb API, and changes to it's functionality will appear in the changelog.
+Inputs are (finfo, url, path)
+Output will be provided in a string array, with [username, password] format.
+If an error occures, ["err"] will be the output.*/
+func DetectPasswd(finfo os.FileInfo, url string, path string) []string {
+	var tmp string
+
+	if finfo.IsDir() {
+		tmp = url
+	} else {
+		tmp = strings.TrimSuffix(url, finfo.Name())
+	}
+
+	b, err := ioutil.ReadFile(path + tmp + "passwd")
+	if err == nil {
+		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
+		if len(tmpa) == 2 {
+			return tmpa
+		}
+	}
+
+	return []string{"err"}
+}
+
+/* DetectPath allows dynamic content control by domain.
+This function is a KatWeb API, and changes to it's functionality will appear in the changelog.
+Inputs are (r.Host+"/", r.URL.EscapedPath()). Outputs are path and url.*/
+func DetectPath(path string, url string) (string, string) {
+	if conf.Cache.Run && strings.HasPrefix(url, "/"+conf.Cache.Loc) {
+		return conf.Cache.Loc + "/", strings.TrimPrefix(url, "/"+conf.Cache.Loc)
+	}
+
+	if conf.Proxy.Run {
+		if strings.HasPrefix(url, "/"+conf.Proxy.Loc) || strings.TrimSuffix(path, "/") == conf.Proxy.Loc {
+			return conf.Proxy.Loc, url
+		}
+	}
+
+	_, err := os.Stat(path)
+	if err == nil && path != "ssl/" {
+		return path, url
+	}
+
+	return "html/", url
+}
+
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
 func checkIntact() {
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
@@ -127,46 +174,6 @@ func checkIntact() {
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
 	}
-}
-
-// detectPath handles dynamic content control by domain.
-func detectPath(p string, l string) (string, string) {
-	if conf.Cache.Run && strings.HasPrefix(l, "/"+conf.Cache.Loc) {
-		return conf.Cache.Loc + "/", strings.TrimPrefix(l, "/"+conf.Cache.Loc)
-	}
-
-	if conf.Proxy.Run {
-		if strings.HasPrefix(l, "/"+conf.Proxy.Loc) || strings.TrimSuffix(p, "/") == conf.Proxy.Loc {
-			return conf.Proxy.Loc, l
-		}
-	}
-
-	_, err := os.Stat(p)
-	if err == nil && p != "ssl/" {
-		return p, l
-	}
-
-	return "html/", l
-}
-
-// detectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
-func detectPasswd(i os.FileInfo, p string, dp string) []string {
-	var tmpl string
-
-	if i.IsDir() {
-		tmpl = p
-	} else {
-		tmpl = strings.TrimSuffix(p, i.Name())
-	}
-
-	b, err := ioutil.ReadFile(dp + tmpl + "passwd")
-	if err == nil {
-		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
-		if len(tmpa) == 2 {
-			return tmpa
-		}
-	}
-	return []string{"err"}
 }
 
 // runAuth uses provided information to run HTTP authentication on a request.
@@ -358,7 +365,7 @@ func main() {
 		)
 
 		// Get file info, and check Dynamic Content Control settings.
-		path, url := detectPath(r.Host+"/", r.URL.EscapedPath())
+		path, url := DetectPath(r.Host+"/", r.URL.EscapedPath())
 		if path == conf.Proxy.Loc {
 			// No additional headers are added, we will depend on the proxied server to provide those.
 			proxy := &httputil.ReverseProxy{Director: director}
@@ -370,7 +377,7 @@ func main() {
 		// Enable password protection of a folder if needed.
 		finfo, err := os.Stat(path + url)
 		if err == nil {
-			auth = detectPasswd(finfo, url, path)
+			auth = DetectPasswd(finfo, url, path)
 			if auth[0] != "err" {
 				authg = true
 			}
