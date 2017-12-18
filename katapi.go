@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -20,6 +21,14 @@ type gzipResponseWriter struct {
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
+}
+
+func director(r *http.Request) {
+	u := r.URL.EscapedPath()
+
+	/* This never returns an error for some reason, so why bother handling it?
+	Not to mention, there's not any real way to handle an error here anyways. */
+	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(u, "/"+conf.Proxy.Loc))
 }
 
 /* DetectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.

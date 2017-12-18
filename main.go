@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -46,14 +45,6 @@ type Conf struct {
 	Name  string `json:"name"`
 	HTTP  int    `json:"httpPort"`
 	HTTPS int    `json:"sslPort"`
-}
-
-func director(r *http.Request) {
-	u := r.URL.EscapedPath()
-
-	/* This never returns an error for some reason, so why bother handling it?
-	Not to mention, there's not any real way to handle an error here anyways. */
-	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(u, "/"+conf.Proxy.Loc))
 }
 
 var (
