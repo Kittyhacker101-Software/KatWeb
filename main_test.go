@@ -1,12 +1,13 @@
 /* KatWeb by kittyhacker101
-This file contains unit tests for KatWeb APIs.
-Currently tested APIs : DetectPath, DetectPasswd
-Untested APIs : MakeGzipHandler, RunAuth */
+This file contains unit tests for some KatWeb APIs.
+Currently tested APIs : DetectPath, DetectPasswd, MakeGzipHandler
+Untested APIs : RunAuth */
 package main
 
 import (
-	//"net/http"
-	//"net/http/httptest"
+	"net/http"
+	"net/http/httptest"
+	"io"
 	"os"
 	"testing"
 )
@@ -91,8 +92,24 @@ func TestPasswd(t *testing.T) {
 	}
 }
 
-/* func TestGzipHandler(t *testing.T) {
+func TestGzipHandler(t *testing.T) {
 	mainHandle := func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Hello world!")
 	}
-} */
+	gzipHandle := MakeGzipHandler(mainHandle, 6)
+
+	req, err := http.NewRequest("GET", "/example.html", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(gzipHandle)
+	handler.ServeHTTP(rr, req)
+
+	ctype := rr.Header().Get("Content-Encoding")
+	if ctype != "gzip" {
+		t.Errorf("Content-Encoding header does not match: got %v want %v", ctype, "gzip")
+	}
+}
