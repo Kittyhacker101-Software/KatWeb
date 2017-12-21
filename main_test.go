@@ -13,11 +13,9 @@ import (
 )
 
 func TestPathCache(t *testing.T) {
-	conf.Cache.Run = true
-	conf.Cache.Loc = "cache"
-	path, url := DetectPath("example.com/", "/"+conf.Cache.Loc+"/example.html")
-	if path != conf.Cache.Loc+"/" {
-		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Cache.Loc+"/")
+	path, url := DetectPath("example.com/", "/cache/example.html", "cache", "norun")
+	if path != "cache/" {
+		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "cache/")
 	}
 	if url != "/example.html" {
 		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/example.html")
@@ -25,11 +23,9 @@ func TestPathCache(t *testing.T) {
 }
 
 func TestPathCacheHost(t *testing.T) {
-	conf.Cache.Run = true
-	conf.Cache.Loc = "cache"
-	path, url := DetectPath(conf.Cache.Loc+"/", "/example.html")
-	if path != conf.Cache.Loc+"/" {
-		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Cache.Loc+"/")
+	path, url := DetectPath("cache/", "/example.html", "cache", "norun")
+	if path != "cache/" {
+		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "cache/")
 	}
 	if url != "/example.html" {
 		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/example.html")
@@ -37,23 +33,19 @@ func TestPathCacheHost(t *testing.T) {
 }
 
 func TestPathProxy(t *testing.T) {
-	conf.Proxy.Run = true
-	conf.Proxy.Loc = "proxy"
-	path, url := DetectPath("example.com/", "/"+conf.Proxy.Loc+"/example.html")
-	if path != conf.Proxy.Loc {
-		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Proxy.Loc)
+	path, url := DetectPath("example.com/", "/proxy/example.html", "norun", "proxy")
+	if path != "proxy" {
+		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "proxy")
 	}
-	if url != "/"+conf.Proxy.Loc+"/example.html" {
-		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/"+conf.Proxy.Loc+"/example.html")
+	if url != "/proxy/example.html" {
+		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/proxy/example.html")
 	}
 }
 
 func TestPathProxyHost(t *testing.T) {
-	conf.Proxy.Run = true
-	conf.Proxy.Loc = "proxy"
-	path, url := DetectPath(conf.Proxy.Loc+"/", "/example.html")
-	if path != conf.Proxy.Loc {
-		t.Errorf("Path was incorrect, got: %s, want: %s.", path, conf.Proxy.Loc)
+	path, url := DetectPath("proxy/", "/example.html", "norun", "proxy")
+	if path != "proxy" {
+		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "proxy")
 	}
 	if url != "/example.html" {
 		t.Errorf("URL was incorrect, got: %s, want: %s.", url, "/example.html")
@@ -61,7 +53,7 @@ func TestPathProxyHost(t *testing.T) {
 }
 
 func TestPathSSL(t *testing.T) {
-	path, url := DetectPath("ssl/", "/example.html")
+	path, url := DetectPath("ssl/", "/example.html", "norun", "norun")
 	if path != "html/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "html/")
 	}
@@ -71,7 +63,7 @@ func TestPathSSL(t *testing.T) {
 }
 
 func TestPathHTML(t *testing.T) {
-	path, url := DetectPath("html/", "/example.html")
+	path, url := DetectPath("html/", "/example.html", "norun", "norun")
 	if path != "html/" {
 		t.Errorf("Path was incorrect, got: %s, want: %s.", path, "html/")
 	}

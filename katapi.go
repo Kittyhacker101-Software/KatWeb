@@ -64,7 +64,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 
 // director contains a director for use in httputil.ReverseProxy
 func director(r *http.Request) {
-	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), conf.Proxy.Loc))
+	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 }
 
 // -------- KatWeb Function APIs --------
@@ -94,16 +94,16 @@ func DetectPasswd(finfo os.FileInfo, url string, path string) []string {
 }
 
 /* DetectPath allows dynamic content control by domain.
-Inputs are (r.Host+"/", r.URL.EscapedPath()). Outputs are path and url.
+Inputs are (r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc). Outputs are path and url.
 Note that this is not a fully external API currently, it still has some dependencies on KatWeb code. */
-func DetectPath(path string, url string) (string, string) {
-	if conf.Cache.Run && strings.HasPrefix(url, "/"+conf.Cache.Loc) {
-		return conf.Cache.Loc + "/", strings.TrimPrefix(url, "/"+conf.Cache.Loc)
+func DetectPath(path string, url string, cache string, proxy string) (string, string) {
+	if cache != "norun" && strings.HasPrefix(url, "/"+cache) {
+		return cache + "/", strings.TrimPrefix(url, "/"+cache)
 	}
 
-	if conf.Proxy.Run {
-		if strings.HasPrefix(url, "/"+conf.Proxy.Loc) || strings.TrimSuffix(path, "/") == conf.Proxy.Loc {
-			return conf.Proxy.Loc, url
+	if proxy != "norun" {
+		if strings.HasPrefix(url, "/"+proxy) || strings.TrimSuffix(path, "/") == proxy {
+			return proxy, url
 		}
 	}
 

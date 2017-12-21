@@ -85,6 +85,14 @@ func checkIntact() {
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
 	}
+
+	if !conf.Cache.Run {
+		conf.Cache.Loc = "norun"
+	}
+
+	if !conf.Proxy.Run {
+		conf.Proxy.Loc = "norun"
+	}
 }
 
 // loadHeaders adds headers from the server configuration to the request.
@@ -210,7 +218,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get file info, and check Dynamic Content Control settings.
-	path, url := DetectPath(r.Host+"/", r.URL.EscapedPath())
+	path, url := DetectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
 	if path == conf.Proxy.Loc {
 		// No additional headers are added, we will depend on the proxied server to provide those.
 		proxy := &httputil.ReverseProxy{Director: director}
