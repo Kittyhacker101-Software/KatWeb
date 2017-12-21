@@ -1,7 +1,7 @@
 /* KatWeb by kittyhacker101
 This file contains unit tests for some KatWeb APIs.
-Currently tested APIs : DetectPath, DetectPasswd, MakeGzipHandler
-Untested APIs : RunAuth */
+Currently tested APIs : DetectPath, DetectPasswd, MakeGzipHandler, RunAuth
+Untested APIs :  */
 package main
 
 import (
@@ -103,5 +103,52 @@ func TestGzipHandler(t *testing.T) {
 	ctype := rr.Header().Get("Content-Encoding")
 	if ctype != "gzip" {
 		t.Errorf("Content-Encoding header does not match: got %v want %v", ctype, "gzip")
+	}
+}
+
+func TestAuthBlock(t *testing.T) {
+	mainHandle := func(w http.ResponseWriter, r *http.Request) {
+		if RunAuth(w, r, []string{"admin", "passwd"}) {
+			io.WriteString(w, "Hello world!")
+		} else {
+			http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
+		}
+	}
+	req, err := http.NewRequest("GET", "/example.html", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(mainHandle)
+	handler.ServeHTTP(rr, req)
+
+	status := rr.Code
+	if status != http.StatusUnauthorized {
+		t.Errorf("HTTP status does not match: got %v want %v", status, http.StatusUnauthorized)
+	}
+}
+
+func TestAuthAllow(t *testing.T) {
+	mainHandle := func(w http.ResponseWriter, r *http.Request) {
+		if RunAuth(w, r, []string{"admin", "passwd"}) {
+			io.WriteString(w, "Hello world!")
+		} else {
+			http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
+		}
+	}
+	req, err := http.NewRequest("GET", "/example.html", nil)
+	req.SetBasicAuth("admin", "passwd")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(mainHandle)
+	handler.ServeHTTP(rr, req)
+
+	status := rr.Code
+	if status != http.StatusOK {
+		t.Errorf("HTTP status does not match: got %v want %v", status, http.StatusOK)
 	}
 }
