@@ -64,7 +64,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 
 // director contains a director for use in httputil.ReverseProxy
 func director(r *http.Request) {
-	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), conf.Proxy.Loc))
 }
 
 // -------- KatWeb Function APIs --------
