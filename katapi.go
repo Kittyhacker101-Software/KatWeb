@@ -19,7 +19,7 @@ import (
 // -------- KatWeb Configuration Presets --------
 
 var (
-	// tlsc provides an TLS configuration, for use in http.Server
+	// tlsc provides an TLS configuration for use in http.Server
 	tlsc = &tls.Config{
 		NextProtos:               []string{"h2", "http/1.1"},
 		PreferServerCipherSuites: true,
@@ -94,8 +94,9 @@ func DetectPasswd(finfo os.FileInfo, url string, path string) []string {
 }
 
 /* DetectPath allows dynamic content control by domain.
-Inputs are (r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc). Outputs are path and url.
-Note that this is not a fully external API currently, it still has some dependencies on KatWeb code. */
+Inputs are (r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc).
+If you wish to disable caching or proxying, set the path to "norun".
+Outputs are path and url. */
 func DetectPath(path string, url string, cache string, proxy string) (string, string) {
 	if cache != "norun" && strings.HasPrefix(url, "/"+cache) {
 		return cache + "/", strings.TrimPrefix(url, "/"+cache)
