@@ -2,7 +2,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,29 +49,6 @@ type Conf struct {
 var (
 	conf     Conf
 	location *time.Location
-
-	// tlsc provides a SSL config that is more secure than Golang's default.
-	tlsc = &tls.Config{
-		NextProtos:               []string{"h2", "http/1.1"},
-		PreferServerCipherSuites: true,
-		CurvePreferences: []tls.CurveID{
-			tls.CurveP521,
-			tls.CurveP384,
-			tls.CurveP256,
-			tls.X25519,
-		},
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			/* Note : Comment the bottom two ciphers and uncomment the middle two, for a 100% score in SSL Labs.
-			If you enable this, the server will not start unless you disable HTTP/2 in srv. */
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			/* tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, */
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
 )
 
 // checkIntact checks to make sure all folders exist and that the server configuration is valid.
@@ -174,16 +150,6 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 // updateCache automatically updates the Basic HTTP Cache.
 func updateCache() {
 	fmt.Println("KatWeb Cache Started.")
-
-	tr := &http.Transport{
-		DisableKeepAlives: true,
-		IdleConnTimeout:   time.Duration(conf.IdleTime) * time.Second,
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(conf.DatTime) * time.Second,
-	}
-
 	for {
 		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
 			if err != nil {

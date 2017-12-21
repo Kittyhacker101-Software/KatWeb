@@ -1,18 +1,57 @@
 /* KatWeb by kittyhacker101.
 This file contains KatWeb APIs, parts of KatWeb which normally stay the same, and are easy to interface with.
 Changes to an API's functionality, or additions/deletions of APIs will appear in the changelog.
-Once enough KatWeb APIs are available, then you may be able to use these to make KatWeb however you wish. */
+KatWeb APIs are also useful if you wish to modify KatWeb a large amount, as they are very flexible. */
 package main
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
+
+// -------- KatWeb Configuration Presets --------
+
+var (
+	// tlsc provides an TLS configuration, for use in http.Server
+	tlsc = &tls.Config{
+		NextProtos:               []string{"h2", "http/1.1"},
+		PreferServerCipherSuites: true,
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP521,
+			tls.CurveP384,
+			tls.CurveP256,
+			tls.X25519,
+		},
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
+
+	// transport and client for any http.Client used to grab data from other servers
+	transport = &http.Transport{
+		DisableKeepAlives: true,
+		IdleConnTimeout:   30 * time.Second,
+	}
+	client = &http.Client{
+		Transport: transport,
+		Timeout:   15 * time.Second,
+	}
+)
+
+// -------- KatWeb Function Snippets (parts of APIs) --------
 
 type gzipResponseWriter struct {
 	io.Writer
@@ -23,13 +62,12 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// director contains a director for use in httputil.ReverseProxy
 func director(r *http.Request) {
-	u := r.URL.EscapedPath()
-
-	/* This never returns an error for some reason, so why bother handling it?
-	Not to mention, there's not any real way to handle an error here anyways. */
-	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(u, "/"+conf.Proxy.Loc))
+	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 }
+
+// -------- KatWeb Function APIs --------
 
 /* DetectPasswd checks if a folder is set to be protected, and retrive the authentication credentials if required.
 Inputs are (finfo, url, path).
@@ -113,3 +151,5 @@ func RunAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 
 	return false
 }
+
+// -------- End of File --------

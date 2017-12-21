@@ -5,9 +5,9 @@ Untested APIs : RunAuth */
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"io"
 	"os"
 	"testing"
 )
