@@ -262,14 +262,24 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 			} else if RunAuth(w, r, auth) {
 				http.ServeFile(w, r, path+url)
-				fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
+				if r.Method == "POST" {
+					r.ParseForm()
+					fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr, r.PostForm)
+				} else {
+					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
+				}
 			} else {
 				http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
 				fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
 		} else {
 			http.ServeFile(w, r, path+url)
-			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+			if r.Method == "POST" {
+				r.ParseForm()
+				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr, r.PostForm)
+			} else {
+				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+			}
 		}
 	}
 }
@@ -281,7 +291,8 @@ func main() {
 	// Load the config file, and then parse it into the conf struct. Then, peform additional checks on it.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to read config file!")
+		fmt.Println("[Fatal] : Unable to read config file! If possible, debugging info may be printed below.")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	err = json.Unmarshal(data, &conf)
