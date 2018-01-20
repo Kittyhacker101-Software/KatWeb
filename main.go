@@ -2,12 +2,15 @@
 package main
 
 import (
+	"compress/gzip"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,7 +18,7 @@ import (
 	"time"
 )
 
-// Conf contains all the fields for the JSON Config file of the server.
+// Conf contains all configuration fields for the server.
 type Conf struct {
 	IdleTime int `json:"keepAliveTimeout"`
 	CachTime int `json:"cachingTimeout"`
@@ -49,9 +52,108 @@ type Conf struct {
 var (
 	conf     Conf
 	location *time.Location
+
+	// tlsc provides an TLS configuration for use with http.Server
+	tlsc = &tls.Config{
+		NextProtos:               []string{"h2", "http/1.1"},
+		PreferServerCipherSuites: true,
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP521,
+			tls.CurveP384,
+			tls.CurveP256,
+			tls.X25519,
+		},
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
+
+	// transport and client settings for use with http.Client
+	transport = &http.Transport{
+		DisableKeepAlives: true,
+		IdleConnTimeout:   30 * time.Second,
+	}
+	client = &http.Client{
+		Transport: transport,
+		Timeout:   15 * time.Second,
+	}
 )
 
-// checkIntact checks to make sure all folders exist and that the server configuration is valid.
+// makeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
+func makeGzipHandler(funct http.HandlerFunc, level int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			funct(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Encoding", "gzip")
+
+		gz, err := gzip.NewWriterLevel(w, level)
+		if err != nil {
+			gz = gzip.NewWriter(w)
+		}
+		defer gz.Close()
+
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		funct(gzr, r)
+	}
+}
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+// director for use with httputil.ReverseProxy
+func director(r *http.Request) {
+	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+}
+
+// detectPasswd gets password protection settings, and authentication credentials.
+func detectPasswd(finfo os.FileInfo, url string, path string) []string {
+	var tmp string
+
+	if finfo.IsDir() {
+		tmp = url
+	} else {
+		tmp = strings.TrimSuffix(url, finfo.Name())
+	}
+
+	b, err := ioutil.ReadFile(path + tmp + "passwd")
+	if err == nil {
+		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
+		if len(tmpa) == 2 {
+			return tmpa
+		}
+	}
+
+	return []string{"err"}
+}
+
+// runAuth runs basic authentication on a http.Request
+func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	user, pass, _ := r.BasicAuth()
+	if len(a) == 2 && user == a[0] && pass == a[1] {
+		return true
+	}
+
+	return false
+}
+
+// checkIntact validates the server configuration.
 func checkIntact() {
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
 		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
@@ -95,6 +197,26 @@ func checkIntact() {
 	}
 }
 
+// detectPath allows dynamic content control by domain and path.
+func detectPath(path string, url string, cache string, proxy string) (string, string) {
+	if cache != "norun" && strings.HasPrefix(url, "/"+cache) {
+		return cache + "/", strings.TrimPrefix(url, "/"+cache)
+	}
+
+	if proxy != "norun" {
+		if strings.HasPrefix(url, "/"+proxy) || strings.TrimSuffix(path, "/") == proxy {
+			return proxy, url
+		}
+	}
+
+	_, err := os.Stat(path)
+	if err == nil && path != "ssl/" {
+		return path, url
+	}
+
+	return "html/", url
+}
+
 // loadHeaders adds headers from the server configuration to the request.
 func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	if conf.Name != "" {
@@ -123,8 +245,6 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 
 	if exists {
 		if conf.Pro {
-			/* This code will prevent other sites from directly pulling your content.
-			Might cause issues if your site spans multiple domains. */
 			w.Header().Add("X-Content-Type-Options", "nosniff")
 			w.Header().Add("X-Frame-Options", "sameorigin")
 			w.Header().Add("X-XSS-Protection", "1; mode=block")
@@ -136,11 +256,11 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
-// wrapLoad chooses the correct wrappers based on server configuration.
+// wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
 	if conf.Zip.Run {
-		tmpR = MakeGzipHandler(origin, conf.Zip.Lvl)
+		tmpR = makeGzipHandler(origin, conf.Zip.Lvl)
 	}
 
 	tmpH := tmpR
@@ -155,7 +275,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	return tmpR, tmpH
 }
 
-// updateCache automatically updates the Basic HTTP Cache.
+// updateCache automatically updates the simple cache.
 func updateCache() {
 	fmt.Println("KatWeb Cache Started.")
 	for {
@@ -210,27 +330,26 @@ func updateCache() {
 	}
 }
 
-// mainHandle handles all HTTP Web Requests sent to KatWeb.
+// mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
 		authg bool
 		auth  []string
 	)
 
-	// Get file info, and check Dynamic Content Control settings.
-	path, url := DetectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
+	// Get the correct content control options for the file.
+	path, url := detectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
 	if path == conf.Proxy.Loc {
-		// No additional headers are added, we will depend on the proxied server to provide those.
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(w, r)
 		fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
 
-	// Enable password protection of a folder if needed.
+	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
 	if err == nil {
-		auth = DetectPasswd(finfo, url, path)
+		auth = detectPasswd(finfo, url, path)
 		if auth[0] != "err" {
 			authg = true
 		}
@@ -238,20 +357,17 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	loadHeaders(w, err == nil, location)
 
-	// Check if a redirect is present, and apply the redirect if needed.
+	// Apply any present redirects.
 	if err != nil {
 		b, err := ioutil.ReadFile(path + url + ".redir")
 		if err == nil {
-			/* These redirects are set as permanent, it's rare for server-side temporary redirects to be set.
-			If you wanted a temporary redirect, then why not just use HTML for it instead? */
 			http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
 			fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
 			return
 		}
 	}
 
-	/* Add file headers, then send data. Add HTTP errors if required.
-	I may consider allowing changing of the error text in the future, but it's unlikely to be used. */
+	// Send the content requested, and provide an error if required. Run any authentication which may be enabled.
 	if err != nil {
 		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
 		fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -260,11 +376,11 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			if finfo.Name() == "passwd" {
 				http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
 				fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
-			} else if RunAuth(w, r, auth) {
+			} else if runAuth(w, r, auth) {
 				http.ServeFile(w, r, path+url)
 				if r.Method == "POST" {
 					r.ParseForm()
-					fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr, r.PostForm)
+					fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
 				} else {
 					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 				}
@@ -276,7 +392,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, path+url)
 			if r.Method == "POST" {
 				r.ParseForm()
-				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr, r.PostForm)
+				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
 			} else {
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
@@ -284,11 +400,10 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// The main function handles startup and webserver logic.
 func main() {
 	fmt.Println("Loading KatWeb...")
 
-	// Load the config file, and then parse it into the conf struct. Then, peform additional checks on it.
+	// Load, parse, and validate configuration.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file! If possible, debugging info may be printed below.")
@@ -302,7 +417,7 @@ func main() {
 	}
 	checkIntact()
 
-	// UTC time is required for HTTP Caching headers.
+	// Load the correct timezone for caching headers.
 	location, err = time.LoadLocation("UTC")
 	if err != nil {
 		fmt.Println("[Warn] : Unable to load timezones!")
@@ -331,7 +446,7 @@ func main() {
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
 	}
 
-	// Run HTTP Cache auto update, and start the HTTP/HTTPS servers.
+	// Run the server, and update the cache.
 	if conf.Cache.Run {
 		go updateCache()
 	}
