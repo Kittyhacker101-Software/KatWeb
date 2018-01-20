@@ -379,8 +379,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			} else if runAuth(w, r, auth) {
 				http.ServeFile(w, r, path+url)
 				if r.Method == "POST" {
-					r.ParseForm()
-					fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+					err := r.ParseForm()
+					if err == nil {
+						fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+					} else {
+						fmt.Println("[WebAuthForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
+					}
 				} else {
 					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 				}
@@ -391,8 +395,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		} else {
 			http.ServeFile(w, r, path+url)
 			if r.Method == "POST" {
-				r.ParseForm()
-				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+				err := r.ParseForm()
+				if err == nil {
+					fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+				} else {
+					fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
+				}
 			} else {
 				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
