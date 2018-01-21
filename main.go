@@ -31,8 +31,9 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Pro bool `json:"protect"`
-	Zip struct {
+	Pro    bool `json:"protect"`
+	Passwd bool `json:"password"`
+	Zip    struct {
 		Run bool `json:"enabled"`
 		Lvl int  `json:"level"`
 	} `json:"gzip"`
@@ -358,7 +359,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
-	if err == nil {
+	if err == nil && conf.Passwd {
 		auth = detectPasswd(finfo, url, path)
 		if auth[0] != "err" {
 			authg = true
