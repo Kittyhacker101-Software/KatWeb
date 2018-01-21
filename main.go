@@ -106,13 +106,6 @@ func makeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 
 		w.Header().Set("Content-Encoding", "gzip")
 
-		/*gz, err := gzip.NewWriterLevel(w, level)
-		if err != nil {
-			fmt.Println("[Warn] : An error occured while creating gzip writer!")
-			gz = gzip.NewWriter(w)
-		}
-		defer gz.Close() */
-
 		gz := zippers.Get().(*gzip.Writer)
 		defer zippers.Put(gz)
 		gz.Reset(w)
