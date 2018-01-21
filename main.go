@@ -32,7 +32,6 @@ type Conf struct {
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
 	Pro    bool `json:"protect"`
-	Passwd bool `json:"password"`
 	Zip    struct {
 		Run bool `json:"enabled"`
 		Lvl int  `json:"level"`
@@ -359,7 +358,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
-	if err == nil && conf.Passwd {
+	if err == nil {
 		auth = detectPasswd(finfo, url, path)
 		if auth[0] != "err" {
 			authg = true
