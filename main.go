@@ -31,8 +31,8 @@ type Conf struct {
 		Sub bool `json:"includeSubDomains"`
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
-	Pro    bool `json:"protect"`
-	Zip    struct {
+	Pro bool `json:"protect"`
+	Zip struct {
 		Run bool `json:"enabled"`
 		Lvl int  `json:"level"`
 	} `json:"gzip"`
@@ -89,7 +89,7 @@ var (
 	zippers = sync.Pool{New: func() interface{} {
 		gz, err := gzip.NewWriterLevel(nil, conf.Zip.Lvl)
 		if err != nil {
-			fmt.Println("[Warn] : An error occured while creating gzip writer!")
+			fmt.Println("[Warn] : An error occurred while creating gzip writer!")
 			gz = gzip.NewWriter(nil)
 		}
 		return gz
@@ -292,15 +292,16 @@ func updateCache() {
 		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
-				return nil
+				return err
 			}
-			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
-				fmt.Println("[Cache][HTTP] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
-				b, err := ioutil.ReadFile(path)
 
+			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
+				fmt.Println("[Cache] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
+
+				b, err := ioutil.ReadFile(path)
 				if err != nil {
 					fmt.Println("[Cache][Warn] : Unable to read " + path + "!")
-					return nil
+					return err
 				}
 
 				err = os.Remove(strings.TrimSuffix(path, ".txt"))
@@ -311,7 +312,7 @@ func updateCache() {
 				out, err := os.Create(strings.TrimSuffix(path, ".txt"))
 				if err != nil {
 					fmt.Println("[Cache][Warn] : Unable to create " + strings.TrimSuffix(path, ".txt") + "!")
-					return nil
+					return err
 				}
 
 				resp, err := client.Get(strings.TrimSpace(string(b)))
@@ -320,7 +321,7 @@ func updateCache() {
 				}
 				if err != nil {
 					fmt.Println("[Cache][Warn] : Unable to download " + strings.TrimSuffix(path, ".txt") + "!")
-					return nil
+					return err
 				}
 
 				_, err = io.Copy(out, resp.Body)
@@ -331,10 +332,10 @@ func updateCache() {
 			return nil
 		})
 
-		if err != nil {
-			fmt.Println("[Cache][Warn] : Unable to walk filepath!")
+		if err == nil {
+			fmt.Println("[Cache] : All files in cache updated!")
 		} else {
-			fmt.Println("[Cache][HTTP] : All files in HTTP Cache updated!")
+			fmt.Println("[Cache][Warn] : Unable to update one of more files in the cache!")
 		}
 		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
 	}
