@@ -33,7 +33,6 @@ KatWeb comes with a built in system to serve different content depending on vari
   * includeSubDomains - If HSTS should effect subdomains, must be enabled for preload to work.
   * preload - If your site's HSTS rule should be preloaded into the browser's HSTS preload list. Once you are in the preload list, you can't get out of it easily!
 - protect - Prevents other web-sites from stealing your content in various ways.
-- password - Allow password protection using HTTP basic auth. May increase disk usage.
 - gzip - HTTP compression for files.
   * enabled - If gzip should be enabled. 
   * level - Compression level for gzip (Between 1 and 9, 4-6 is reccomended)
