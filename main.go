@@ -2,7 +2,6 @@
 package main
 
 import (
-	//"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -380,12 +379,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Send the content requested, and provide an error if required. Run any authentication which may be enabled.
 	if err != nil {
-		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", 404)
+		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
 	} else {
 		if authg {
 			if finfo.Name() == "passwd" {
-				http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", 403)
+				http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", http.StatusForbidden)
 				fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 			} else if runAuth(w, r, auth) {
 				http.ServeFile(w, r, path+url)
@@ -400,7 +399,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 				}
 			} else {
-				http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", 401)
+				http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
 				fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
 			}
 		} else {
