@@ -9,7 +9,7 @@
     "preload": true
   },
   "protect": true,
-  "password": false,
+  "password": true,
   "gzip": {
     "enabled": true,
     "level": 6
