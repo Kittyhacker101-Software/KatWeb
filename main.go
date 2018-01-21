@@ -425,13 +425,14 @@ func main() {
 	// Load, parse, and validate configuration.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to read config file! If possible, debugging info may be printed below.")
+		fmt.Println("[Fatal] : Unable to read config file! Debugging info will be printed below.")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	err = json.Unmarshal(data, &conf)
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to parse config file!")
+		fmt.Println("[Fatal] : Unable to parse config file! Debugging info will be printed below.")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	checkIntact()
