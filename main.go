@@ -2,10 +2,11 @@
 package main
 
 import (
-	"compress/gzip"
+	//"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/klauspost/compress/gzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -83,10 +85,19 @@ var (
 		Transport: transport,
 		Timeout:   15 * time.Second,
 	}
+
+	zippers = sync.Pool{New: func() interface{} {
+		gz, err := gzip.NewWriterLevel(nil, conf.Zip.Lvl)
+		if err != nil {
+			fmt.Println("[Warn] : An error occured while creating gzip writer!")
+			gz = gzip.NewWriter(nil)
+		}
+		return gz
+	}}
 )
 
 // makeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
-func makeGzipHandler(funct http.HandlerFunc, level int) http.HandlerFunc {
+func makeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			funct(w, r)
@@ -95,10 +106,16 @@ func makeGzipHandler(funct http.HandlerFunc, level int) http.HandlerFunc {
 
 		w.Header().Set("Content-Encoding", "gzip")
 
-		gz, err := gzip.NewWriterLevel(w, level)
+		/*gz, err := gzip.NewWriterLevel(w, level)
 		if err != nil {
+			fmt.Println("[Warn] : An error occured while creating gzip writer!")
 			gz = gzip.NewWriter(w)
 		}
+		defer gz.Close() */
+
+		gz := zippers.Get().(*gzip.Writer)
+		defer zippers.Put(gz)
+		gz.Reset(w)
 		defer gz.Close()
 
 		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
@@ -260,7 +277,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
 	if conf.Zip.Run {
-		tmpR = makeGzipHandler(origin, conf.Zip.Lvl)
+		tmpR = makeGzipHandler(origin)
 	}
 
 	tmpH := tmpR
