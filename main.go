@@ -106,12 +106,13 @@ func makeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Content-Encoding", "gzip")
 
 		gz := zippers.Get().(*gzip.Writer)
-		defer zippers.Put(gz)
 		gz.Reset(w)
-		defer gz.Close()
 
 		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		funct(gzr, r)
+
+		gz.Close()
+		zippers.Put(gz)
 	}
 }
 
