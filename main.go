@@ -365,7 +365,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	loadHeaders(w, err == nil, location)
 
-	// Apply any present redirects.
+	// Apply any requried redirects.
 	if err != nil {
 		b, err := ioutil.ReadFile(path + url + ".redir")
 		if err == nil {
@@ -373,6 +373,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
 			return
 		}
+	}
+	if strings.HasSuffix(r.URL.Path, "index.html") {
+		w.Header().Set("Location", "./")
+		w.WriteHeader(http.StatusMovedPermanently)
+		fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
 	}
 
 	// Send the content requested, and provide an error if required. Run any authentication which may be enabled.
