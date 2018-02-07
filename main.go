@@ -157,6 +157,13 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	return false
 }
 
+// redir does an HTTP permanent redirect without making the path absolute.
+func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
+	w.Header().Set("Location", loc)
+	w.WriteHeader(http.StatusMovedPermanently)
+	fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+}
+
 // checkIntact validates the server configuration.
 func checkIntact() {
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
@@ -374,10 +381,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if strings.HasSuffix(r.URL.Path, "index.html") {
-		w.Header().Set("Location", "./")
-		w.WriteHeader(http.StatusMovedPermanently)
-		fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+	if strings.HasSuffix(url, "index.html") {
+		redir(w, r, "./", url)
+		return
+	}
+	if finfo.IsDir() && !strings.HasSuffix(url, "/") {
+		redir(w, r, url+"/", url)
 		return
 	}
 
