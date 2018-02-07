@@ -365,7 +365,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	loadHeaders(w, err == nil, location)
 
-	// Apply any requried redirects.
+	// Apply any required redirects.
 	if err != nil {
 		b, err := ioutil.ReadFile(path + url + ".redir")
 		if err == nil {
