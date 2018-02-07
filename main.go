@@ -54,6 +54,9 @@ var (
 	conf     Conf
 	location *time.Location
 
+	// Added due to a naming conflict between a variable named url, and the net/url package.
+	parse = url.Parse
+
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
 		NextProtos:               []string{"h2", "http/1.1"},
@@ -125,20 +128,11 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-// director for use with httputil.ReverseProxy
-func director(r *http.Request) {
-	r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
-}
-
 // detectPasswd gets password protection settings, and authentication credentials.
-func detectPasswd(finfo os.FileInfo, url string, path string) []string {
+func detectPasswd(url string, path string) []string {
 	var tmp string
 
-	if finfo.IsDir() {
-		tmp = url
-	} else {
-		tmp = strings.TrimSuffix(url, finfo.Name())
-	}
+	tmp, _ = filepath.Split(url)
 
 	b, err := ioutil.ReadFile(path + tmp + "passwd")
 	if err == nil {
@@ -352,7 +346,9 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Get the correct content control options for the file.
 	path, url := detectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
 	if path == conf.Proxy.Loc {
-		proxy := &httputil.ReverseProxy{Director: director}
+		proxy := &httputil.ReverseProxy{Director: func(r *http.Request) {
+			r.URL, _ = parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+		}}
 		proxy.ServeHTTP(w, r)
 		fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
@@ -361,7 +357,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
 	if err == nil {
-		auth = detectPasswd(finfo, url, path)
+		auth = detectPasswd(url, path)
 		if auth[0] != "err" {
 			authg = true
 		}
