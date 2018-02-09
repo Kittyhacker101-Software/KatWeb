@@ -422,7 +422,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err == nil && finfo.IsDir() && !strings.HasSuffix(url, "/") {
-		redir(w, r, url+"/", url)
+		redir(w, r, r.URL.EscapedPath()+"/", url)
 		return
 	}
 
