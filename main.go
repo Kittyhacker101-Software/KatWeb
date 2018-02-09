@@ -373,61 +373,51 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	loadHeaders(w, err == nil, location)
 
 	// Apply any required redirects.
-	if err != nil {
-		b, err := ioutil.ReadFile(path + url + ".redir")
-		if err == nil {
-			http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
-			fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
-			return
-		}
+	b, err2 := ioutil.ReadFile(path + url + ".redir")
+	if err2 == nil {
+		http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
+		fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
 	}
 	if strings.HasSuffix(url, "index.html") {
 		redir(w, r, "./", url)
 		return
 	}
-	if finfo.IsDir() && !strings.HasSuffix(url, "/") {
+	if err == nil && finfo.IsDir() && !strings.HasSuffix(url, "/") {
 		redir(w, r, url+"/", url)
 		return
 	}
 
-	// Send the content requested, and provide an error if required. Run any authentication which may be enabled.
+	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
 		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
-	} else {
-		if authg {
-			if finfo.Name() == "passwd" {
-				http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", http.StatusForbidden)
-				fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
-			} else if runAuth(w, r, auth) {
-				http.ServeFile(w, r, path+url)
-				if r.Method == "POST" {
-					err := r.ParseForm()
-					if err == nil {
-						fmt.Printf("[WebAuthForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
-					} else {
-						fmt.Println("[WebAuthForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
-					}
-				} else {
-					fmt.Println("[WebAuth][" + r.Host + url + "] : " + r.RemoteAddr)
-				}
-			} else {
-				http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
-				fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
-			}
-		} else {
-			http.ServeFile(w, r, path+url)
-			if r.Method == "POST" {
-				err := r.ParseForm()
-				if err == nil {
-					fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
-				} else {
-					fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
-				}
-			} else {
-				fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
-			}
+		return
+	}
+	if finfo.Name() == "passwd" {
+		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", http.StatusForbidden)
+		fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
+	}
+	if authg {
+		if !runAuth(w, r, auth) {
+			http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
+			fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
+			return
 		}
+	}
+
+	// Send the content requested, and provide an error if required.
+	http.ServeFile(w, r, path+url)
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err == nil {
+			fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+		} else {
+			fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
+		}
+	} else {
+		fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 	}
 }
 
