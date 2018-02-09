@@ -399,12 +399,10 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
-	if authg {
-		if !runAuth(w, r, auth) {
-			http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
-			fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
-			return
-		}
+	if authg && !runAuth(w, r, auth) {
+		http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
+		fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
 	}
 
 	// Send the content requested, and provide an error if required.
