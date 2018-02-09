@@ -277,6 +277,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
+// Create a list of files present in a directory
 func dirList(w http.ResponseWriter, f os.File) {
 	dirs, err := f.Readdir(-1)
 	if err != nil {
@@ -466,7 +467,16 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Send the content requested
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
 	f.Close()
-	fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err == nil {
+			fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
+		} else {
+			fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
+		}
+	} else {
+		fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+	}
 }
 
 func main() {
