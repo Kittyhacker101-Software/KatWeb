@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -96,6 +97,14 @@ var (
 		}
 		return gz
 	}}
+
+	htmlReplacer = strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		`"`, "&#34;",
+		"'", "&#39;",
+	)
 )
 
 // makeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
@@ -268,6 +277,33 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
+func dirList(w http.ResponseWriter, f os.File) {
+	dirs, err := f.Readdir(-1)
+	if err != nil {
+		// TODO: log err.Error() to the Server.ErrorLog, once it's possible
+		// for a handler to get at its Server via the ResponseWriter. See
+		// Issue 12438.
+		http.Error(w, "Error reading directory", http.StatusInternalServerError)
+		return
+	}
+	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, "<pre>\n")
+	for _, d := range dirs {
+		name := d.Name()
+		if d.IsDir() {
+			name += "/"
+		}
+		// name may contain '?' or '#', which must be escaped to remain
+		// part of the URL path, and not indicate the start of a query
+		// string or fragment.
+		url := url.URL{Path: name}
+		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", url.String(), htmlReplacer.Replace(name))
+	}
+	fmt.Fprintf(w, "</pre>\n")
+}
+
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpR := origin
@@ -348,6 +384,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
 		authg bool
 		auth  []string
+		loc   string
 	)
 
 	// Get the correct content control options for the file.
@@ -395,7 +432,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if finfo.Name() == "passwd" {
-		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action. The user might not have the necessary permissions for a resource.", http.StatusForbidden)
+		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action.", http.StatusForbidden)
 		fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
@@ -405,18 +442,31 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the content requested, and provide an error if required.
-	http.ServeFile(w, r, path+url)
-	if r.Method == "POST" {
-		err := r.ParseForm()
-		if err == nil {
-			fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
-		} else {
-			fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
-		}
-	} else {
-		fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
+	// Open the requested file
+	loc = path + url
+	if finfo.IsDir() {
+		loc = loc + "index.html"
 	}
+	f, err := os.Open(loc)
+
+	if err != nil {
+		if strings.HasSuffix(loc, "index.html") {
+			// If there is no index.html file for the requested path, create a list of files in the directory
+			f, err := os.Open(path + url)
+			if err == nil {
+				dirList(w, *f)
+				return
+			}
+		}
+		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+		fmt.Println("[Web500][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
+	}
+
+	// Send the content requested
+	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
+	f.Close()
+	fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 }
 
 func main() {
