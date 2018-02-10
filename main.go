@@ -465,8 +465,15 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the content requested
+	finfo, err = f.Stat()
+	if err != nil {
+		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+		fmt.Println("[Web500][" + r.Host + url + "] : " + r.RemoteAddr)
+		return
+	}
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
 	f.Close()
+
 	if r.Method == "POST" {
 		err := r.ParseForm()
 		if err == nil {
