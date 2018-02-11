@@ -172,7 +172,7 @@ func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
 	w.Header().Set("Location", loc)
 	w.WriteHeader(http.StatusMovedPermanently)
 	if conf.Log {
-		fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+		fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
 	}
 }
 
@@ -262,7 +262,6 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 			w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 		}
 	} else if conf.HSTS.Mix {
-		// Note : You will want to disable HSTS Mixed if you disable HTTP/2.
 		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
 	}
 
@@ -293,7 +292,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><html lang=en><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5;margin:0}h1,h3{font-family:Segoe UI,Arial,sans-serif;font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}.btn,h3{text-align:center}h3{font-size:24px}.btn{color:#fff;width:98.5%;display:inline-block;background-color:#616161;padding:8px 16px;text-decoration:none;cursor:pointer}header{color:#fff;background-color:#009688;padding:64px 16px 64px 32px}div{padding:.01em 16px}</style><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
+	w.Write([]byte(`<!DOCTYPE html><html lang=en><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5;margin:0}h1,h3{font-family:Segoe UI,Arial,sans-serif;font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}a,h3{text-align:center}h3{font-size:24px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;cursor:pointer;background-color:#616161;padding:8px 16px}header{background-color:#009688;padding:64px 16px 64px 32px}div{padding:.01em 16px}</style><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
 	for _, d := range dirs {
 		name := d.Name()
 		if d.IsDir() {
@@ -303,7 +302,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 		// part of the URL path, and not indicate the start of a query
 		// string or fragment.
 		url := url.URL{Path: name}
-		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + " class=btn>" + url.String() + "</a>"))
+		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + ">" + url.String() + "</a>"))
 	}
 	w.Write([]byte("</div></div></div>"))
 }
@@ -320,7 +319,9 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+			if conf.Log {
+				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+			}
 		})
 	}
 
@@ -420,7 +421,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	if err2 == nil {
 		http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
 		if conf.Log {
-			fmt.Println("[Web301][" + r.Host + url + "] : " + r.RemoteAddr)
+			fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
@@ -437,21 +438,21 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		if conf.Log {
-			fmt.Println("[Web404][" + r.Host + url + "] : " + r.RemoteAddr)
+			fmt.Println("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
 	if finfo.Name() == "passwd" {
 		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action.", http.StatusForbidden)
 		if conf.Log {
-			fmt.Println("[Web403][" + r.Host + url + "] : " + r.RemoteAddr)
+			fmt.Println("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
 		http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
 		if conf.Log {
-			fmt.Println("[Web401][" + r.Host + url + "] : " + r.RemoteAddr)
+			fmt.Println("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
@@ -473,7 +474,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		fmt.Println("[Web500][" + r.Host + url + "] : " + r.RemoteAddr)
+		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
 
@@ -481,7 +482,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	finfo, err = f.Stat()
 	if err != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		fmt.Println("[Web500][" + r.Host + url + "] : " + r.RemoteAddr)
+		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
