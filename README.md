@@ -65,3 +65,4 @@ Changing conf options requires a server restart to take effect.
 - Custom Redirects
 - Opportunistic Encryption
 - HTTP Reverse Proxy
+- Material Design Directory Listings
