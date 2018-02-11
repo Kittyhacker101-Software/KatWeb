@@ -293,7 +293,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><html lang=en><title>KatWeb HTTP Server</title><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5;margin:0}h1,h2,h3,h4,h5{font-family:Segoe UI,Arial,sans-serif;font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}h2{font-size:30px}.btn,h3{text-align:center}h3{font-size:24px}h5{font-size:18px}.btn{color:#fff;width:98.5%;display:inline-block;background-color:#616161;padding:8px 16px;text-decoration:none;cursor:pointer}footer,header{color:#fff;background-color:#009688}footer{position:fixed;bottom:0;width:100%;padding:32px 16px 32px 32px}header{padding:64px 16px 64px 32px}div{padding:.01em 16px}hr{border:0;border-top:1px solid #eee;margin:20px 0}</style><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
+	w.Write([]byte(`<!DOCTYPE html><html lang=en><title>KatWeb HTTP Server</title><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5;margin:0}h1,h2,h3,h4,h5{font-family:Segoe UI,Arial,sans-serif;font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}h2{font-size:30px}.btn,h3{text-align:center}h3{font-size:24px}h5{font-size:18px}.btn,footer,header{color:#fff;background-color:#009688;padding:32px 16px 32px 32px}.btn,header{padding:64px 16px 64px 32px}div{padding:.01em 16px}hr{border:0;border-top:1px solid #eee;margin:20px 0}.btn{width:98.5%;display:inline-block;background-color:#616161;padding:8px 16px;text-decoration:none;cursor:pointer}</style><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
 	for _, d := range dirs {
 		name := d.Name()
 		if d.IsDir() {
@@ -305,7 +305,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 		url := url.URL{Path: name}
 		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + " class=btn>" + url.String() + "</a>"))
 	}
-	w.Write([]byte("</div></div></div><footer><h5>KatWeb HTTP Server</h5><p>A web server designed for the modern web.</footer>"))
+	w.Write([]byte("</div></div></div>"))
 }
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
