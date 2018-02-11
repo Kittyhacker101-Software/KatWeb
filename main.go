@@ -488,6 +488,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
 	f.Close()
 
+	// Log the response to the console
 	if conf.Log {
 		if r.Method == "POST" {
 			err := r.ParseForm()
@@ -537,8 +538,6 @@ func main() {
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
 		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
-		/* Uncomment this snippet of code if you wish to disable HTTP/2.
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0) */
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
