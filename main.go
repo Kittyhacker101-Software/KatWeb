@@ -409,7 +409,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	finfo, err := os.Stat(path + url)
 	if err == nil {
 		auth = detectPasswd(url, path)
-		if auth[0] != "err" {
+		if len(auth) > 0 && auth[0] != "err" {
 			authg = true
 		}
 	}
