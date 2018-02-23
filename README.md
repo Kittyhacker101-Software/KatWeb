@@ -51,6 +51,14 @@ KatWeb comes with a built in system to serve different content depending on vari
 
 Changing conf options requires a server restart to take effect.
 
+## Optimizing for Maximum Peformance
+To get the maximum peformance out of KatWeb, here's some optimization tips :
+- Disable logging in the config. This can help speed up websites with large numbers of users by 2x in most cases.
+- Use x86_64 Linux. The x86_64 version of KatWeb is the most optimized, and KatWeb works more reliably on Linux systems.
+- Use only physical cores, and disable hyperthreading on CPUs with high clock speeds. On some CPUs, this can improve peformance by more than 2x, but it doesn't always help peformance. This will vary from CPU to CPU, so it may help peformance on one CPU, but can hurt peformance on others. When in doubt, test it on your hardware, and see how it impacts peformance.
+- Use GZIP when there is limited bandwidth. The overhead of KatWeb's Gzip is quite small, and it will help if bandwidth is your main limiting factor.
+- Use reverse proxing as little as possible, as it will add more latency to web requests.
+
 ## Features
 - SSL Support
 - HSTS Support
