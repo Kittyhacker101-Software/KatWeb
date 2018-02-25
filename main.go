@@ -121,8 +121,7 @@ func makeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 		gz := zippers.Get().(*gzip.Writer)
 		gz.Reset(w)
 
-		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
-		funct(gzr, r)
+		funct(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
 
 		gz.Close()
 		zippers.Put(gz)
@@ -298,9 +297,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 		if d.IsDir() {
 			name += "/"
 		}
-		// name may contain '?' or '#', which must be escaped to remain
-		// part of the URL path, and not indicate the start of a query
-		// string or fragment.
+		// Escape special characters from the url path
 		url := url.URL{Path: name}
 		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + ">" + url.String() + "</a>"))
 	}
