@@ -2,7 +2,6 @@
   "keepAliveTimeout": 30,
   "cachingTimeout": 4,
   "streamTimeout": 5,
-  "logging": true,
   "hsts": {
     "enabled": false,
     "mixedssl": false,
@@ -10,8 +9,13 @@
     "preload": true
   },
   "protect": true,
+  "performance": {
+	"logging": true,
+	"threads": 0,
+	"gc": 120
+  },
   "gzip": {
-    "enabled": true,
+    "enabled": false,
     "level": 6
   },
   "hcache": {

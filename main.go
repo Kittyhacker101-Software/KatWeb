@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,10 +24,9 @@ import (
 
 // Conf contains all configuration fields for the server.
 type Conf struct {
-	IdleTime int  `json:"keepAliveTimeout"`
-	CachTime int  `json:"cachingTimeout"`
-	DatTime  int  `json:"streamTimeout"`
-	Log      bool `json:"logging"`
+	IdleTime int `json:"keepAliveTimeout"`
+	CachTime int `json:"cachingTimeout"`
+	DatTime  int `json:"streamTimeout"`
 	HSTS     struct {
 		Run bool `json:"enabled"`
 		Mix bool `json:"mixedssl"`
@@ -33,6 +34,11 @@ type Conf struct {
 		Pre bool `json:"preload"`
 	} `json:"hsts"`
 	Pro bool `json:"protect"`
+	Pef struct {
+		Log    bool `json:"logging"`
+		Thread int  `json:"threads"`
+		GC     int  `json:"gc"`
+	} `json:"performance"`
 	Zip struct {
 		Run bool `json:"enabled"`
 		Lvl int  `json:"level"`
@@ -170,7 +176,7 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
 	w.Header().Set("Location", loc)
 	w.WriteHeader(http.StatusMovedPermanently)
-	if conf.Log {
+	if conf.Pef.Log {
 		fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
 	}
 }
@@ -207,6 +213,11 @@ func checkIntact() {
 	if conf.DatTime <= 4 {
 		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
 	}
+
+	if conf.Pef.Thread > 0 {
+		runtime.GOMAXPROCS(conf.Pef.Thread)
+	}
+	debug.SetGCPercent(conf.Pef.GC)
 
 	if !conf.Cache.Run {
 		conf.Cache.Loc = "norun"
@@ -310,7 +321,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
 			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if conf.Log {
+			if conf.Pef.Log {
 				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
 			}
 		})
@@ -390,7 +401,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			r.URL, _ = parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 		}}
 		proxy.ServeHTTP(w, r)
-		if conf.Log {
+		if conf.Pef.Log {
 			fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
@@ -411,7 +422,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	b, err2 := ioutil.ReadFile(path + url + ".redir")
 	if err2 == nil {
 		http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
-		if conf.Log {
+		if conf.Pef.Log {
 			fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
@@ -428,21 +439,21 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
 		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
-		if conf.Log {
+		if conf.Pef.Log {
 			fmt.Println("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
 	if finfo.Name() == "passwd" {
 		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action.", http.StatusForbidden)
-		if conf.Log {
+		if conf.Pef.Log {
 			fmt.Println("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
 		http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
-		if conf.Log {
+		if conf.Pef.Log {
 			fmt.Println("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 		return
@@ -480,7 +491,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	f.Close()
 
 	// Log the response to the console
-	if conf.Log {
+	if conf.Pef.Log {
 		if r.Method == "POST" {
 			err := r.ParseForm()
 			if err == nil {
