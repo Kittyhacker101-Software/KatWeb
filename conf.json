@@ -15,7 +15,7 @@
 	"gc": 120
   },
   "gzip": {
-    "enabled": false,
+    "enabled": true,
     "level": 6
   },
   "hcache": {
