@@ -4,6 +4,9 @@ KatWeb is a simple static file HTTPS server designed for the 21st century.
 This program is used in production on the kittyhacker101.tk servers!
 Note : It is reccomended to download a release of the software, instead of building the latest code in the repository.
 
+# More info
+More information about using KatWeb can be found in the [KatWeb Wiki](https://github.com/kittyhacker101/KatWeb/wiki)
+
 ## File System Structure
 - /KatWeb/cache/ - Simple HTTP Cache.
 - /KatWeb/html/ - Document root of server.
