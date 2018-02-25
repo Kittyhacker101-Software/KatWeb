@@ -36,7 +36,7 @@ KatWeb comes with a built in system to serve different content depending on vari
 - peformance - Various settings which impact KatWeb's peformance
   * logging - Logging of sucessfully handled requests. It is reccomended to turn this off if you recieve a large number of web requests going to your server.
   * threads - Amount of CPU threads KatWeb will use. Set to 0 run as many threads as there are CPU cores.
-  * gc - Percentage of RAM usage increase before the garbage collector will run. Increase this number on systems which have a large amount of RAM (4GB or more) to get better peformance.
+  * gc - Percentage of RAM usage increase before the garbage collector will run. Increase this number on systems which have a large amount of RAM to get better peformance.
 - gzip - HTTP compression for files.
   * enabled - If gzip should be enabled. 
   * level - Compression level for gzip (Between 1 and 9, 4-6 is reccomended)
