@@ -191,8 +191,7 @@ func checkIntact() {
 	}
 
 	if conf.Cache.Run {
-		_, err := os.Stat(conf.Cache.Loc)
-		if err != nil {
+		if _, err := os.Stat(conf.Cache.Loc); err != nil {
 			fmt.Println("[Warn] : Cache folder does not exist!")
 			conf.Cache.Run = false
 		} else if conf.Cache.Up <= 0 {
@@ -201,8 +200,7 @@ func checkIntact() {
 		}
 	}
 
-	_, err := os.Stat("html")
-	if err != nil {
+	if _, err := os.Stat("html"); err != nil {
 		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
 
@@ -231,8 +229,7 @@ func detectPath(path string, url string, cache string, proxy string) (string, st
 		}
 	}
 
-	_, err := os.Stat(path)
-	if err == nil && path != "ssl/" {
+	if _, err := os.Stat(path); err == nil && path != "ssl/" {
 		return path, url
 	}
 
@@ -282,9 +279,6 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 func dirList(w http.ResponseWriter, f os.File, urln string) {
 	dirs, err := f.Readdir(-1)
 	if err != nil {
-		// TODO: log err.Error() to the Server.ErrorLog, once it's possible
-		// for a handler to get at its Server via the ResponseWriter. See
-		// Issue 12438.
 		http.Error(w, "Error reading directory", http.StatusInternalServerError)
 		return
 	}
