@@ -5,8 +5,8 @@
   "hsts": {
     "enabled": false,
     "mixedssl": false,
-    "includeSubDomains": true,
-    "preload": true
+    "includeSubDomains": false,
+    "preload": false
   },
   "protect": true,
   "performance": {
