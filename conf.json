@@ -1,7 +1,6 @@
 {
-  "keepAliveTimeout": 30,
   "cachingTimeout": 4,
-  "streamTimeout": 5,
+  "streamTimeout": 10,
   "hsts": {
     "enabled": false,
     "mixedssl": false,

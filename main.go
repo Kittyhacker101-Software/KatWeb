@@ -24,7 +24,6 @@ import (
 
 // Conf contains all configuration fields for the server.
 type Conf struct {
-	IdleTime int `json:"keepAliveTimeout"`
 	CachTime int `json:"cachingTimeout"`
 	DatTime  int `json:"streamTimeout"`
 	HSTS     struct {
@@ -104,8 +103,7 @@ var (
 	}}
 
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var host string
-		host = r.Host
+		host := r.Host
 		if conf.HTTP != 80 {
 			host = strings.TrimSuffix(host, ":"+strconv.Itoa(conf.HTTP))
 		}
@@ -159,7 +157,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 
 // checkIntact validates the server configuration.
 func checkIntact() {
-	if conf.HSTS.Mix && conf.IdleTime == 0 {
+	if conf.HSTS.Mix {
 		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
 		conf.HSTS.Mix = false
 	}
@@ -190,9 +188,7 @@ func checkIntact() {
 
 // detectPasswd gets password protection settings, and authentication credentials.
 func detectPasswd(url string, path string) ([]string, bool) {
-	var tmp string
-
-	tmp, _ = filepath.Split(url)
+	tmp, _ := filepath.Split(url)
 
 	b, err := ioutil.ReadFile(path + tmp + "passwd")
 	if err == nil {
@@ -250,9 +246,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
 	}
-	if conf.IdleTime != 0 {
-		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.IdleTime))
-	}
+	w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
 	if conf.HSTS.Run {
 		/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
 		If there is a legitimate use case for it, then I might consider adding it in the future. */
@@ -267,7 +261,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 			w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 		}
 	} else if conf.HSTS.Mix {
-		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.IdleTime))
+		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.DatTime*4))
 	}
 
 	if exists {
@@ -519,16 +513,16 @@ func main() {
 		Handler:      handleReq,
 		TLSConfig:    tlsc,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
-		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
-		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
+		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
+		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTP),
 		Handler:      handleHTTP,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
-		WriteTimeout: time.Duration(conf.DatTime*2) * time.Second,
-		IdleTimeout:  time.Duration(conf.IdleTime) * time.Second,
+		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
+		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
 	}
 
 	// Run the server, and update the cache.
