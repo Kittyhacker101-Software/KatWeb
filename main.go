@@ -104,11 +104,19 @@ var (
 	}}
 
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Connection", "close")
-		http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-		if conf.Pef.Log {
-			fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+		var host string
+		host = r.Host
+		if conf.HTTP != 80 {
+			host = strings.TrimSuffix(host, ":"+strconv.Itoa(conf.HTTP))
 		}
+		if conf.HTTPS != 443 {
+			host = host + ":" + strconv.Itoa(conf.HTTPS)
+		}
+
+		w.Header().Set("Connection", "close")
+		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+		fmt.Println(host)
+
 	})
 
 	htmlReplacer = strings.NewReplacer(
@@ -153,10 +161,10 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 func checkIntact() {
 	if conf.HTTP != 80 || conf.HTTPS != 443 {
 		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
-		if conf.HSTS.Run {
+		/* if conf.HSTS.Run {
 			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
 			conf.HSTS.Run = false
-		}
+		} */
 	}
 
 	if conf.HSTS.Mix && conf.IdleTime == 0 {
@@ -480,13 +488,7 @@ func updateCache() {
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 	tmpH := makeGzipHandler(origin)
 	if conf.HSTS.Run {
-		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Connection", "close")
-			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if conf.Pef.Log {
-				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
-			}
-		})
+		tmpH = httpsredir
 	}
 
 	return makeGzipHandler(origin), tmpH
