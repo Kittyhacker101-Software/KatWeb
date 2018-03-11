@@ -159,14 +159,6 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 
 // checkIntact validates the server configuration.
 func checkIntact() {
-	if conf.HTTP != 80 || conf.HTTPS != 443 {
-		fmt.Println("[Warn] : Dynamic Serving will not work on non-standard ports!")
-		/* if conf.HSTS.Run {
-			fmt.Println("[Warn] : HSTS will not work on non-standard ports!")
-			conf.HSTS.Run = false
-		} */
-	}
-
 	if conf.HSTS.Mix && conf.IdleTime == 0 {
 		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
 		conf.HSTS.Mix = false
