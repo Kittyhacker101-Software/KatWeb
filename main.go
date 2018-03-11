@@ -37,12 +37,9 @@ type Conf struct {
 	Pef struct {
 		Log    bool `json:"logging"`
 		Thread int  `json:"threads"`
+		Lvl    int  `json:"gzip"`
 		GC     int  `json:"gc"`
 	} `json:"performance"`
-	Zip struct {
-		Run bool `json:"enabled"`
-		Lvl int  `json:"level"`
-	} `json:"gzip"`
 	Cache struct {
 		Run bool   `json:"enabled"`
 		Loc string `json:"location"`
@@ -94,7 +91,7 @@ var (
 	}
 
 	zippers = sync.Pool{New: func() interface{} {
-		gz, err := gzip.NewWriterLevel(nil, conf.Zip.Lvl)
+		gz, err := gzip.NewWriterLevel(nil, conf.Pef.Lvl)
 		if err != nil {
 			fmt.Println("[Warn] : An error occurred while creating gzip writer!")
 			gz = gzip.NewWriter(nil)
@@ -105,6 +102,14 @@ var (
 	proxy = &httputil.ReverseProxy{Director: func(r *http.Request) {
 		r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 	}}
+
+	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Connection", "close")
+		http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+		if conf.Pef.Log {
+			fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+		}
+	})
 
 	htmlReplacer = strings.NewReplacer(
 		"&", "&amp;",
@@ -473,12 +478,7 @@ func updateCache() {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
-	tmpR := origin
-	if conf.Zip.Run {
-		tmpR = makeGzipHandler(origin)
-	}
-
-	tmpH := tmpR
+	tmpH := makeGzipHandler(origin)
 	if conf.HSTS.Run {
 		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Connection", "close")
@@ -489,7 +489,7 @@ func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
 		})
 	}
 
-	return tmpR, tmpH
+	return makeGzipHandler(origin), tmpH
 }
 
 func main() {

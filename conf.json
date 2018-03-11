@@ -12,11 +12,8 @@
   "performance": {
 	"logging": true,
 	"threads": 0,
+	"gzip": 6,
 	"gc": 120
-  },
-  "gzip": {
-    "enabled": true,
-    "level": 6
   },
   "hcache": {
     "enabled": false,
