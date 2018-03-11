@@ -62,9 +62,6 @@ var (
 	conf     Conf
 	location *time.Location
 
-	// Added due to a naming conflict between a variable named url, and the net/url package.
-	parse = url.Parse
-
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
 		NextProtos:               []string{"h2", "http/1.1"},
@@ -105,6 +102,10 @@ var (
 		return gz
 	}}
 
+	proxy = &httputil.ReverseProxy{Director: func(r *http.Request) {
+		r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+	}}
+
 	htmlReplacer = strings.NewReplacer(
 		"&", "&amp;",
 		"<", "&lt;",
@@ -141,44 +142,6 @@ type gzipResponseWriter struct {
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
-}
-
-// detectPasswd gets password protection settings, and authentication credentials.
-func detectPasswd(url string, path string) []string {
-	var tmp string
-
-	tmp, _ = filepath.Split(url)
-
-	b, err := ioutil.ReadFile(path + tmp + "passwd")
-	if err == nil {
-		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
-		if len(tmpa) == 2 {
-			return tmpa
-		}
-	}
-
-	return []string{"err"}
-}
-
-// runAuth runs basic authentication on a http.Request
-func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-
-	user, pass, _ := r.BasicAuth()
-	if len(a) == 2 && user == a[0] && pass == a[1] {
-		return true
-	}
-
-	return false
-}
-
-// redir does an HTTP permanent redirect without making the path absolute.
-func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
-	w.Header().Set("Location", loc)
-	w.WriteHeader(http.StatusMovedPermanently)
-	if conf.Pef.Log {
-		fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
-	}
 }
 
 // checkIntact validates the server configuration.
@@ -218,23 +181,53 @@ func checkIntact() {
 		runtime.GOMAXPROCS(conf.Pef.Thread)
 	}
 	debug.SetGCPercent(conf.Pef.GC)
+}
 
-	if !conf.Cache.Run {
-		conf.Cache.Loc = "norun"
+// detectPasswd gets password protection settings, and authentication credentials.
+func detectPasswd(url string, path string) ([]string, bool) {
+	var tmp string
+
+	tmp, _ = filepath.Split(url)
+
+	b, err := ioutil.ReadFile(path + tmp + "passwd")
+	if err == nil {
+		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
+		if len(tmpa) == 2 {
+			return tmpa, true
+		}
 	}
 
-	if !conf.Proxy.Run {
-		conf.Proxy.Loc = "norun"
+	return []string{"err"}, false
+}
+
+// runAuth runs basic authentication on a http.Request
+func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	user, pass, _ := r.BasicAuth()
+	if len(a) == 2 && user == a[0] && pass == a[1] {
+		return true
+	}
+
+	return false
+}
+
+// redir does an HTTP permanent redirect without making the path absolute.
+func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
+	w.Header().Set("Location", loc)
+	w.WriteHeader(http.StatusMovedPermanently)
+	if conf.Pef.Log {
+		fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
 	}
 }
 
 // detectPath allows dynamic content control by domain and path.
 func detectPath(path string, url string, cache string, proxy string) (string, string) {
-	if cache != "norun" && strings.HasPrefix(url, "/"+cache) {
+	if conf.Cache.Run && strings.HasPrefix(url, "/"+cache) {
 		return cache + "/", strings.TrimPrefix(url, "/"+cache)
 	}
 
-	if proxy != "norun" {
+	if conf.Proxy.Run {
 		if strings.HasPrefix(url, "/"+proxy) || strings.TrimSuffix(path, "/") == proxy {
 			return proxy, url
 		}
@@ -309,83 +302,6 @@ func dirList(w http.ResponseWriter, f os.File, urln string) {
 	w.Write([]byte("</div></div></div>"))
 }
 
-// wrapLoad chooses the correct handler wrappers based on server configuration.
-func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
-	tmpR := origin
-	if conf.Zip.Run {
-		tmpR = makeGzipHandler(origin)
-	}
-
-	tmpH := tmpR
-	if conf.HSTS.Run {
-		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Connection", "close")
-			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-			if conf.Pef.Log {
-				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
-			}
-		})
-	}
-
-	return tmpR, tmpH
-}
-
-// updateCache automatically updates the simple cache.
-func updateCache() {
-	fmt.Println("KatWeb Cache Started.")
-	for {
-		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
-				return err
-			}
-
-			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
-				fmt.Println("[Cache] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
-
-				b, err := ioutil.ReadFile(path)
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to read " + path + "!")
-					return err
-				}
-
-				err = os.Remove(strings.TrimSuffix(path, ".txt"))
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to delete " + strings.TrimSuffix(path, ".txt") + "!")
-				}
-
-				out, err := os.Create(strings.TrimSuffix(path, ".txt"))
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to create " + strings.TrimSuffix(path, ".txt") + "!")
-					return err
-				}
-
-				resp, err := client.Get(strings.TrimSpace(string(b)))
-				if resp != nil {
-					defer resp.Body.Close()
-				}
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to download " + strings.TrimSuffix(path, ".txt") + "!")
-					return err
-				}
-
-				_, err = io.Copy(out, resp.Body)
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to write " + strings.TrimSuffix(path, ".txt") + "!")
-				}
-			}
-			return nil
-		})
-
-		if err == nil {
-			fmt.Println("[Cache] : All files in cache updated!")
-		} else {
-			fmt.Println("[Cache][Warn] : Unable to update one of more files in the cache!")
-		}
-		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
-	}
-}
-
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -397,9 +313,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Get the correct content control options for the file.
 	path, url := detectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
 	if path == conf.Proxy.Loc {
-		proxy := &httputil.ReverseProxy{Director: func(r *http.Request) {
-			r.URL, _ = parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
-		}}
 		proxy.ServeHTTP(w, r)
 		if conf.Pef.Log {
 			fmt.Println("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr)
@@ -410,10 +323,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
 	if err == nil {
-		auth = detectPasswd(url, path)
-		if len(auth) > 0 && auth[0] != "err" {
-			authg = true
-		}
+		auth, authg = detectPasswd(url, path)
 	}
 
 	loadHeaders(w, err == nil, location)
@@ -503,6 +413,83 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
 	}
+}
+
+// updateCache automatically updates the simple cache.
+func updateCache() {
+	fmt.Println("KatWeb Cache Started.")
+	for {
+		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
+				return err
+			}
+
+			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
+				fmt.Println("[Cache] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
+
+				b, err := ioutil.ReadFile(path)
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to read " + path + "!")
+					return err
+				}
+
+				err = os.Remove(strings.TrimSuffix(path, ".txt"))
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to delete " + strings.TrimSuffix(path, ".txt") + "!")
+				}
+
+				out, err := os.Create(strings.TrimSuffix(path, ".txt"))
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to create " + strings.TrimSuffix(path, ".txt") + "!")
+					return err
+				}
+
+				resp, err := client.Get(strings.TrimSpace(string(b)))
+				if resp != nil {
+					defer resp.Body.Close()
+				}
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to download " + strings.TrimSuffix(path, ".txt") + "!")
+					return err
+				}
+
+				_, err = io.Copy(out, resp.Body)
+				if err != nil {
+					fmt.Println("[Cache][Warn] : Unable to write " + strings.TrimSuffix(path, ".txt") + "!")
+				}
+			}
+			return nil
+		})
+
+		if err == nil {
+			fmt.Println("[Cache] : All files in cache updated!")
+		} else {
+			fmt.Println("[Cache][Warn] : Unable to update one of more files in the cache!")
+		}
+		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
+	}
+}
+
+// wrapLoad chooses the correct handler wrappers based on server configuration.
+func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
+	tmpR := origin
+	if conf.Zip.Run {
+		tmpR = makeGzipHandler(origin)
+	}
+
+	tmpH := tmpR
+	if conf.HSTS.Run {
+		tmpH = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Connection", "close")
+			http.Redirect(w, r, "https://"+r.Host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+			if conf.Pef.Log {
+				fmt.Println("[WebHSTS][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+			}
+		})
+	}
+
+	return tmpR, tmpH
 }
 
 func main() {
