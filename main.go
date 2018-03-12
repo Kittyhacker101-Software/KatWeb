@@ -113,8 +113,6 @@ var (
 
 		w.Header().Set("Connection", "close")
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
-		fmt.Println(host)
-
 	})
 
 	htmlReplacer = strings.NewReplacer(
