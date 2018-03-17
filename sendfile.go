@@ -9,11 +9,12 @@ import (
 	"strings"
 )
 
-const indexFile string = "index.html"
-const serverError string = "500 Internal Server Error : An unexpected condition was encountered."
+const indexFile = "index.html"
+const serverError = "500 Internal Server Error : An unexpected condition was encountered."
 
+// ServeFile writes the contents of a file or directory into the HTTP response
 func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string) error {
-	var location string = loc
+	var location = loc
 
 	finfo, err := os.Stat(loc)
 	if err != nil {
@@ -30,11 +31,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 			// If the index file is not present, create a list of files in the directory
 			file, err := os.Open(loc)
 			if err == nil {
-				err = dirList(w, *file, folder)
-				if err != nil {
-					return err
-				}
-				return nil
+				return dirList(w, *file, folder)
 			}
 		}
 		http.Error(w, serverError, http.StatusInternalServerError)
