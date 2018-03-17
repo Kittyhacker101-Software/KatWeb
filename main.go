@@ -31,9 +31,9 @@ type Conf struct {
 	} `json:"hsts"`
 	Pro bool `json:"protect"`
 	Pef struct {
-		Log    bool `json:"logging"`
-		Thread int  `json:"threads"`
-		GC     int  `json:"gc"`
+		Log    bool    `json:"logging"`
+		Thread int     `json:"threads"`
+		GC     float32 `json:"gcx"`
 	} `json:"performance"`
 	Cache struct {
 		Run bool   `json:"enabled"`
@@ -131,7 +131,7 @@ func checkIntact() {
 	if conf.Pef.Thread > 0 {
 		runtime.GOMAXPROCS(conf.Pef.Thread)
 	}
-	debug.SetGCPercent(conf.Pef.GC)
+	debug.SetGCPercent(int(conf.Pef.GC * 100))
 }
 
 // detectPasswd gets password protection settings, and authentication credentials.

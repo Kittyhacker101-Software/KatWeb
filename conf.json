@@ -11,7 +11,7 @@
   "performance": {
 	"logging": true,
 	"threads": 0,
-	"gc": 120
+	"gcx": 2.5
   },
   "hcache": {
     "enabled": false,
