@@ -12,6 +12,14 @@ import (
 const indexFile = "index.html"
 const serverError = "500 Internal Server Error : An unexpected condition was encountered."
 
+var htmlReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&#34;",
+	"'", "&#39;",
+)
+
 // ServeFile writes the contents of a file or directory into the HTTP response
 func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string) error {
 	var location = loc

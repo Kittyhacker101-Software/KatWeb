@@ -101,14 +101,6 @@ var (
 		w.Header().Set("Connection", "close")
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
 	})
-
-	htmlReplacer = strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&#34;",
-		"'", "&#39;",
-	)
 )
 
 // checkIntact validates the server configuration.
