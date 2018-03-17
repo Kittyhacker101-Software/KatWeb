@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -342,8 +343,8 @@ func main() {
 	go func() {
 		<-c
 		fmt.Println("Shutting down KatWeb...")
-		srv.Shutdown(nil)
-		srvh.Shutdown(nil)
+		srv.Shutdown(context.Background())
+		srvh.Shutdown(context.Background())
 		os.Exit(1)
 	}()
 
