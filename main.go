@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/klauspost/compress/gzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,7 +17,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -36,7 +34,6 @@ type Conf struct {
 	Pef struct {
 		Log    bool `json:"logging"`
 		Thread int  `json:"threads"`
-		Lvl    int  `json:"gzip"`
 		GC     int  `json:"gc"`
 	} `json:"performance"`
 	Cache struct {
@@ -89,15 +86,6 @@ var (
 		Timeout:   15 * time.Second,
 	}
 
-	zippers = sync.Pool{New: func() interface{} {
-		gz, err := gzip.NewWriterLevel(nil, conf.Pef.Lvl)
-		if err != nil {
-			fmt.Println("[Warn] : An error occurred while creating gzip writer!")
-			gz = gzip.NewWriter(nil)
-		}
-		return gz
-	}}
-
 	proxy = &httputil.ReverseProxy{Director: func(r *http.Request) {
 		r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 	}}
@@ -123,35 +111,6 @@ var (
 		"'", "&#39;",
 	)
 )
-
-// makeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
-func makeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			funct(w, r)
-			return
-		}
-
-		w.Header().Set("Content-Encoding", "gzip")
-
-		gz := zippers.Get().(*gzip.Writer)
-		gz.Reset(w)
-
-		funct(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
-
-		gz.Close()
-		zippers.Put(gz)
-	}
-}
-
-type gzipResponseWriter struct {
-	io.Writer
-	http.ResponseWriter
-}
-
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
-}
 
 // checkIntact validates the server configuration.
 func checkIntact() {
@@ -470,12 +429,12 @@ func updateCache() {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
-	tmpH := makeGzipHandler(origin)
+	tmpH := MakeGzipHandler(origin)
 	if conf.HSTS.Run {
 		tmpH = httpsredir
 	}
 
-	return makeGzipHandler(origin), tmpH
+	return MakeGzipHandler(origin), tmpH
 }
 
 func main() {
