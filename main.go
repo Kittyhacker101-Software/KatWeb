@@ -231,7 +231,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
 		authg bool
 		auth  []string
-		//loc   string
 	)
 
 	// Get the correct content control options for the file.
