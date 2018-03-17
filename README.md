@@ -20,7 +20,6 @@ Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/ki
 - Dynamic Serving
 - Modern Default Pages
 - Logging to Console
-- Basic HTTP Cache
 - Password Protected Directories
 - Custom Redirects
 - Opportunistic Encryption
