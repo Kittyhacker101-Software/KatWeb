@@ -337,8 +337,6 @@ func main() {
 		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
 	}
 
-	fmt.Println("KatWeb Server Started.")
-
 	// Handle graceful shutdown from crtl+c
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -350,10 +348,8 @@ func main() {
 		os.Exit(1)
 	}()
 
-	go srvh.ListenAndServe()
-	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
-	fmt.Println("[Fatal] : KatWeb was unable to start! If possible, debugging info may be printed below.")
-	if err != nil {
-		fmt.Println(err)
-	}
+	fmt.Println("KatWeb Server Started. Server errors will be printed into the console.")
+
+	go fmt.Println(srvh.ListenAndServe())
+	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
 }
