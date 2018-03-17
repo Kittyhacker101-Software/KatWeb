@@ -5,17 +5,19 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
+	//"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -35,11 +37,6 @@ type Conf struct {
 		Thread int     `json:"threads"`
 		GC     float32 `json:"gcx"`
 	} `json:"performance"`
-	Cache struct {
-		Run bool   `json:"enabled"`
-		Loc string `json:"location"`
-		Up  int    `json:"updates"`
-	} `json:"hcache"`
 	Proxy struct {
 		Run bool   `json:"enabled"`
 		Loc string `json:"location"`
@@ -75,16 +72,6 @@ var (
 		},
 	}
 
-	// transport and client settings for use with http.Client
-	transport = &http.Transport{
-		DisableKeepAlives: true,
-		IdleConnTimeout:   30 * time.Second,
-	}
-	client = &http.Client{
-		Transport: transport,
-		Timeout:   15 * time.Second,
-	}
-
 	proxy = &httputil.ReverseProxy{Director: func(r *http.Request) {
 		r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 	}}
@@ -108,16 +95,6 @@ func checkIntact() {
 	if conf.HSTS.Mix {
 		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
 		conf.HSTS.Mix = false
-	}
-
-	if conf.Cache.Run {
-		if _, err := os.Stat(conf.Cache.Loc); err != nil {
-			fmt.Println("[Warn] : Cache folder does not exist!")
-			conf.Cache.Run = false
-		} else if conf.Cache.Up <= 0 {
-			fmt.Println("[Warn] : Cache folder cannot update too fast!")
-			conf.Cache.Run = false
-		}
 	}
 
 	if _, err := os.Stat("html"); err != nil {
@@ -171,14 +148,10 @@ func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
 }
 
 // detectPath allows dynamic content control by domain and path.
-func detectPath(path string, url string, cache string, proxy string) (string, string) {
-	if conf.Cache.Run && strings.HasPrefix(url, "/"+cache) {
-		return cache + "/", strings.TrimPrefix(url, "/"+cache)
-	}
-
+func detectPath(path string, url string) (string, string) {
 	if conf.Proxy.Run {
-		if strings.HasPrefix(url, "/"+proxy) || strings.TrimSuffix(path, "/") == proxy {
-			return proxy, url
+		if strings.HasPrefix(url, "/"+conf.Proxy.Loc) || strings.TrimSuffix(path, "/") == conf.Proxy.Loc {
+			return conf.Proxy.Loc, url
 		}
 	}
 
@@ -234,7 +207,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get the correct content control options for the file.
-	path, url := detectPath(r.Host+"/", r.URL.EscapedPath(), conf.Cache.Loc, conf.Proxy.Loc)
+	path, url := detectPath(r.Host+"/", r.URL.EscapedPath())
 	if path == conf.Proxy.Loc {
 		proxy.ServeHTTP(w, r)
 		if conf.Pef.Log {
@@ -301,8 +274,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Log the response to the console
 	if conf.Pef.Log {
 		if r.Method == "POST" {
-			err := r.ParseForm()
-			if err == nil {
+			if err := r.ParseForm(); err == nil {
 				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
 			} else {
 				fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
@@ -310,62 +282,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Println("[Web][" + r.Host + url + "] : " + r.RemoteAddr)
 		}
-	}
-}
-
-// updateCache automatically updates the simple cache.
-func updateCache() {
-	fmt.Println("KatWeb Cache Started.")
-	for {
-		err := filepath.Walk(conf.Cache.Loc+"/", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println("[Cache][Warn] : Unable to get filepath info!")
-				return err
-			}
-
-			if !info.IsDir() && strings.HasSuffix(path, ".txt") {
-				fmt.Println("[Cache] : Updating " + strings.TrimSuffix(path, ".txt") + "...")
-
-				b, err := ioutil.ReadFile(path)
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to read " + path + "!")
-					return err
-				}
-
-				err = os.Remove(strings.TrimSuffix(path, ".txt"))
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to delete " + strings.TrimSuffix(path, ".txt") + "!")
-				}
-
-				out, err := os.Create(strings.TrimSuffix(path, ".txt"))
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to create " + strings.TrimSuffix(path, ".txt") + "!")
-					return err
-				}
-
-				resp, err := client.Get(strings.TrimSpace(string(b)))
-				if resp != nil {
-					defer resp.Body.Close()
-				}
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to download " + strings.TrimSuffix(path, ".txt") + "!")
-					return err
-				}
-
-				_, err = io.Copy(out, resp.Body)
-				if err != nil {
-					fmt.Println("[Cache][Warn] : Unable to write " + strings.TrimSuffix(path, ".txt") + "!")
-				}
-			}
-			return nil
-		})
-
-		if err == nil {
-			fmt.Println("[Cache] : All files in cache updated!")
-		} else {
-			fmt.Println("[Cache][Warn] : Unable to update one of more files in the cache!")
-		}
-		time.Sleep(time.Duration(conf.Cache.Up) * time.Minute)
 	}
 }
 
@@ -421,14 +337,21 @@ func main() {
 		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
 	}
 
-	// Run the server, and update the cache.
-	if conf.Cache.Run {
-		go updateCache()
-	}
-	go srvh.ListenAndServe()
-
 	fmt.Println("KatWeb Server Started.")
-	err = srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
+
+	// Handle graceful shutdown from crtl+c
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("Shutting down KatWeb...")
+		srv.Shutdown(nil)
+		srvh.Shutdown(nil)
+		os.Exit(1)
+	}()
+
+	go srvh.ListenAndServe()
+	srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key")
 	fmt.Println("[Fatal] : KatWeb was unable to start! If possible, debugging info may be printed below.")
 	if err != nil {
 		fmt.Println(err)
