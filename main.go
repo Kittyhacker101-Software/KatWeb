@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -235,35 +234,12 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
-// Create a list of files present in a directory
-func dirList(w http.ResponseWriter, f os.File, urln string) {
-	dirs, err := f.Readdir(-1)
-	if err != nil {
-		http.Error(w, "Error reading directory", http.StatusInternalServerError)
-		return
-	}
-	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><html lang=en><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5;margin:0}h1,h3{font-family:Segoe UI,Arial,sans-serif;font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}a,h3{text-align:center}h3{font-size:24px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;cursor:pointer;background-color:#616161;padding:8px 16px}header{background-color:#009688;padding:64px 16px 64px 32px}div{padding:.01em 16px}</style><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
-	for _, d := range dirs {
-		name := d.Name()
-		if d.IsDir() {
-			name += "/"
-		}
-		// Escape special characters from the url path
-		url := url.URL{Path: name}
-		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + ">" + url.String() + "</a>"))
-	}
-	w.Write([]byte("</div></div></div>"))
-}
-
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
 		authg bool
 		auth  []string
-		loc   string
+		//loc   string
 	)
 
 	// Get the correct content control options for the file.
@@ -325,36 +301,11 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Open the requested file
-	loc = path + url
-	if finfo.IsDir() {
-		loc = loc + "index.html"
-	}
-	f, err := os.Open(loc)
-
+	err = ServeFile(w, r, path+url, url)
 	if err != nil {
-		if strings.HasSuffix(loc, "index.html") {
-			// If there is no index.html file for the requested path, create a list of files in the directory
-			f, err := os.Open(path + url)
-			if err == nil {
-				dirList(w, *f, url)
-				return
-			}
-		}
-		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
 		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
 	}
-
-	// Send the content requested
-	finfo, err = f.Stat()
-	if err != nil {
-		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
-		return
-	}
-	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), f)
-	f.Close()
 
 	// Log the response to the console
 	if conf.Pef.Log {
