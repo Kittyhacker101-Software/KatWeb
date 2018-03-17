@@ -370,13 +370,12 @@ func updateCache() {
 }
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
-func wrapLoad(origin http.HandlerFunc) (http.Handler, http.Handler) {
-	tmpH := MakeGzipHandler(origin)
+func wrapLoad(origin http.HandlerFunc) http.Handler {
 	if conf.HSTS.Run {
-		tmpH = httpsredir
+		return httpsredir
 	}
 
-	return MakeGzipHandler(origin), tmpH
+	return MakeGzipHandler(origin)
 }
 
 func main() {
@@ -404,12 +403,10 @@ func main() {
 		conf.CachTime = 0
 	}
 
-	handleReq, handleHTTP := wrapLoad(mainHandle)
-
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTPS),
-		Handler:      handleReq,
+		Handler:      MakeGzipHandler(mainHandle),
 		TLSConfig:    tlsc,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
@@ -418,7 +415,7 @@ func main() {
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTP),
-		Handler:      handleHTTP,
+		Handler:      wrapLoad(mainHandle),
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
 		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
