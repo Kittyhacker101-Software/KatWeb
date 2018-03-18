@@ -72,9 +72,14 @@ var (
 		},
 	}
 
-	proxy = &httputil.ReverseProxy{Director: func(r *http.Request) {
-		r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
-	}}
+	proxy = &httputil.ReverseProxy{
+		Director: func(r *http.Request) {
+			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+		},
+		Transport: &http.Transport{
+			IdleConnTimeout: time.Duration(conf.DatTime*4) * time.Second,
+		},
+	}
 
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
