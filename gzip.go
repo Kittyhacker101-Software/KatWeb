@@ -9,13 +9,7 @@ import (
 	"sync"
 )
 
-var zippers = sync.Pool{New: func() interface{} {
-	gz, err := gzip.NewWriterLevel(nil, 9)
-	if err != nil {
-		gz = gzip.NewWriter(nil)
-	}
-	return gz
-}}
+var zippers = sync.Pool{New: func() interface{} { return gzip.NewWriter(nil) }}
 
 // MakeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
 func MakeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
