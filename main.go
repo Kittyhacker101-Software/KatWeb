@@ -350,6 +350,6 @@ func main() {
 
 	fmt.Println("KatWeb Server Started. Server errors will be printed into the console.")
 
-	go fmt.Println(srvh.ListenAndServe())
+	go srvh.ListenAndServe()
 	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
 }
