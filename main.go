@@ -36,6 +36,7 @@ type Conf struct {
 		Log    bool    `json:"logging"`
 		Thread int     `json:"threads"`
 		GC     float32 `json:"gcx"`
+		GZ     int     `json:"gzipx"`
 	} `json:"performance"`
 	Proxy struct {
 		Run bool   `json:"enabled"`
@@ -190,17 +191,16 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.DatTime*4))
 	}
 
-	if exists {
-		if conf.Pro {
-			w.Header().Add("Referrer-Policy", "no-referrer")
-			w.Header().Add("X-Content-Type-Options", "nosniff")
-			w.Header().Add("X-Frame-Options", "sameorigin")
-			w.Header().Add("X-XSS-Protection", "1; mode=block")
-		}
-		if conf.CachTime != 0 {
-			w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
-			w.Header().Set("Expires", time.Now().In(l).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
-		}
+	if conf.Pro {
+		w.Header().Add("Referrer-Policy", "no-referrer")
+		w.Header().Add("X-Content-Type-Options", "nosniff")
+		w.Header().Add("X-Frame-Options", "sameorigin")
+		w.Header().Add("X-XSS-Protection", "1; mode=block")
+	}
+
+	if exists && conf.CachTime != 0 {
+		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
+		w.Header().Set("Expires", time.Now().In(l).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 	}
 }
 

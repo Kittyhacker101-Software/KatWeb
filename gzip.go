@@ -10,17 +10,27 @@ import (
 )
 
 var zippers = sync.Pool{New: func() interface{} {
-	gz, err := gzip.NewWriterLevel(nil, 9)
-	if err != nil {
-		gz = gzip.NewWriter(nil)
+	var gz *gzip.Writer
+
+	switch conf.Pef.GZ {
+	case 3:
+		// Highest compression level
+		gz, _ = gzip.NewWriterLevel(nil, 9)
+	case 1:
+		// Speed-optimized compression
+		gz, _ = gzip.NewWriterLevel(nil, -2)
+	default:
+		// Mix between speed and compression
+		gz, _ = gzip.NewWriterLevel(nil, 4)
 	}
+
 	return gz
 }}
 
 // MakeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
 func MakeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || conf.Pef.GZ == 0 {
 			funct(w, r)
 			return
 		}

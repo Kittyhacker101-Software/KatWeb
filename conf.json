@@ -11,7 +11,8 @@
   "performance": {
 	"logging": true,
 	"threads": 0,
-	"gcx": 2.5
+	"gcx": 2.5,
+	"gzipx": 2
   },
   "proxy": {
     "enabled": false,
