@@ -206,14 +206,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	loadHeaders(w, err == nil, location)
 
 	// Apply any required redirects.
-	b, err2 := ioutil.ReadFile(path + url + ".redir")
-	if err2 == nil {
-		http.Redirect(w, r, strings.TrimSpace(string(b)), http.StatusPermanentRedirect)
-		if conf.Pef.Log {
-			fmt.Println("[WebRedir][" + r.Host + url + "] : " + r.RemoteAddr)
-		}
-		return
-	}
 	if strings.HasSuffix(url, IndexFile) {
 		redir(w, r, "./", url)
 		return
