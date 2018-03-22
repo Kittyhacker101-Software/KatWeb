@@ -96,22 +96,6 @@ var (
 	})
 )
 
-// checkIntact validates the server configuration.
-func checkIntact() {
-	if _, err := os.Stat("html"); err != nil {
-		fmt.Println("[Warn] : HTML folder does not exist!")
-	}
-
-	if conf.DatTime <= 4 {
-		fmt.Println("[Warn] : Setting a low stream timeout may result in issues with high latency connections.")
-	}
-
-	if conf.Pef.Thread > 0 {
-		runtime.GOMAXPROCS(conf.Pef.Thread)
-	}
-	debug.SetGCPercent(int(conf.Pef.GC * 100))
-}
-
 // detectPasswd gets password protection settings, and authentication credentials.
 func detectPasswd(url string, path string) ([]string, bool) {
 	tmp, _ := filepath.Split(url)
@@ -307,7 +291,12 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	checkIntact()
+
+	// Load correct number of threads, and GC multiplier
+	if conf.Pef.Thread > 0 {
+		runtime.GOMAXPROCS(conf.Pef.Thread)
+	}
+	debug.SetGCPercent(int(conf.Pef.GC * 100))
 
 	// Load the correct timezone for caching headers.
 	location, err = time.LoadLocation("UTC")
