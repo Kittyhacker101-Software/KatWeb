@@ -272,7 +272,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	err = ServeFile(w, r, path+url, url)
 	if err != nil {
-		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
+		ServerError(w, r)
 		return
 	}
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -10,7 +11,6 @@ import (
 )
 
 const indexFile = "index.html"
-const serverError = "500 Internal Server Error : An unexpected condition was encountered."
 
 var htmlReplacer = strings.NewReplacer(
 	"&", "&amp;",
@@ -19,6 +19,12 @@ var htmlReplacer = strings.NewReplacer(
 	`"`, "&#34;",
 	"'", "&#39;",
 )
+
+// ServerError is called when a request handling error occurs
+func ServerError(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+	fmt.Println("[WebError][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
+}
 
 // ServeFile writes the contents of a file or directory into the HTTP response
 func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string) error {
@@ -37,29 +43,25 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	if err != nil {
 		if strings.HasSuffix(location, indexFile) {
 			// If the index file is not present, create a list of files in the directory
-			file, err := os.Open(loc)
-			if err == nil {
+			if file, err := os.Open(loc); err == nil {
 				return dirList(w, *file, folder)
 			}
 		}
-		http.Error(w, serverError, http.StatusInternalServerError)
 		return err
 	}
 
 	finfo, err = file.Stat()
 	if err != nil {
-		http.Error(w, serverError, http.StatusInternalServerError)
 		return err
 	}
+
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), file)
-	file.Close()
-	return nil
+	return file.Close()
 }
 
 func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	dirs, err := f.Readdir(-1)
 	if err != nil {
-		http.Error(w, "Error reading directory.", http.StatusInternalServerError)
 		return err
 	}
 	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
