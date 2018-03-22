@@ -33,9 +33,9 @@ type Conf struct {
 	} `json:"hsts"`
 	Pro bool `json:"protect"`
 	Pef struct {
+		GC     float32 `json:"gcx"`
 		Log    bool    `json:"logging"`
 		Thread int     `json:"threads"`
-		GC     float32 `json:"gcx"`
 		GZ     int     `json:"gzipx"`
 	} `json:"performance"`
 	Proxy struct {
