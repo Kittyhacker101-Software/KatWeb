@@ -15,10 +15,10 @@ var zippers = sync.Pool{New: func() interface{} {
 	switch conf.Pef.GZ {
 	case 3:
 		// Highest compression level
-		gz, _ = gzip.NewWriterLevel(nil, 9)
+		gz, _ = gzip.NewWriterLevel(nil, gzip.BestCompression)
 	case 1:
 		// Speed-optimized compression
-		gz, _ = gzip.NewWriterLevel(nil, -2)
+		gz, _ = gzip.NewWriterLevel(nil, gzip.ConstantCompression)
 	default:
 		// Mix between speed and compression
 		gz, _ = gzip.NewWriterLevel(nil, 4)
