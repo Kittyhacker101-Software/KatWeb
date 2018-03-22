@@ -98,11 +98,6 @@ var (
 
 // checkIntact validates the server configuration.
 func checkIntact() {
-	if conf.HSTS.Mix {
-		fmt.Println("[Warn] : Mixed SSL requires HTTP Keep Alive!")
-		conf.HSTS.Mix = false
-	}
-
 	if _, err := os.Stat("html"); err != nil {
 		fmt.Println("[Warn] : HTML folder does not exist!")
 	}
