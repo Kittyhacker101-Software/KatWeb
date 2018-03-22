@@ -238,7 +238,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if strings.HasSuffix(url, "index.html") {
+	if strings.HasSuffix(url, IndexFile) {
 		redir(w, r, "./", url)
 		return
 	}

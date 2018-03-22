@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-const indexFile = "index.html"
+// IndexFile is the file name for directory index files
+const IndexFile = "index.html"
 
 var htmlReplacer = strings.NewReplacer(
 	"&", "&amp;",
