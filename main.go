@@ -121,10 +121,8 @@ func checkIntact() {
 func detectPasswd(url string, path string) ([]string, bool) {
 	tmp, _ := filepath.Split(url)
 
-	b, err := ioutil.ReadFile(path + tmp + "passwd")
-	if err == nil {
-		tmpa := strings.Split(strings.TrimSpace(string(b)), ":")
-		if len(tmpa) == 2 {
+	if b, err := ioutil.ReadFile(path + tmp + "passwd"); err == nil {
+		if tmpa := strings.Split(strings.TrimSpace(string(b)), ":"); len(tmpa) == 2 {
 			return tmpa, true
 		}
 	}
@@ -136,8 +134,7 @@ func detectPasswd(url string, path string) ([]string, bool) {
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	user, pass, _ := r.BasicAuth()
-	if len(a) == 2 && user == a[0] && pass == a[1] {
+	if user, pass, _ := r.BasicAuth(); len(a) == 2 && user == a[0] && pass == a[1] {
 		return true
 	}
 
@@ -270,8 +267,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ServeFile(w, r, path+url, url)
-	if err != nil {
+	if ServeFile(w, r, path+url, url) != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
 		fmt.Println("[WebError][" + r.Host + url + "] : " + r.RemoteAddr)
 		return
@@ -280,7 +276,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Log the response to the console
 	if conf.Pef.Log {
 		if r.Method == "POST" {
-			if err := r.ParseForm(); err == nil {
+			if r.ParseForm() == nil {
 				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
 			} else {
 				fmt.Println("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr)
