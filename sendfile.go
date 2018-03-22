@@ -30,12 +30,12 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	}
 
 	if finfo.IsDir() {
-		location = loc + indexFile
+		location = loc + IndexFile
 	}
 
 	file, err := os.Open(location)
 	if err != nil {
-		if strings.HasSuffix(location, indexFile) {
+		if strings.HasSuffix(location, IndexFile) {
 			// If the index file is not present, create a list of files in the directory
 			if file, err := os.Open(loc); err == nil {
 				return dirList(w, *file, folder)
