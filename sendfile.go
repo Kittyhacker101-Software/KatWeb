@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,12 +18,6 @@ var htmlReplacer = strings.NewReplacer(
 	`"`, "&#34;",
 	"'", "&#39;",
 )
-
-// ServerError is called when a request handling error occurs
-func ServerError(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-	fmt.Println("[WebError][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
-}
 
 // ServeFile writes the contents of a file or directory into the HTTP response
 func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string) error {

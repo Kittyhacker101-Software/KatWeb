@@ -272,7 +272,8 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	err = ServeFile(w, r, path+url, url)
 	if err != nil {
-		ServerError(w, r)
+		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+		fmt.Println("[WebError][" + r.Host + r.URL.EscapedPath() + "] : " + r.RemoteAddr)
 		return
 	}
 
