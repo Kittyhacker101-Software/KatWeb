@@ -121,7 +121,7 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
-func redir(w http.ResponseWriter, r *http.Request, loc string, url string) {
+func redir(w http.ResponseWriter, loc string) {
 	w.Header().Set("Location", loc)
 	w.WriteHeader(http.StatusMovedPermanently)
 }
@@ -204,11 +204,11 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Apply any required redirects.
 	if strings.HasSuffix(url, IndexFile) {
-		redir(w, r, "./", url)
+		redir(w, "./")
 		return
 	}
 	if err == nil && finfo.IsDir() && !strings.HasSuffix(url, "/") {
-		redir(w, r, r.URL.EscapedPath()+"/", url)
+		redir(w, r.URL.EscapedPath()+"/")
 		return
 	}
 
