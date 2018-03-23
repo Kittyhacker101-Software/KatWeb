@@ -237,20 +237,14 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	if ServeFile(w, r, path+url, url) != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		if conf.Pef.Log {
-			os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
-		}
+		os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		return
 	}
 
 	// Log the response to the console
 	if conf.Pef.Log {
-		if r.Method == "POST" {
-			if r.ParseForm() == nil {
-				fmt.Printf("[WebForm]["+r.Host+url+"][%v] : "+r.RemoteAddr+"\n", r.PostForm)
-			} else {
-				os.Stdout.WriteString("[WebForm][" + r.Host + url + "][Error] : " + r.RemoteAddr + "\n")
-			}
+		if r.Method == "POST" && r.ParseForm() == nil {
+			fmt.Println("[WebForm]["+r.Host+url+"] : "+r.RemoteAddr+" :", r.PostForm)
 		} else {
 			os.Stdout.WriteString("[Web][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
