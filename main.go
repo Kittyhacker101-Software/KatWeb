@@ -78,7 +78,10 @@ var (
 			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 		},
 		Transport: &http.Transport{
-			IdleConnTimeout: time.Duration(conf.DatTime*4) * time.Second,
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     time.Duration(conf.DatTime) * time.Second,
+			DisableCompression:  true,
 		},
 	}
 
