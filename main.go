@@ -78,9 +78,22 @@ var (
 			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
 		},
 		Transport: &http.Transport{
-			MaxIdleConns:        250,
-			MaxIdleConnsPerHost: 250,
-			IdleConnTimeout:     time.Duration(conf.DatTime*4) * time.Second,
+			TLSClientConfig: &tls.Config{
+				// We're going to assume that you're not reverse proxying services over the open internet.
+				// So, we will prioritize speed, instead of security.
+				InsecureSkipVerify: true,
+				CurvePreferences: []tls.CurveID{
+					tls.X25519,
+					tls.CurveP256,
+				},
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				},
+			},
+			MaxIdleConns:        512,
+			MaxIdleConnsPerHost: 512,
+			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
 			DisableCompression:  true,
 		},
 	}
