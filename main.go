@@ -205,6 +205,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
 		os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		return
 	}
 	path, url := detectPath(r.Host+"/", url)
 	if path == conf.Proxy.Loc {
