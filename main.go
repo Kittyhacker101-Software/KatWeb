@@ -201,7 +201,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get the correct content control options for the file.
-	path, url := detectPath(r.Host+"/", r.URL.EscapedPath())
+	url, err := url.QueryUnescape(r.URL.EscapedPath())
+	if err != nil {
+		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+		os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+	}
+	path, url := detectPath(r.Host+"/", url)
 	if path == conf.Proxy.Loc {
 		proxy.ServeHTTP(w, r)
 		if conf.Pef.Log {
