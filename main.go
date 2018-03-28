@@ -193,6 +193,12 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
+func Print(d string) {
+	// Yes, there are situations where this function will return an error.
+	// But, how would you handle that? Seriously? How?
+	os.Stdout.WriteString(d)
+}
+
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -203,15 +209,15 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Get the correct content control options for the file.
 	url, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
-		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		http.Error(w, "400 Bad Request : The server cannot or will not process the request due to an apparent client error.", http.StatusBadRequest)
+		Print("[WebBad][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		return
 	}
 	path, url := detectPath(r.Host+"/", url)
 	if path == conf.Proxy.Loc {
 		proxy.ServeHTTP(w, r)
 		if conf.Pef.Log {
-			os.Stdout.WriteString("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
@@ -238,28 +244,28 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		if conf.Pef.Log {
-			os.Stdout.WriteString("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 	if finfo.Name() == "passwd" {
 		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action.", http.StatusForbidden)
 		if conf.Pef.Log {
-			os.Stdout.WriteString("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
 		http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
 		if conf.Pef.Log {
-			os.Stdout.WriteString("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 
 	if ServeFile(w, r, path+url, url) != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
-		os.Stdout.WriteString("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		Print("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		return
 	}
 
@@ -268,7 +274,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" && r.ParseForm() == nil {
 			fmt.Println("[WebForm]["+r.Host+url+"] : "+r.RemoteAddr+" :", r.PostForm)
 		} else {
-			os.Stdout.WriteString("[Web][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[Web][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 	}
 }
