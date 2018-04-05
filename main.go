@@ -75,7 +75,7 @@ var (
 
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.EscapedPath(), "/"+conf.Proxy.Loc))
+			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.Path, "/"+conf.Proxy.Loc))
 		},
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -193,6 +193,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 	}
 }
 
+// Print writes a message to the console without formatting
 func Print(d string) {
 	// Yes, there are situations where this function will return an error.
 	// But, how would you handle that? Seriously? How?
