@@ -75,7 +75,7 @@ var (
 
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.Path, "/"+conf.Proxy.Loc))
+			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.String(), "/"+conf.Proxy.Loc))
 		},
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
