@@ -24,4 +24,5 @@ Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/ki
 - Custom Redirects
 - Opportunistic Encryption
 - HTTP Reverse Proxy
+- Websocket Reverse Proxy
 - Material Design Directory Listings
