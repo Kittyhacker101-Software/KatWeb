@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/yhat/wsutil"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -95,6 +96,30 @@ var (
 			MaxIdleConnsPerHost: 512,
 			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
 			DisableCompression:  true,
+		},
+	}
+
+	wsproxy = &wsutil.ReverseProxy{
+		Director: func(r *http.Request) {
+			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.String(), "/"+conf.Proxy.Loc))
+			if r.URL.Scheme == "https" {
+				r.URL.Scheme = "wss://"
+			} else {
+				r.URL.Scheme = "ws://"
+			}
+		},
+		TLSClientConfig: &tls.Config{
+			// We're going to assume that you're not reverse proxying services over the open internet.
+			// So, we will prioritize speed, instead of security.
+			InsecureSkipVerify: true,
+			CurvePreferences: []tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+			},
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
 		},
 	}
 
@@ -216,7 +241,11 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	path, url := detectPath(r.Host+"/", url)
 	if path == conf.Proxy.Loc {
-		proxy.ServeHTTP(w, r)
+		if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
+			wsproxy.ServeHTTP(w, r)
+		} else {
+			proxy.ServeHTTP(w, r)
+		}
 		if conf.Pef.Log {
 			Print("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}

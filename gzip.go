@@ -30,7 +30,7 @@ var zippers = sync.Pool{New: func() interface{} {
 // MakeGzipHandler creates a wrapper for an http.Handler with Gzip compression.
 func MakeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || conf.Pef.GZ == 0 {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || conf.Pef.GZ == 0 || strings.Contains(r.Header.Get("Upgrade"), "websocket") {
 			funct(w, r)
 			return
 		}
