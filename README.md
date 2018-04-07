@@ -1,6 +1,6 @@
 ## KatWeb
 Welcome to KatWeb!
-KatWeb is a simple static file HTTPS server designed for the 21st century.
+KatWeb is a simple static file HTTPS server and reverse proxy designed for the 21st century.
 This program is used in production on the kittyhacker101.tk servers!
 
 ## Getting KatWeb
