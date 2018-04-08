@@ -50,8 +50,7 @@ type Conf struct {
 }
 
 var (
-	conf     Conf
-	location *time.Location
+	conf Conf
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -183,7 +182,7 @@ func detectPath(path string, url string) (string, string) {
 }
 
 // loadHeaders adds headers from the server configuration to the request.
-func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
+func loadHeaders(w http.ResponseWriter, exists bool) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
 	}
@@ -214,7 +213,7 @@ func loadHeaders(w http.ResponseWriter, exists bool, l *time.Location) {
 
 	if exists && conf.CachTime != 0 {
 		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
-		w.Header().Set("Expires", time.Now().In(l).Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
+		w.Header().Set("Expires", time.Now().UTC().Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 	}
 }
 
@@ -258,7 +257,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		auth, authg = detectPasswd(url, path)
 	}
 
-	loadHeaders(w, err == nil, location)
+	loadHeaders(w, err == nil)
 
 	// Apply any required redirects.
 	if strings.HasSuffix(url, IndexFile) {
@@ -340,13 +339,6 @@ func main() {
 		runtime.GOMAXPROCS(conf.Pef.Thread)
 	}
 	debug.SetGCPercent(int(conf.Pef.GC * 100))
-
-	// Load the correct timezone for caching headers.
-	location, err = time.LoadLocation("UTC")
-	if err != nil {
-		fmt.Println("[Warn] : Unable to load timezones!")
-		conf.CachTime = 0
-	}
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
