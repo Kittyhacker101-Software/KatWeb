@@ -6,10 +6,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/yhat/wsutil"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"os/signal"
@@ -39,8 +37,7 @@ type Conf struct {
 		Thread int     `json:"threads"`
 		GZ     int     `json:"gzipx"`
 	} `json:"performance"`
-	Proxy struct {
-		Run bool   `json:"enabled"`
+	Proxy []struct {
 		Loc string `json:"location"`
 		URL string `json:"host"`
 	} `json:"proxy"`
@@ -73,55 +70,7 @@ var (
 		},
 	}
 
-	proxy = &httputil.ReverseProxy{
-		Director: func(r *http.Request) {
-			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.String(), "/"+conf.Proxy.Loc))
-		},
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				// We're going to assume that you're not reverse proxying services over the open internet.
-				// So, we will prioritize speed, instead of security.
-				InsecureSkipVerify: true,
-				CurvePreferences: []tls.CurveID{
-					tls.X25519,
-					tls.CurveP256,
-				},
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				},
-			},
-			MaxIdleConns:        512,
-			MaxIdleConnsPerHost: 512,
-			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
-			DisableCompression:  true,
-		},
-	}
-
-	wsproxy = &wsutil.ReverseProxy{
-		Director: func(r *http.Request) {
-			r.URL, _ = url.Parse(conf.Proxy.URL + strings.TrimPrefix(r.URL.String(), "/"+conf.Proxy.Loc))
-			if r.URL.Scheme == "https" {
-				r.URL.Scheme = "wss://"
-			} else {
-				r.URL.Scheme = "ws://"
-			}
-		},
-		TLSClientConfig: &tls.Config{
-			// We're going to assume that you're not reverse proxying services over the open internet.
-			// So, we will prioritize speed, instead of security.
-			InsecureSkipVerify: true,
-			CurvePreferences: []tls.CurveID{
-				tls.X25519,
-				tls.CurveP256,
-			},
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			},
-		},
-	}
-
+	// httpsredir is a http.HandlerFunc for redirecting HTTP requests to HTTPS
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		if conf.HTTP != 80 {
@@ -167,10 +116,11 @@ func redir(w http.ResponseWriter, loc string) {
 }
 
 // detectPath allows dynamic content control by domain and path.
-func detectPath(path string, url string) (string, string) {
-	if conf.Proxy.Run {
-		if strings.HasPrefix(url, "/"+conf.Proxy.Loc) || strings.TrimSuffix(path, "/") == conf.Proxy.Loc {
-			return conf.Proxy.Loc, url
+func detectPath(path string, url string, r *http.Request) (string, string) {
+	if len(conf.Proxy) > 0 {
+		prox := GetProxy(r)
+		if prox != -1 {
+			return conf.Proxy[prox].Loc, "proxy%"
 		}
 	}
 
@@ -232,21 +182,21 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get the correct content control options for the file.
-	url, err := url.QueryUnescape(r.URL.EscapedPath())
+	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		http.Error(w, "400 Bad Request : The server cannot or will not process the request due to an apparent client error.", http.StatusBadRequest)
-		Print("[WebBad][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		Print("[WebBad][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
 		return
 	}
-	path, url := detectPath(r.Host+"/", url)
-	if path == conf.Proxy.Loc {
+	path, url := detectPath(r.Host+"/", urlo, r)
+	if url == "proxy%" {
 		if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
 			wsproxy.ServeHTTP(w, r)
 		} else {
 			proxy.ServeHTTP(w, r)
 		}
 		if conf.Pef.Log {
-			Print("[WebProxy][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Print("[WebProxy][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
@@ -320,7 +270,6 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 func main() {
 	fmt.Println("Loading KatWeb...")
 
-	// Load, parse, and validate configuration.
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file! Debugging info will be printed below.")
@@ -334,7 +283,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Load correct number of threads, and GC multiplier
 	if conf.Pef.Thread > 0 {
 		runtime.GOMAXPROCS(conf.Pef.Thread)
 	}

@@ -1,25 +1,30 @@
 {
-  "cachingTimeout": 4,
-  "streamTimeout": 10,
-  "hsts": {
-    "enabled": false,
-    "mixedssl": false,
-    "includeSubDomains": false,
-    "preload": false
+  "cachingTimeout":4,
+  "streamTimeout":10,
+  "hsts":{
+    "enabled":false,
+    "mixedssl":false,
+    "includeSubDomains":false,
+    "preload":false
   },
-  "protect": true,
-  "performance": {
-	"logging": true,
-	"threads": 0,
-	"gcx": 2.5,
-	"gzipx": 2
+  "protect":true,
+  "performance":{
+    "logging":true,
+    "threads":0,
+    "gcx":2.5,
+    "gzipx":2
   },
-  "proxy": {
-    "enabled": false,
-    "location": "proxy",
-    "host": "http://localhost:8080"
-  },
-  "name": "KatWeb",
-  "httpPort": 80,
-  "sslPort": 443
+  "proxy":[
+    {
+      "location":"proxy",
+      "host":"http://localhost:8080/"
+    },
+    {
+      "location":"proxyssl",
+      "host":"https://localhost:8181/"
+    }
+  ],
+  "name":"KatWeb",
+  "httpPort":80,
+  "sslPort":443
 }
