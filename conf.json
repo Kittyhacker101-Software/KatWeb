@@ -16,11 +16,11 @@
   },
   "proxy": [
     {
-      "location": "proxya",
+      "location": "proxyl",
       "host": "http://localhost:8080/"
     },
     {
-      "location": "proxyb",
+      "location": "proxy",
       "host": "http://192.168.1.1/"
     }
   ],
