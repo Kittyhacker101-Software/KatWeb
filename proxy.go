@@ -27,8 +27,8 @@ var (
 
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			prox := conf.Proxy[GetProxy(r)]
-			r.URL, _ = url.Parse(prox.URL + strings.TrimPrefix(r.URL.String(), "/"+prox.Loc))
+			prox := GetProxy(r)
+			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+prox))
 		},
 		Transport: &http.Transport{
 			TLSClientConfig:     tlsp,
@@ -41,8 +41,8 @@ var (
 
 	wsproxy = &wsutil.ReverseProxy{
 		Director: func(r *http.Request) {
-			prox := conf.Proxy[GetProxy(r)]
-			r.URL, _ = url.Parse(prox.URL + strings.TrimPrefix(r.URL.String(), "/"+prox.Loc))
+			prox := GetProxy(r)
+			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+prox))
 			if r.URL.Scheme == "https" {
 				r.URL.Scheme = "wss://"
 			} else {
@@ -51,20 +51,36 @@ var (
 		},
 		TLSClientConfig: tlsp,
 	}
+
+	proxyMap = make(map[string]string)
 )
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
-func GetProxy(r *http.Request) int {
+func GetProxy(r *http.Request) string {
 	url, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		url = r.URL.EscapedPath()
 	}
+	urlp := strings.Split(url, "/")
 
-	for i := range conf.Proxy {
-		if strings.HasPrefix(url, "/"+conf.Proxy[i].Loc) || r.Host == conf.Proxy[i].Loc {
-			return i
-		}
+	if val, ok := proxyMap[r.Host]; ok {
+		return val
 	}
 
-	return -1
+	if len(urlp) == 0 {
+		return ""
+	}
+
+	if val, ok := proxyMap[urlp[1]]; ok {
+		return val
+	}
+
+	return ""
+}
+
+// MakeProxyMap converts the conf.Proxy into a map[string]string
+func MakeProxyMap() {
+	for i := range conf.Proxy {
+		proxyMap[conf.Proxy[i].Loc] = conf.Proxy[i].URL
+	}
 }

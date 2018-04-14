@@ -119,8 +119,8 @@ func redir(w http.ResponseWriter, loc string) {
 func detectPath(path string, url string, r *http.Request) (string, string) {
 	if len(conf.Proxy) > 0 {
 		prox := GetProxy(r)
-		if prox != -1 {
-			return conf.Proxy[prox].Loc, "proxy%"
+		if prox != "" {
+			return prox, "proxy%"
 		}
 	}
 
@@ -287,6 +287,7 @@ func main() {
 		runtime.GOMAXPROCS(conf.Pef.Thread)
 	}
 	debug.SetGCPercent(int(conf.Pef.GC * 100))
+	MakeProxyMap()
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
