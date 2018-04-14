@@ -118,7 +118,7 @@ func redir(w http.ResponseWriter, loc string) {
 // detectPath allows dynamic content control by domain and path.
 func detectPath(path string, url string, r *http.Request) (string, string) {
 	if len(conf.Proxy) > 0 {
-		prox := GetProxy(r)
+		prox, _ := GetProxy(r)
 		if prox != "" {
 			return prox, "proxy%"
 		}
