@@ -28,7 +28,7 @@ var (
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox := GetProxy(r)
-			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+prox))
+			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+r.URL.Path))
 		},
 		Transport: &http.Transport{
 			TLSClientConfig:     tlsp,
@@ -42,7 +42,7 @@ var (
 	wsproxy = &wsutil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox := GetProxy(r)
-			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+prox))
+			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+r.URL.Path))
 			if r.URL.Scheme == "https" {
 				r.URL.Scheme = "wss://"
 			} else {
