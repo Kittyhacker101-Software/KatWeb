@@ -136,7 +136,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
 	}
-	if r.TLS != nil {
+	if r.TLS == nil {
 		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
 	}
 	if conf.HSTS.Run {
