@@ -132,9 +132,12 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 }
 
 // loadHeaders adds headers from the server configuration to the request.
-func loadHeaders(w http.ResponseWriter, exists bool) {
+func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
+	}
+	if r.TLS != nil {
+		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
 	}
 	if conf.HSTS.Run {
 		/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
@@ -206,7 +209,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		auth, authg = detectPasswd(url, path)
 	}
 
-	loadHeaders(w, err == nil)
+	loadHeaders(w, r, err == nil)
 
 	// Apply any required redirects.
 	if strings.HasSuffix(url, IndexFile) {
