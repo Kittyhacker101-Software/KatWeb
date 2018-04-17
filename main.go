@@ -136,7 +136,6 @@ func loadHeaders(w http.ResponseWriter, exists bool) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
 	}
-	w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
 	if conf.HSTS.Run {
 		/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
 		If there is a legitimate use case for it, then I might consider adding it in the future. */
