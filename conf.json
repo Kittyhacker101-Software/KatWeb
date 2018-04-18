@@ -1,12 +1,7 @@
 {
   "cachingTimeout": 4,
   "streamTimeout": 10,
-  "hsts": {
-    "enabled": false,
-    "mixedssl": false,
-    "includeSubDomains": false,
-    "preload": false
-  },
+  "hsts": false,
   "protect": true,
   "performance": {
     "logging": true,

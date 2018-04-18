@@ -22,16 +22,11 @@ import (
 
 // Conf contains all configuration fields for the server.
 type Conf struct {
-	CachTime int `json:"cachingTimeout"`
-	DatTime  int `json:"streamTimeout"`
-	HSTS     struct {
-		Run bool `json:"enabled"`
-		Mix bool `json:"mixedssl"`
-		Sub bool `json:"includeSubDomains"`
-		Pre bool `json:"preload"`
-	} `json:"hsts"`
-	Pro bool `json:"protect"`
-	Pef struct {
+	CachTime int  `json:"cachingTimeout"`
+	DatTime  int  `json:"streamTimeout"`
+	HSTS     bool `json:"hsts"`
+	Pro      bool `json:"protect"`
+	Pef      struct {
 		GC     float32 `json:"gcx"`
 		Log    bool    `json:"logging"`
 		Thread int     `json:"threads"`
@@ -139,21 +134,8 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 	if r.TLS == nil {
 		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
 	}
-	if conf.HSTS.Run {
-		/* I may consider adding a config option for the max-age for HSTS, but it seems pointless to do so.
-		If there is a legitimate use case for it, then I might consider adding it in the future. */
-		if conf.HSTS.Sub {
-			if conf.HSTS.Pre {
-				w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
-			} else {
-				w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains")
-			}
-		} else {
-			// HSTS Preload requires includeSubDomains.
-			w.Header().Add("Strict-Transport-Security", "max-age=31536000")
-		}
-	} else if conf.HSTS.Mix {
-		w.Header().Add("Alt-Svc", `h2=":`+strconv.Itoa(conf.HTTPS)+`"; ma=`+strconv.Itoa(conf.DatTime*4))
+	if conf.HSTS {
+		w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
 	}
 
 	if conf.Pro {
@@ -262,7 +244,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) http.Handler {
-	if conf.HSTS.Run {
+	if conf.HSTS {
 		return httpsredir
 	}
 
