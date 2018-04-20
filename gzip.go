@@ -31,7 +31,7 @@ var zippers = sync.Pool{New: func() interface{} {
 func MakeGzipHandler(funct http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//TODO : Send previously compressed responses
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || conf.Pef.GZ == 0 || strings.Contains(r.Header.Get("Upgrade"), "websocket") || w.Header().Get("Content-Encoding") != "" {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || conf.Pef.GZ == 0 || strings.Contains(r.Header.Get("Upgrade"), "websocket") {
 			funct(w, r)
 			return
 		}
