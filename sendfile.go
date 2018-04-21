@@ -2,22 +2,46 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"github.com/klauspost/compress/gzip"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"sort"
 	"strings"
+	"sync"
 )
 
 // IndexFile is the file name for directory index files
 const IndexFile = "index.html"
 
-var htmlReplacer = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	`"`, "&#34;",
-	"'", "&#39;",
+var (
+	htmlReplacer = strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		`"`, "&#34;",
+		"'", "&#39;",
+	)
+	zippers = sync.Pool{New: func() interface{} {
+		var gz *gzip.Writer
+
+		switch conf.Pef.GZ {
+		case 3:
+			// Highest compression level
+			gz, _ = gzip.NewWriterLevel(nil, gzip.BestCompression)
+		case 1:
+			// Speed-optimized compression
+			gz, _ = gzip.NewWriterLevel(nil, gzip.ConstantCompression)
+		default:
+			// Mix between speed and compression
+			gz, _ = gzip.NewWriterLevel(nil, 4)
+		}
+
+		return gz
+	}}
 )
 
 // ServeFile writes the contents of a file or directory into the HTTP response
@@ -49,7 +73,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 		return err
 	}
 
-	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && conf.Pef.GZ == 0 {
+	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			filen, err := os.Open(location + ".br")
 			if err == nil {
@@ -64,6 +88,23 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
+		} else {
+			var gb bytes.Buffer
+			writer := bufio.NewWriter(&gb)
+
+			gz := zippers.Get().(*gzip.Writer)
+			gz.Reset(writer)
+
+			io.Copy(gz, file)
+
+			gz.Close()
+			zippers.Put(gz)
+
+			writer.Flush()
+
+			w.Header().Set("Content-Encoding", "gzip")
+			http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), bytes.NewReader(gb.Bytes()))
+			return file.Close()
 		}
 	}
 
