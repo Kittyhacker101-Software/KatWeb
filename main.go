@@ -248,7 +248,7 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 		return httpsredir
 	}
 
-	return MakeGzipHandler(origin)
+	return origin
 }
 
 func main() {
@@ -276,7 +276,7 @@ func main() {
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.HTTPS),
-		Handler:      MakeGzipHandler(mainHandle),
+		Handler:      http.HandlerFunc(mainHandle),
 		TLSConfig:    tlsc,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
