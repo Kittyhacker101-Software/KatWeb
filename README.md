@@ -21,8 +21,6 @@ Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/ki
 - Modern Default Pages
 - Logging to Console
 - Password Protected Directories
-- Custom Redirects
-- Opportunistic Encryption
 - HTTP Reverse Proxy
 - Websocket Reverse Proxy
 - Material Design Directory Listings
