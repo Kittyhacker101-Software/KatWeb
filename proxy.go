@@ -85,6 +85,7 @@ func MakeProxyMap() {
 	}
 }
 
+// ProxyRequest reverse-proxies a request, or websocket
 func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
 		wsproxy.ServeHTTP(w, r)
