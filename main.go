@@ -259,10 +259,8 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	err = json.Unmarshal(data, &conf)
-	if err != nil {
-		fmt.Println("[Fatal] : Unable to parse config file! Debugging info will be printed below.")
-		fmt.Println(err)
+	if json.Unmarshal(data, &conf) != nil {
+		fmt.Println("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
 
