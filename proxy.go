@@ -3,6 +3,7 @@ package main
 
 import (
 	"crypto/tls"
+	"github.com/streamrail/concurrent-map"
 	"github.com/yhat/wsutil"
 	"net/http"
 	"net/http/httputil"
@@ -54,7 +55,7 @@ var (
 		TLSClientConfig: tlsp,
 	}
 
-	proxyMap = map[string]string{}
+	proxyMap = cmap.New()
 )
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
@@ -65,16 +66,16 @@ func GetProxy(r *http.Request) (string, string) {
 	}
 	urlp := strings.Split(url, "/")
 
-	if val, ok := proxyMap[r.Host]; ok {
-		return val, r.Host
+	if val, ok := proxyMap.Get(r.Host); ok {
+		return val.(string), r.Host
 	}
 
 	if len(urlp) == 0 {
 		return "", ""
 	}
 
-	if val, ok := proxyMap[urlp[1]]; ok {
-		return val, urlp[1]
+	if val, ok := proxyMap.Get(urlp[1]); ok {
+		return val.(string), urlp[1]
 	}
 
 	return "", ""
@@ -83,7 +84,7 @@ func GetProxy(r *http.Request) (string, string) {
 // MakeProxyMap converts the conf.Proxy into a map[string]string
 func MakeProxyMap() {
 	for i := range conf.Proxy {
-		proxyMap[conf.Proxy[i].Loc] = conf.Proxy[i].URL
+		proxyMap.Set(conf.Proxy[i].Loc, conf.Proxy[i].URL)
 	}
 }
 
