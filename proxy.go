@@ -52,7 +52,7 @@ var (
 		TLSClientConfig: tlsp,
 	}
 
-	proxyMap = make(map[string]string)
+	proxyMap = map[string]string{}
 )
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
