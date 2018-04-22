@@ -176,11 +176,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	path, url := detectPath(r.Host+"/", urlo, r)
 	if url == typeProxy {
-		if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
-			wsproxy.ServeHTTP(w, r)
-		} else {
-			proxy.ServeHTTP(w, r)
-		}
+		ProxyRequest(w, r)
 		if conf.Pef.Log {
 			Print("[WebProxy][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
 		}

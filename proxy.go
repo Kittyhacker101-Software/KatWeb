@@ -84,3 +84,11 @@ func MakeProxyMap() {
 		proxyMap[conf.Proxy[i].Loc] = conf.Proxy[i].URL
 	}
 }
+
+func ProxyRequest(w http.ResponseWriter, r *http.Request) {
+	if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
+		wsproxy.ServeHTTP(w, r)
+	} else {
+		proxy.ServeHTTP(w, r)
+	}
+}
