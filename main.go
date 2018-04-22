@@ -41,6 +41,8 @@ type Conf struct {
 	HTTPS int    `json:"sslPort"`
 }
 
+const typeProxy = "proxy%"
+
 var (
 	conf Conf
 
@@ -115,7 +117,7 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 	if len(conf.Proxy) > 0 {
 		prox, _ := GetProxy(r)
 		if prox != "" {
-			return prox, "proxy%"
+			return prox, typeProxy
 		}
 	}
 
@@ -168,12 +170,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Get the correct content control options for the file.
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
-		http.Error(w, "400 Bad Request : The server cannot or will not process the request due to an apparent client error.", http.StatusBadRequest)
+		http.Error(w, "400 Bad Request : Unable to parse URL!", http.StatusBadRequest)
 		Print("[WebBad][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
 		return
 	}
 	path, url := detectPath(r.Host+"/", urlo, r)
-	if url == "proxy%" {
+	if url == typeProxy {
 		if strings.Contains(r.Header.Get("Connection"), "Upgrade") && strings.Contains(r.Header.Get("Upgrade"), "websocket") {
 			wsproxy.ServeHTTP(w, r)
 		} else {
@@ -205,29 +207,30 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
-		http.Error(w, "404 Not Found : The requested resource could not be found but may be available in the future.", http.StatusNotFound)
+		http.Error(w, "404 Not Found : File not found!", http.StatusNotFound)
 		if conf.Pef.Log {
 			Print("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 	if finfo.Name() == "passwd" {
-		http.Error(w, "403 Forbidden : The request was valid, but the server is refusing action.", http.StatusForbidden)
+		http.Error(w, "403 Forbidden : You don't have permission to access this file!", http.StatusForbidden)
 		if conf.Pef.Log {
 			Print("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
-		http.Error(w, "401 Unauthorized : Authentication is required and has failed or has not yet been provided.", http.StatusUnauthorized)
+		http.Error(w, "401 Unauthorized : Authentication credentials incorrect.", http.StatusUnauthorized)
 		if conf.Pef.Log {
 			Print("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		}
 		return
 	}
 
+	// Serve the content, and return an error if needed
 	if ServeFile(w, r, path+url, url) != nil {
-		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered.", http.StatusInternalServerError)
+		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered, try again later.", http.StatusInternalServerError)
 		Print("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 		return
 	}
