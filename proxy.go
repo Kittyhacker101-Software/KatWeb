@@ -14,7 +14,9 @@ import (
 var (
 	// tlsc is a TLS configuration optimized for speed, instead of security
 	tlsp = &tls.Config{
-		InsecureSkipVerify: true,
+		NextProtos:               []string{"h2", "http/1.1"},
+		PreferServerCipherSuites: true,
+		InsecureSkipVerify:       true,
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,
 			tls.CurveP256,
