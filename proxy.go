@@ -2,7 +2,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"github.com/yhat/wsutil"
 	"net/http"
 	"net/http/httputil"
@@ -13,28 +12,13 @@ import (
 )
 
 var (
-	// tlsc is a TLS configuration optimized for speed, instead of security
-	tlsp = &tls.Config{
-		NextProtos:               []string{"h2", "http/1.1"},
-		PreferServerCipherSuites: true,
-		InsecureSkipVerify:       true,
-		CurvePreferences: []tls.CurveID{
-			tls.X25519,
-			tls.CurveP256,
-		},
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
-
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox, loc := GetProxy(r)
 			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
 		},
 		Transport: &http.Transport{
-			TLSClientConfig:     tlsp,
+			TLSClientConfig:     tlsc,
 			MaxIdleConns:        512,
 			MaxIdleConnsPerHost: 512,
 			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
@@ -52,7 +36,7 @@ var (
 				r.URL.Scheme = "ws://"
 			}
 		},
-		TLSClientConfig: tlsp,
+		TLSClientConfig: tlsc,
 	}
 
 	proxyMap sync.Map
