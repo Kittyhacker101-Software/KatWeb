@@ -1,7 +1,5 @@
 ## KatWeb
-Welcome to KatWeb!
-KatWeb is a simple static file HTTPS server and reverse proxy designed for the 21st century.
-This program is used in production on the kittyhacker101.tk servers!
+![KatWeb](https://kittyhacker101.tk/KatWeb.svg)
 
 ## Getting KatWeb
 To download KatWeb, you can either download a compiled release from the [releases page](https://github.com/kittyhacker101/KatWeb/releases), or compile KatWeb from the source code in the repository (**not recommended**).
