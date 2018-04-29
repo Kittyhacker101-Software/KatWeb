@@ -39,7 +39,7 @@ var (
 		TLSClientConfig: tlsc,
 	}
 
-	proxyMap sync.Map
+	proxyMap, redirMap sync.Map
 )
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
@@ -69,6 +69,9 @@ func GetProxy(r *http.Request) (string, string) {
 func MakeProxyMap() {
 	for i := range conf.Proxy {
 		proxyMap.Store(conf.Proxy[i].Loc, conf.Proxy[i].URL)
+	}
+	for i := range conf.Redir {
+		redirMap.Store(conf.Redir[i].Loc, conf.Redir[i].URL)
 	}
 }
 

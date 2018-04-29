@@ -11,12 +11,18 @@
   },
   "proxy": [
     {
-      "location": "proxyl",
-      "host": "http://localhost:8080/"
+      "location": "proxy2",
+      "host": "http://example.com"
     },
     {
       "location": "proxy",
-      "host": "http://192.168.1.1/"
+      "host": "http://localhost:8080/"
+    }
+  ],
+  "redir": [
+    {
+	"location": "localhost/redirect",
+	"dest": "http://example.com"
     }
   ],
   "name": "KatWeb",

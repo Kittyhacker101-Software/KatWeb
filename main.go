@@ -36,6 +36,10 @@ type Conf struct {
 		Loc string `json:"location"`
 		URL string `json:"host"`
 	} `json:"proxy"`
+	Redir []struct {
+		Loc string `json:"location"`
+		URL string `json:"dest"`
+	} `json:"redir"`
 	Name  string `json:"name"`
 	HTTP  int    `json:"httpPort"`
 	HTTPS int    `json:"sslPort"`
@@ -199,6 +203,9 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	if err == nil && finfo.IsDir() && !strings.HasSuffix(url, "/") {
 		redir(w, r.URL.EscapedPath()+"/")
 		return
+	}
+	if val, ok := redirMap.Load(r.Host + url); ok {
+		http.Redirect(w, r, val.(string), http.StatusMovedPermanently)
 	}
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
