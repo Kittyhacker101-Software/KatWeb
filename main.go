@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -101,6 +102,19 @@ func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	}
 
 	return false
+}
+
+// detectPasswd gets password protection settings, and authentication credentials.
+func detectPasswd(url string, path string) ([]string, bool) {
+	tmp, _ := filepath.Split(url)
+
+	if b, err := ioutil.ReadFile(path + tmp + "passwd"); err == nil {
+		if tmpa := strings.Split(strings.TrimSpace(string(b)), ":"); len(tmpa) == 2 {
+			return tmpa, true
+		}
+	}
+
+	return []string{"err"}, false
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
