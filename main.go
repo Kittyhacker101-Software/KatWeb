@@ -257,7 +257,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) http.Handler {
-	var wrap http.HandlerFunc = origin
+	var wrap = origin
 
 	if conf.HSTS {
 		wrap = httpsredir
