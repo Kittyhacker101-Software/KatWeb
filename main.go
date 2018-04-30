@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/crypto/acme/autocert"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -26,7 +27,11 @@ type Conf struct {
 	DatTime  int  `json:"streamTimeout"`
 	HSTS     bool `json:"hsts"`
 	Pro      bool `json:"protect"`
-	Pef      struct {
+	Le       struct {
+		Run bool     `json:"enabled"`
+		Loc []string `json:"domains"`
+	} `json:"letsencrypt"`
+	Pef struct {
 		GC     float32 `json:"gcx"`
 		Log    bool    `json:"logging"`
 		Thread int     `json:"threads"`
@@ -49,6 +54,11 @@ const typeProxy = "proxy%"
 
 var (
 	conf Conf
+
+	certManager = &autocert.Manager{
+		Prompt: autocert.AcceptTOS,
+		Cache:  autocert.DirCache("ssl"),
+	}
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -250,11 +260,19 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) http.Handler {
+	var wrap http.HandlerFunc = origin
+
 	if conf.HSTS {
-		return httpsredir
+		wrap = httpsredir
 	}
 
-	return origin
+	if conf.Le.Run {
+		tlsc.GetCertificate = certManager.GetCertificate
+		certManager.HostPolicy = autocert.HostWhitelist(conf.Le.Loc...)
+		return certManager.HTTPHandler(wrap)
+	}
+
+	return wrap
 }
 
 func main() {

@@ -1,8 +1,12 @@
 {
   "cachingTimeout": 4,
   "streamTimeout": 10,
-  "hsts": false,
+  "hsts": true,
   "protect": true,
+  "letsencrypt": {
+    "enabled": false,
+    "domains": ["example.com"]
+  },
   "performance": {
     "logging": true,
     "threads": 0,
