@@ -1,7 +1,7 @@
 {
   "cachingTimeout": 4,
   "streamTimeout": 10,
-  "hsts": true,
+  "hsts": false,
   "protect": true,
   "letsencrypt": {
     "enabled": false,
