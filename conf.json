@@ -8,9 +8,7 @@
     "domains": ["example.com"]
   },
   "performance": {
-    "logging": true,
-    "threads": 0,
-    "gcx": 2.5,
+    "logging": false,
     "gzipx": 2
   },
   "proxy": [

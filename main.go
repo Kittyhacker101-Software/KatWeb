@@ -12,8 +12,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -32,10 +30,8 @@ type Conf struct {
 		Loc []string `json:"domains"`
 	} `json:"letsencrypt"`
 	Pef struct {
-		GC     float32 `json:"gcx"`
-		Log    bool    `json:"logging"`
-		Thread int     `json:"threads"`
-		GZ     int     `json:"gzipx"`
+		Log bool `json:"logging"`
+		GZ  int  `json:"gzipx"`
 	} `json:"performance"`
 	Proxy []struct {
 		Loc string `json:"location"`
@@ -95,19 +91,6 @@ var (
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
 	})
 )
-
-// detectPasswd gets password protection settings, and authentication credentials.
-func detectPasswd(url string, path string) ([]string, bool) {
-	tmp, _ := filepath.Split(url)
-
-	if b, err := ioutil.ReadFile(path + tmp + "passwd"); err == nil {
-		if tmpa := strings.Split(strings.TrimSpace(string(b)), ":"); len(tmpa) == 2 {
-			return tmpa, true
-		}
-	}
-
-	return []string{"err"}, false
-}
 
 // runAuth runs basic authentication on a http.Request
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
@@ -289,10 +272,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if conf.Pef.Thread > 0 {
-		runtime.GOMAXPROCS(conf.Pef.Thread)
-	}
-	debug.SetGCPercent(int(conf.Pef.GC * 100))
+	debug.SetGCPercent(720)
 	MakeProxyMap()
 
 	// srv handles all configuration for HTTPS.
