@@ -1,4 +1,3 @@
-## KatWeb
 <img src="https://cdn.kittyhacker101.tk/KatWeb.svg" alt="KatWeb - A modern and lightweight webserver designed for the modern web." width="600"></img> 
 
 ## Getting KatWeb
@@ -10,7 +9,7 @@ The root folder for serving files is /html/, the configuration is /conf.json.
 Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/kittyhacker101/KatWeb/wiki).
 
 ## Features
-- SSL Support
+- TLS Support
 - HSTS Support
 - JSON Config Files
 - HTTP/2 and Keep-Alive
