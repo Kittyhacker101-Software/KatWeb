@@ -69,6 +69,12 @@ var (
 		},
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{
+			// TLS 1.3+ only, requires tls-tris
+			//tls.TLS_CHACHA20_POLY1305_SHA256,
+			//tls.TLS_AES_256_GCM_SHA384,
+			//tls.TLS_AES_128_GCM_SHA256,
+
+			// TLS 1.2
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -92,6 +98,13 @@ var (
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
 	})
 )
+
+// Log logs a request to the console.
+func Log(r *http.Request, head string, url string) {
+	if conf.Pef.Log {
+		os.Stdout.WriteString("[" + head + "][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+	}
+}
 
 // runAuth runs basic authentication on a http.Request
 func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
@@ -164,13 +177,6 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 	}
 }
 
-// Print writes a message to the console without formatting
-func Print(d string) {
-	// Yes, there are situations where this function will return an error.
-	// But, how would you handle that? Seriously? How?
-	os.Stdout.WriteString(d)
-}
-
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -182,15 +188,13 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		http.Error(w, "400 Bad Request : Unable to parse URL!", http.StatusBadRequest)
-		Print("[WebBad][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
+		Log(r, "WebBad", urlo)
 		return
 	}
 	path, url := detectPath(r.Host+"/", urlo, r)
 	if url == typeProxy {
 		ProxyRequest(w, r)
-		if conf.Pef.Log {
-			Print("[WebProxy][" + r.Host + urlo + "] : " + r.RemoteAddr + "\n")
-		}
+		Log(r, "WebProxy", urlo)
 		return
 	}
 
@@ -218,30 +222,24 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
 		http.Error(w, "404 Not Found : File not found!", http.StatusNotFound)
-		if conf.Pef.Log {
-			Print("[WebNotFound][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
-		}
+		Log(r, "WebNotFound", url)
 		return
 	}
 	if finfo.Name() == "passwd" {
 		http.Error(w, "403 Forbidden : You don't have permission to access this file!", http.StatusForbidden)
-		if conf.Pef.Log {
-			Print("[WebForbid][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
-		}
+		Log(r, "WebForbid", url)
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
 		http.Error(w, "401 Unauthorized : Authentication credentials incorrect.", http.StatusUnauthorized)
-		if conf.Pef.Log {
-			Print("[WebUnAuth][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
-		}
+		Log(r, "WebUnAuth", url)
 		return
 	}
 
 	// Serve the content, and return an error if needed
 	if ServeFile(w, r, path+url, url) != nil {
 		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered, try again later.", http.StatusInternalServerError)
-		Print("[WebError][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		Log(r, "WebError", url)
 		return
 	}
 
@@ -250,7 +248,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" && r.ParseForm() == nil {
 			fmt.Println("[WebForm]["+r.Host+url+"] : "+r.RemoteAddr+" :", r.PostForm)
 		} else {
-			Print("[Web][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+			Log(r, "Web", url)
 		}
 	}
 }
