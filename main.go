@@ -235,7 +235,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "BREW" {
-		StyledError(w, "418 I'm a Teapot", "You can't brew coffee with a teapot. Also, you found the easter egg :D", http.StatusTeapot)
+		StyledError(w, "418 I'm a Teapot", "The requested entity body is short and stout. Tip me over and pour me out.", http.StatusTeapot)
 		Log(r, "WebTeapot", url)
 		return
 	}
