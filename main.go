@@ -186,7 +186,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Get the correct content control options for the file.
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
-		http.Error(w, "400 Bad Request : Unable to parse URL!", http.StatusBadRequest)
+		StyledError(w, "400 Bad Request", "The server cannot process the request due to an apparent client error", http.StatusBadRequest)
 		Log(r, "WebBad", urlo)
 		return
 	}
@@ -237,7 +237,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Serve the content, and return an error if needed
 	if ServeFile(w, r, path+url, url) != nil {
-		http.Error(w, "500 Internal Server Error : An unexpected condition was encountered, try again later.", http.StatusInternalServerError)
+		StyledError(w, "500 Internal Server Error", "An unexpected condition was encountered, try again later", http.StatusInternalServerError)
 		Log(r, "WebError", url)
 		return
 	}
