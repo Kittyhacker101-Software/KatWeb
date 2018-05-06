@@ -220,17 +220,17 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
-		http.Error(w, "404 Not Found : File not found!", http.StatusNotFound)
+		StyledError(w, "404 Not Found", "The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		Log(r, "WebNotFound", url)
 		return
 	}
 	if finfo.Name() == "passwd" {
-		http.Error(w, "403 Forbidden : You don't have permission to access this file!", http.StatusForbidden)
+		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
 		Log(r, "WebForbid", url)
 		return
 	}
 	if authg && !runAuth(w, r, auth) {
-		http.Error(w, "401 Unauthorized : Authentication credentials incorrect.", http.StatusUnauthorized)
+		StyledError(w, "401 Unauthorized", "Correct authentication credentials are required to access this resource.", http.StatusUnauthorized)
 		Log(r, "WebUnAuth", url)
 		return
 	}

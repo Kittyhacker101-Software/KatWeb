@@ -130,3 +130,9 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	w.Write([]byte("</div></div></div>"))
 	return nil
 }
+
+func StyledError(w http.ResponseWriter, title string, content string, status int) {
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{margin:0;font:15px/1.5 Verdana,sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}h3{font-size:24px}header{color:#fff}header{background-color:teal;padding:64px 16px 64px 32px}div{padding:.01em 16px}</style><title>` + title + `</title><header><h1>` + title + `</h1></header><div style="padding:16px;"><h3>` + content + `</h3></div></div>`))
+}
