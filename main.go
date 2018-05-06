@@ -272,6 +272,7 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 func main() {
 	flag.Parse()
 	fmt.Println("Loading KatWeb...")
+	os.Chdir(*rootl)
 
 	data, err := ioutil.ReadFile(*conl)
 	if err != nil {
@@ -283,8 +284,6 @@ func main() {
 		fmt.Println("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
-
-	os.Chdir(*rootl)
 
 	debug.SetGCPercent(720)
 	MakeProxyMap()
