@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"golang.org/x/crypto/acme/autocert"
 	"io/ioutil"
@@ -56,6 +57,8 @@ var (
 		Prompt: autocert.AcceptTOS,
 		Cache:  autocert.DirCache("ssl"),
 	}
+
+	conl = flag.String("config", "conf.json", "Location of config file")
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -266,9 +269,10 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 }
 
 func main() {
+	flag.Parse()
 	fmt.Println("Loading KatWeb...")
 
-	data, err := ioutil.ReadFile("conf.json")
+	data, err := ioutil.ReadFile(*conl)
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file! Debugging info will be printed below.")
 		fmt.Println(err)
