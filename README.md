@@ -22,4 +22,4 @@ Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/ki
 - HTTP Reverse Proxy
 - Websocket Reverse Proxy
 - Material Design Directory Listings
-- Material Desgin Error Pages
+- Material Design Error Pages
