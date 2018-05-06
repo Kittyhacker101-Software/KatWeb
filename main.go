@@ -58,7 +58,6 @@ var (
 		Cache:  autocert.DirCache("ssl"),
 	}
 
-	conl  = flag.String("config", "conf.json", "Location of config file")
 	rootl = flag.String("root", ".", "Root folder location")
 
 	// tlsc provides an TLS configuration for use with http.Server
@@ -279,7 +278,7 @@ func main() {
 	fmt.Println("Loading KatWeb...")
 	os.Chdir(*rootl)
 
-	data, err := ioutil.ReadFile(*conl)
+	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println("[Fatal] : Unable to read config file! Debugging info will be printed below.")
 		fmt.Println(err)
