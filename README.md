@@ -9,7 +9,7 @@ The root folder for serving files is /html/, the configuration is /conf.json.
 Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/kittyhacker101/KatWeb/wiki).
 
 ## Features
-- TLS 1.2 Support (TLS 1.3 support coming soon!)
+- TLS 1.2 Support (with partial TLS 1.3 draft #22 support)
 - HSTS Support
 - JSON Config Files
 - HTTP/2 and Keep-Alive
