@@ -58,7 +58,8 @@ var (
 		Cache:  autocert.DirCache("ssl"),
 	}
 
-	conl = flag.String("config", "conf.json", "Location of config file")
+	conl  = flag.String("config", "conf.json", "Location of config file")
+	rootl = flag.String("root", ".", "Root folder location")
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -282,6 +283,8 @@ func main() {
 		fmt.Println("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
+
+	os.Chdir(*rootl)
 
 	debug.SetGCPercent(720)
 	MakeProxyMap()
