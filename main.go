@@ -164,7 +164,6 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 
 	if conf.Pro {
 		w.Header().Add("Referrer-Policy", "no-referrer")
-		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("X-Frame-Options", "sameorigin")
 		w.Header().Add("X-XSS-Protection", "1; mode=block")
 	}
