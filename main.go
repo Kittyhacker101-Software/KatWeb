@@ -170,7 +170,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 	}
 
 	if exists && conf.CachTime != 0 {
-		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate=3600")
+		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate="+strconv.Itoa(900*conf.CachTime))
 		w.Header().Set("Expires", time.Now().UTC().Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 	}
 }
