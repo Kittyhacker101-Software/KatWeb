@@ -6,9 +6,11 @@ import (
 	"bytes"
 	"github.com/klauspost/compress/gzip"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -72,6 +74,8 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 		return err
 	}
 
+	w.Header().Set("Content-Type", getMime(file, finfo))
+
 	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			if filen, err := os.Open(location + ".br"); err == nil {
@@ -107,6 +111,19 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 
 	http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), file)
 	return file.Close()
+}
+
+func getMime(f *os.File, fi os.FileInfo) string {
+	mime := mime.TypeByExtension(filepath.Ext(fi.Name()))
+	if mime != "" {
+		return mime
+	}
+
+	var buf [512]byte
+	n, _ := io.ReadFull(f, buf[:])
+	mime = http.DetectContentType(buf[:n])
+	f.Seek(0, io.SeekStart)
+	return mime
 }
 
 func dirList(w http.ResponseWriter, f os.File, urln string) error {
