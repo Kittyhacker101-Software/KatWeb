@@ -198,23 +198,24 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	loadHeaders(w, r)
 
-	// Check the file's password protection options.
-	finfo, err := os.Stat(path + url)
-	if err == nil {
-		auth, authg = detectPasswd(url, path)
-	}
-
 	// Apply any required redirects.
 	if strings.HasSuffix(url, IndexFile) {
 		redir(w, "./")
 		return
 	}
-	if err == nil && finfo.IsDir() && !strings.HasSuffix(url, "/") {
-		redir(w, r.URL.EscapedPath()+"/")
-		return
-	}
 	if val, ok := redirMap.Load(r.Host + url); ok {
 		http.Redirect(w, r, val.(string), http.StatusMovedPermanently)
+		return
+	}
+
+	// Check the file's password protection options.
+	finfo, err := os.Stat(path + url)
+	if err == nil {
+		if finfo.IsDir() && !strings.HasSuffix(url, "/") {
+			redir(w, r.URL.EscapedPath()+"/")
+			return
+		}
+		auth, authg = detectPasswd(url, path)
 	}
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
@@ -246,14 +247,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log the response to the console
-	if conf.Pef.Log {
-		if r.Method == "POST" && r.ParseForm() == nil {
-			fmt.Println("[WebForm]["+r.Host+url+"] : "+r.RemoteAddr+" :", r.PostForm)
-		} else {
-			Log(r, "Web", url)
-		}
-	}
+	Log(r, "Web", url)
 }
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
