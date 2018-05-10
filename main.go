@@ -151,7 +151,7 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 }
 
 // loadHeaders adds headers from the server configuration to the request.
-func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
+func loadHeaders(w http.ResponseWriter, r *http.Request) {
 	if conf.Name != "" {
 		w.Header().Add("Server", conf.Name)
 	}
@@ -169,7 +169,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request, exists bool) {
 		w.Header().Add("X-XSS-Protection", "1; mode=block")
 	}
 
-	if exists && conf.CachTime != 0 {
+	if conf.CachTime != 0 {
 		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate="+strconv.Itoa(900*conf.CachTime))
 		w.Header().Set("Expires", time.Now().UTC().Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 	}
@@ -196,13 +196,13 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	loadHeaders(w, r)
+
 	// Check the file's password protection options.
 	finfo, err := os.Stat(path + url)
 	if err == nil {
 		auth, authg = detectPasswd(url, path)
 	}
-
-	loadHeaders(w, r, err == nil)
 
 	// Apply any required redirects.
 	if strings.HasSuffix(url, IndexFile) {
