@@ -43,7 +43,6 @@ type Conf struct {
 		Loc string `json:"location"`
 		URL string `json:"dest"`
 	} `json:"redir"`
-	Name  string `json:"name"`
 	HTTP  int    `json:"httpPort"`
 	HTTPS int    `json:"sslPort"`
 }
@@ -152,12 +151,7 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 
 // loadHeaders adds headers from the server configuration to the request.
 func loadHeaders(w http.ResponseWriter, r *http.Request) {
-	if conf.Name != "" {
-		w.Header().Add("Server", conf.Name)
-	}
-	if r.TLS == nil {
-		w.Header().Add("Keep-Alive", "timeout="+strconv.Itoa(conf.DatTime*4))
-	}
+	w.Header().Add("Server", "KatWeb")
 	if conf.HSTS {
 		w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
 	}

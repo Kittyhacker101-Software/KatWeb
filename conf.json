@@ -27,7 +27,6 @@
 	"dest": "http://example.com"
     }
   ],
-  "name": "KatWeb",
   "httpPort": 80,
   "sslPort": 443
 }
