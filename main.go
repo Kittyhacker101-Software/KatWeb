@@ -309,6 +309,7 @@ func main() {
 				fmt.Println("[Error] : Unable to parse config file!")
 				continue
 			}
+			MakeProxyMap()
 			fmt.Println("[Info] : Config reloaded.")
 		}
 	}()
