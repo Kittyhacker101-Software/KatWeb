@@ -247,7 +247,7 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 
 func main() {
 	flag.Parse()
-	fmt.Println("Loading KatWeb...")
+	fmt.Println("[Info] : Loading KatWeb...")
 	os.Chdir(*rootl)
 
 	data, err := ioutil.ReadFile("conf.json")
@@ -299,22 +299,21 @@ func main() {
 	go func() {
 		for {
 			<-cr
-			fmt.Println("Reloading config...")
-			fmt.Println("Warning: Reloading the config while KatWeb is running may result in buggy behavior.")
-			fmt.Println("If you encounter any issues as a result of reloading the config, restart KatWeb.")
+			fmt.Println("[Info] : Reloading config...")
 			data, err := ioutil.ReadFile("conf.json")
 			if err != nil {
-				fmt.Println("[Fatal] : Unable to read config file!")
-				break
+				fmt.Println("[Error] : Unable to read config file!")
+				continue
 			}
 			if json.Unmarshal(data, &conf) != nil {
-				fmt.Println("[Fatal] : Unable to parse config file!")
-				break
+				fmt.Println("[Error] : Unable to parse config file!")
+				continue
 			}
+			fmt.Println("[Info] : Config reloaded.")
 		}
 	}()
 
-	fmt.Println("KatWeb Server Started. Server errors will be printed into the console.")
+	fmt.Println("[Info] : KatWeb Started. Server errors will be printed into the console.")
 
 	go srvh.ListenAndServe()
 	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
