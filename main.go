@@ -211,7 +211,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Don't allow the client to access .. or . folders, and don't allow access to hidden files.
 	// Also, don't allow access to the root folder.
-	if (len(url) > 1 && url[1] == 46) || path == "ssl/" || path[0] == 46 || path == "/" {
+	if (len(url) > 1 && url[1] == 46) || path == "ssl/" || strings.ContainsAny(path, "..") || path == "/" {
 		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
 		Log(r, "WebForbid", url)
 		return
