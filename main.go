@@ -143,7 +143,7 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 		}
 	}
 
-	if _, err := os.Stat(path); err == nil && path != "ssl/" && path[0] != 46 {
+	if _, err := os.Stat(path); err == nil {
 		return path, url
 	}
 
@@ -189,6 +189,14 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		Log(r, "WebBad", urlo)
 		return
 	}
+
+	// Don't allow the client to access .. or . folders
+	if (len(urlo) >= 1 && urlo[1] == 46) || r.Host == "ssl" || r.Host[0] == 46 {
+		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
+		Log(r, "WebForbid", urlo)
+		return
+	}
+
 	path, url := detectPath(r.Host+"/", urlo, r)
 	if url == typeProxy {
 		ProxyRequest(w, r)
