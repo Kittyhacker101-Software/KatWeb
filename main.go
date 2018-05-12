@@ -191,7 +191,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Don't allow the client to access .. or . folders
-	if (len(urlo) >= 1 && urlo[1] == 46) || r.Host == "ssl" || r.Host[0] == 46 {
+	if (len(urlo) > 1 && urlo[1] == 46) || r.Host == "ssl" || r.Host[0] == 46 {
 		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
 		Log(r, "WebForbid", urlo)
 		return
