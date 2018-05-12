@@ -197,13 +197,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Don't allow the client to access .. or . folders, and don't allow access to hidden files
-	if (len(url) > 1 && url[1] == 46) || path == "ssl/" || path[0] == 46 {
-		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
-		Log(r, "WebForbid", url)
-		return
-	}
-
 	loadHeaders(w, r)
 
 	// Apply any required redirects.
@@ -213,6 +206,13 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	if val, ok := redirMap.Load(r.Host + url); ok {
 		http.Redirect(w, r, val.(string), http.StatusMovedPermanently)
+		return
+	}
+
+	// Don't allow the client to access .. or . folders, and don't allow access to hidden files
+	if (len(url) > 1 && url[1] == 46) || path == "ssl/" || path[0] == 46 || path == "/" {
+		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
+		Log(r, "WebForbid", url)
 		return
 	}
 
