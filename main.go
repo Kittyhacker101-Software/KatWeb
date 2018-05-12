@@ -143,7 +143,7 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 		}
 	}
 
-	if _, err := os.Stat(path); err == nil && path != "ssl/" {
+	if _, err := os.Stat(path); err == nil && path != "ssl/" && path[0] != 46 {
 		return path, url
 	}
 
