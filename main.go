@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -43,8 +42,8 @@ type Conf struct {
 		Loc string `json:"location"`
 		URL string `json:"dest"`
 	} `json:"redir"`
-	HTTP  int    `json:"httpPort"`
-	HTTPS int    `json:"sslPort"`
+	HTTP  int `json:"httpPort"`
+	HTTPS int `json:"sslPort"`
 }
 
 const typeProxy = "proxy%"
@@ -101,30 +100,6 @@ func Log(r *http.Request, head string, url string) {
 	if conf.Pef.Log {
 		os.Stdout.WriteString("[" + head + "][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
 	}
-}
-
-// runAuth runs basic authentication on a http.Request
-func runAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-
-	if user, pass, _ := r.BasicAuth(); len(a) == 2 && user == a[0] && pass == a[1] {
-		return true
-	}
-
-	return false
-}
-
-// detectPasswd gets password protection settings, and authentication credentials.
-func detectPasswd(url string, path string) ([]string, bool) {
-	tmp, _ := filepath.Split(url)
-
-	if b, err := ioutil.ReadFile(path + tmp + "passwd"); err == nil {
-		if tmpa := strings.Split(strings.TrimSpace(string(b)), ":"); len(tmpa) == 2 {
-			return tmpa, true
-		}
-	}
-
-	return []string{"err"}, false
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
@@ -218,7 +193,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			redir(w, r.URL.EscapedPath()+"/")
 			return
 		}
-		auth, authg = detectPasswd(url, path)
+		auth, authg = DetectPasswd(url, path)
 	}
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
@@ -232,7 +207,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		Log(r, "WebForbid", url)
 		return
 	}
-	if authg && !runAuth(w, r, auth) {
+	if authg && !RunAuth(w, r, auth) {
 		StyledError(w, "401 Unauthorized", "Correct authentication credentials are required to access this resource.", http.StatusUnauthorized)
 		Log(r, "WebUnAuth", url)
 		return
@@ -316,6 +291,27 @@ func main() {
 		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
 		os.Exit(1)
+	}()
+
+	// Reload config when a SIGHUP is recived
+	cr := make(chan os.Signal, 1)
+	signal.Notify(cr, syscall.SIGHUP)
+	go func() {
+		for {
+			<-cr
+			fmt.Println("Reloading config...")
+			fmt.Println("Warning: Reloading the config while KatWeb is running may result in buggy behavior.")
+			fmt.Println("If you encounter any issues as a result of reloading the config, restart KatWeb.")
+			data, err := ioutil.ReadFile("conf.json")
+			if err != nil {
+				fmt.Println("[Fatal] : Unable to read config file!")
+				break
+			}
+			if json.Unmarshal(data, &conf) != nil {
+				fmt.Println("[Fatal] : Unable to parse config file!")
+				break
+			}
+		}
 	}()
 
 	fmt.Println("KatWeb Server Started. Server errors will be printed into the console.")
