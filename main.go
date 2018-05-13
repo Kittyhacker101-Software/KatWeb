@@ -98,7 +98,11 @@ var (
 // Log logs a request to the console.
 func Log(r *http.Request, head string, url string) {
 	if conf.Pef.Log {
-		os.Stdout.WriteString("[" + head + "][" + r.Host + url + "] : " + r.RemoteAddr + "\n")
+		host := r.Host
+		if strings.Contains(r.Host, ":") {
+			host = strings.Split(r.Host, ":")[0]
+		}
+		os.Stdout.WriteString("[" + head + "][" + host + url + "] : " + r.RemoteAddr + "\n")
 	}
 }
 
@@ -110,6 +114,10 @@ func redir(w http.ResponseWriter, loc string) {
 
 // detectPath allows dynamic content control by domain and path.
 func detectPath(path string, url string, r *http.Request) (string, string) {
+	if strings.Contains(path, ":") {
+		path = strings.Split(path, ":")[0]
+	}
+
 	if len(conf.Proxy) > 0 {
 		prox, _ := GetProxy(r)
 		if prox != "" {
