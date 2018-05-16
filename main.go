@@ -57,6 +57,7 @@ var (
 	}
 
 	rootl = flag.String("root", ".", "Root folder location")
+	svrh  = flag.String("serverName", "KatWeb", `String set in the "server" HTTP header.`)
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -134,7 +135,9 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 
 // loadHeaders adds headers from the server configuration to the request.
 func loadHeaders(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Server", "KatWeb")
+	if len(*svrh) > 0 {
+		w.Header().Add("Server", *svrh)
+	}
 	if conf.HSTS {
 		w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
 	}
