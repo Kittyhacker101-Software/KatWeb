@@ -19,10 +19,10 @@ var (
 		},
 		Transport: &http.Transport{
 			TLSClientConfig:     tlsc,
-			MaxIdleConns:        512,
-			MaxIdleConnsPerHost: 512,
+			MaxIdleConns:        4096,
+			MaxIdleConnsPerHost: 256,
 			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
-			DisableCompression:  true,
+			DisableCompression:  false,
 		},
 	}
 

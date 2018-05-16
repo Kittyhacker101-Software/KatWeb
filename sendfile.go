@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -30,11 +31,11 @@ var (
 	zippers = sync.Pool{New: func() interface{} {
 		var gz *gzip.Writer
 
-		switch conf.Pef.GZ {
-		case 3:
+		switch {
+		case runtime.NumGoroutine() < 12:
 			// Highest compression level
 			gz, _ = gzip.NewWriterLevel(nil, gzip.BestCompression)
-		case 1:
+		case runtime.NumGoroutine() > 32:
 			// Speed-optimized compression
 			gz, _ = gzip.NewWriterLevel(nil, gzip.ConstantCompression)
 		default:
@@ -89,7 +90,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
-		} else if conf.Pef.GZ != 0 && finfo.Size() < 2500000 {
+		} else if finfo.Size() < 2500000 {
 			var gb bytes.Buffer
 			writer := bufio.NewWriter(&gb)
 

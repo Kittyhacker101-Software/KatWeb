@@ -32,7 +32,6 @@ type Conf struct {
 	} `json:"letsencrypt"`
 	Pef struct {
 		Log bool `json:"logging"`
-		GZ  int  `json:"gzipx"`
 	} `json:"performance"`
 	Proxy []struct {
 		Loc string `json:"location"`
