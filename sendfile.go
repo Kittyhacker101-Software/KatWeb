@@ -114,7 +114,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	return file.Close()
 }
 
-func getMime(f *os.File, fi os.FileInfo) string {
+func getMime(f io.ReadSeeker, fi os.FileInfo) string {
 	mime := mime.TypeByExtension(filepath.Ext(fi.Name()))
 	if mime != "" {
 		return mime
