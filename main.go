@@ -25,14 +25,10 @@ type Conf struct {
 	CachTime int  `json:"cachingTimeout"`
 	DatTime  int  `json:"streamTimeout"`
 	HSTS     bool `json:"hsts"`
-	Pro      bool `json:"protect"`
 	Le       struct {
 		Run bool     `json:"enabled"`
 		Loc []string `json:"domains"`
 	} `json:"letsencrypt"`
-	Pef struct {
-		Log bool `json:"logging"`
-	} `json:"performance"`
 	Proxy []struct {
 		Loc string `json:"location"`
 		URL string `json:"host"`
@@ -41,8 +37,12 @@ type Conf struct {
 		Loc string `json:"location"`
 		URL string `json:"dest"`
 	} `json:"redir"`
-	HTTP  int `json:"httpPort"`
-	HTTPS int `json:"sslPort"`
+	Adv struct {
+		Log   bool `json:"logging"`
+		Pro   bool `json:"protect"`
+		HTTP  int  `json:"httpPort"`
+		HTTPS int  `json:"sslPort"`
+	} `json:"advanced"`
 }
 
 const typeProxy = "proxy%"
@@ -83,11 +83,11 @@ var (
 	// httpsredir is a http.HandlerFunc for redirecting HTTP requests to HTTPS
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
-		if conf.HTTP != 80 {
-			host = strings.TrimSuffix(host, ":"+strconv.Itoa(conf.HTTP))
+		if conf.Adv.HTTP != 80 {
+			host = strings.TrimSuffix(host, ":"+strconv.Itoa(conf.Adv.HTTP))
 		}
-		if conf.HTTPS != 443 {
-			host = host + ":" + strconv.Itoa(conf.HTTPS)
+		if conf.Adv.HTTPS != 443 {
+			host = host + ":" + strconv.Itoa(conf.Adv.HTTPS)
 		}
 
 		w.Header().Set("Connection", "close")
@@ -97,7 +97,7 @@ var (
 
 // Log logs a request to the console.
 func Log(r *http.Request, head string, url string) {
-	if conf.Pef.Log {
+	if conf.Adv.Log {
 		host := r.Host
 		if strings.Contains(r.Host, ":") {
 			host = strings.Split(r.Host, ":")[0]
@@ -141,7 +141,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Strict-Transport-Security", "max-age=31536000;includeSubDomains;preload")
 	}
 
-	if conf.Pro {
+	if conf.Adv.Pro {
 		w.Header().Add("Referrer-Policy", "no-referrer")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("X-Frame-Options", "sameorigin")
@@ -276,7 +276,7 @@ func main() {
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
-		Addr:         ":" + strconv.Itoa(conf.HTTPS),
+		Addr:         ":" + strconv.Itoa(conf.Adv.HTTPS),
 		Handler:      http.HandlerFunc(mainHandle),
 		TLSConfig:    tlsc,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
@@ -285,7 +285,7 @@ func main() {
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
-		Addr:         ":" + strconv.Itoa(conf.HTTP),
+		Addr:         ":" + strconv.Itoa(conf.Adv.HTTP),
 		Handler:      wrapLoad(mainHandle),
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,

@@ -2,14 +2,9 @@
   "cachingTimeout": 4,
   "streamTimeout": 10,
   "hsts": false,
-  "protect": true,
   "letsencrypt": {
     "enabled": false,
     "domains": ["example.com"]
-  },
-  "performance": {
-    "logging": true,
-    "gzipx": 2
   },
   "proxy": [
     {
@@ -27,6 +22,10 @@
 	"dest": "http://example.com"
     }
   ],
-  "httpPort": 80,
-  "sslPort": 443
+  "advanced": {
+    "protect": true,
+    "logging": true,
+    "httpPort": 80,
+    "sslPort": 443
+  }
 }
