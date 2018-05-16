@@ -149,7 +149,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	return nil
 }
 
-// StyledEror serves an styled error page
+// StyledError serves an styled error page
 func StyledError(w http.ResponseWriter, title string, content string, status int) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
