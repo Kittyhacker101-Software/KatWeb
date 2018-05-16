@@ -90,7 +90,6 @@ var (
 			host = host + ":" + strconv.Itoa(conf.Adv.HTTPS)
 		}
 
-		w.Header().Set("Connection", "close")
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
 	})
 )
@@ -297,7 +296,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("Shutting down KatWeb...")
+		fmt.Println("[Info] : Shutting down KatWeb...")
 		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
 		os.Exit(1)
