@@ -143,13 +143,12 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 	if conf.Adv.Pro {
 		w.Header().Add("Referrer-Policy", "no-referrer")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
-		w.Header().Add("X-Frame-Options", "sameorigin")
+		w.Header().Add("Content-Security-Policy", "default-src: https: 'unsafe-inline'; frame-ancestors 'self'")
 		w.Header().Add("X-XSS-Protection", "1; mode=block")
 	}
 
 	if conf.CachTime != 0 {
 		w.Header().Set("Cache-Control", "max-age="+strconv.Itoa(3600*conf.CachTime)+", public, stale-while-revalidate="+strconv.Itoa(900*conf.CachTime))
-		w.Header().Set("Expires", time.Now().UTC().Add(time.Duration(conf.CachTime)*time.Hour).Format(http.TimeFormat))
 	}
 }
 

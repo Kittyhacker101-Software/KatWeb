@@ -90,7 +90,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
-		} else if finfo.Size() < 2500000 {
+		} else if finfo.Size() < 50000 {
 			var gb bytes.Buffer
 			writer := bufio.NewWriter(&gb)
 
