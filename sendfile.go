@@ -34,19 +34,10 @@ var (
 		switch {
 		case runtime.NumGoroutine() < 12:
 			gz, _ = gzip.NewWriterLevel(nil, gzip.BestCompression)
-			if conf.Adv.Log {
-				os.Stdout.WriteString("[Gzip] : New gzip writer created with compression level of 9.\n")
-			}
 		case runtime.NumGoroutine() > 32:
 			gz, _ = gzip.NewWriterLevel(nil, gzip.ConstantCompression)
-			if conf.Adv.Log {
-				os.Stdout.WriteString("[Gzip] : New gzip writer created with compression level of 0 (Huffman Only).\n")
-			}
 		default:
 			gz, _ = gzip.NewWriterLevel(nil, 4)
-			if conf.Adv.Log {
-				os.Stdout.WriteString("[Gzip] : New gzip writer created with compression level of 4.\n")
-			}
 		}
 
 		return gz
