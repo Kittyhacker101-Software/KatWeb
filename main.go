@@ -97,13 +97,15 @@ var (
 
 // Log logs a request to the console.
 func Log(r *http.Request, head string, url string) {
-	if conf.Adv.Log {
-		host := r.Host
-		if strings.Contains(r.Host, ":") {
-			host = strings.Split(r.Host, ":")[0]
-		}
-		os.Stdout.WriteString("[" + head + "][" + host + url + "] : " + r.RemoteAddr + "\n")
+	if !conf.Adv.Log {
+		return
 	}
+	
+	host := r.Host
+	if strings.Contains(r.Host, ":") {
+		host = strings.Split(r.Host, ":")[0]
+	}
+	os.Stdout.WriteString("[" + head + "][" + host + url + "] : " + r.RemoteAddr + "\n")
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
