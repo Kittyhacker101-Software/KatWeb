@@ -91,6 +91,7 @@ var (
 		}
 
 		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+		Log(r, "WebHSTS", r.URL.EscapedPath())
 	})
 )
 
@@ -322,7 +323,7 @@ func main() {
 		}
 	}()
 
-	fmt.Println("[Info] : KatWeb Started. Server errors will be printed into the console.")
+	fmt.Println("[Info] : KatWeb Started.")
 
 	go srvh.ListenAndServe()
 	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
