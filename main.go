@@ -295,7 +295,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("[Info] : Shutting down KatWeb...")
+		fmt.Println("\n[Info] : Shutting down KatWeb...")
 		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
 		os.Exit(1)
