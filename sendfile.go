@@ -74,7 +74,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
-		} else if finfo.Size() < 50000 && w.Header().Get("Content-Type") != "application/gzip" {
+		} else if finfo.Size() < 200000 && w.Header().Get("Content-Type") != "application/gzip" {
 			if filen, err := os.Create(location + ".gz"); err == nil {
 				gz := zippers.Get().(*gzip.Writer)
 				gz.Reset(filen)
