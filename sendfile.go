@@ -2,8 +2,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"github.com/klauspost/compress/gzip"
 	"io"
 	"mime"
@@ -11,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -29,17 +26,7 @@ var (
 		"'", "&#39;",
 	)
 	zippers = sync.Pool{New: func() interface{} {
-		var gz *gzip.Writer
-
-		switch {
-		case runtime.NumGoroutine() < 12:
-			gz, _ = gzip.NewWriterLevel(nil, gzip.BestCompression)
-		case runtime.NumGoroutine() > 32:
-			gz, _ = gzip.NewWriterLevel(nil, gzip.ConstantCompression)
-		default:
-			gz, _ = gzip.NewWriterLevel(nil, 4)
-		}
-
+		gz, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
 		return gz
 	}}
 )
@@ -87,23 +74,20 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
-		} else if finfo.Size() < 50000 {
-			var gb bytes.Buffer
-			writer := bufio.NewWriter(&gb)
+		} else if finfo.Size() < 50000 && w.Header().Get("Content-Type") != "application/gzip" {
+			if filen, err := os.Create(location + ".gz"); err == nil {
+				gz := zippers.Get().(*gzip.Writer)
+				gz.Reset(filen)
 
-			gz := zippers.Get().(*gzip.Writer)
-			gz.Reset(writer)
+				io.Copy(gz, file)
 
-			io.Copy(gz, file)
+				gz.Close()
+				zippers.Put(gz)
+				file.Close()
 
-			gz.Close()
-			zippers.Put(gz)
-
-			writer.Flush()
-
-			w.Header().Set("Content-Encoding", "gzip")
-			http.ServeContent(w, r, finfo.Name(), finfo.ModTime(), bytes.NewReader(gb.Bytes()))
-			return file.Close()
+				file = filen
+				w.Header().Set("Content-Encoding", "gzip")
+			}
 		}
 	}
 
