@@ -38,7 +38,7 @@ type Conf struct {
 		URL string `json:"dest"`
 	} `json:"redir"`
 	Adv struct {
-		Log   bool `json:"logging"`
+		Dev   bool `json:"devmode"`
 		Pro   bool `json:"protect"`
 		HTTP  int  `json:"httpPort"`
 		HTTPS int  `json:"sslPort"`
@@ -90,14 +90,14 @@ var (
 			host = host + ":" + strconv.Itoa(conf.Adv.HTTPS)
 		}
 
-		http.Redirect(w, r, "https://"+host+r.URL.EscapedPath(), http.StatusMovedPermanently)
+		redir(w, "https://"+host+r.URL.EscapedPath())
 		Log(r, "WebHSTS", r.URL.EscapedPath())
 	})
 )
 
 // Log logs a request to the console.
 func Log(r *http.Request, head string, url string) {
-	if !conf.Adv.Log {
+	if !conf.Adv.Dev {
 		return
 	}
 
@@ -185,7 +185,8 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if val, ok := redirMap.Load(r.Host + url); ok {
-		http.Redirect(w, r, val.(string), http.StatusMovedPermanently)
+		redir(w, val.(string))
+		Log(r, "WebRedir", r.URL.EscapedPath())
 		return
 	}
 

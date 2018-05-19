@@ -62,7 +62,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 
 	w.Header().Set("Content-Type", getMime(file, finfo))
 
-	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && !conf.Adv.Dev {
 		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			if filen, err := os.Open(location + ".br"); err == nil {
 				file.Close()

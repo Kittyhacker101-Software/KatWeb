@@ -1,7 +1,7 @@
 {
   "cachingTimeout": 4,
   "streamTimeout": 10,
-  "hsts": false,
+  "hsts": true,
   "letsencrypt": {
     "enabled": false,
     "domains": ["example.com"]
@@ -24,7 +24,7 @@
   ],
   "advanced": {
     "protect": true,
-    "logging": true,
+    "devmode": true,
     "httpPort": 80,
     "sslPort": 443
   }
