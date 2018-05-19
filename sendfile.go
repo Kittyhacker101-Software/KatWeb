@@ -29,7 +29,7 @@ var (
 		gz, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
 		return gz
 	}}
-	gztypes = []string{"application/javascript", "application/json", "image/svg+xml", "text/css", "text/csv", "text/html", "text/plain", "text/xml"}
+	gztypes = []string{"application/javascript", "application/json", "application/x-javascript", "image/svg+xml", "text/css", "text/csv", "text/html", "text/plain", "text/xml"}
 )
 
 // ServeFile writes the contents of a file or directory into the HTTP response
