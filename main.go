@@ -100,7 +100,7 @@ func Log(r *http.Request, head string, url string) {
 	if !conf.Adv.Log {
 		return
 	}
-	
+
 	host := r.Host
 	if strings.Contains(r.Host, ":") {
 		host = strings.Split(r.Host, ":")[0]
@@ -146,7 +146,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 	if conf.Adv.Pro {
 		w.Header().Add("Referrer-Policy", "no-referrer")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
-		w.Header().Add("Content-Security-Policy", "default-src: https: 'unsafe-inline'; frame-ancestors 'self'")
+		w.Header().Add("Content-Security-Policy", "default-src https: 'unsafe-inline' 'self'; frame-ancestors 'self'")
 		w.Header().Add("X-XSS-Protection", "1; mode=block")
 	}
 
