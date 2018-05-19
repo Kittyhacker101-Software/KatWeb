@@ -29,6 +29,7 @@ var (
 		gz, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
 		return gz
 	}}
+	gztypes = []string{"application/javascript", "application/json", "image/svg+xml", "text/css", "text/csv", "text/html", "text/plain", "text/xml"}
 )
 
 // ServeFile writes the contents of a file or directory into the HTTP response
@@ -74,19 +75,23 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
 			}
-		} else if finfo.Size() < 100000 && w.Header().Get("Content-Type") != "application/gzip" {
-			if filen, err := os.Create(location + ".gz"); err == nil {
-				gz := zippers.Get().(*gzip.Writer)
-				gz.Reset(filen)
+		} else if finfo.Size() < 100000 && finfo.Size() < 400 && w.Header().Get("Content-Type") != "application/gzip" {
+			ct := strings.Split(w.Header().Get("Content-Type"), ";")
+			i := sort.SearchStrings(gztypes, ct[0])
+			if i < len(gztypes) && gztypes[i] == ct[0] {
+				if filen, err := os.Create(location + ".gz"); err == nil {
+					gz := zippers.Get().(*gzip.Writer)
+					gz.Reset(filen)
 
-				io.Copy(gz, file)
+					io.Copy(gz, file)
 
-				gz.Close()
-				zippers.Put(gz)
-				file.Close()
+					gz.Close()
+					zippers.Put(gz)
+					file.Close()
 
-				file = filen
-				w.Header().Set("Content-Encoding", "gzip")
+					file = filen
+					w.Header().Set("Content-Encoding", "gzip")
+				}
 			}
 		}
 	}
