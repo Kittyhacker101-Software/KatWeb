@@ -97,7 +97,7 @@ var (
 
 // Log logs a request to the console.
 func Log(r *http.Request, head string, url string) {
-	if !conf.Adv.Dev {
+	if !conf.Adv.Dev && (head == "WebProxy" || head == "Web") {
 		return
 	}
 
