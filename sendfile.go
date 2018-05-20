@@ -121,7 +121,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body,html{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}a,h3{text-align:center}h3{font-size:24px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;cursor:pointer;background-color:#333e42;padding:8px 16px}header{background-color:#222d32;padding:64px 16px 64px 32px}div{padding:.01em 16px}</style><title>` + urln + `</title><header><h1>` + urln + `</h1></header><div style="padding:16px;"><h3>Contents of directory</h3><div style="max-width:800px;margin:auto">`))
+	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding-top:16px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;background-color:#333e42;padding:8px 16px}a,h3{text-align:center}header{background-color:#222d32;padding:80px 32px}div{max-width:800px;margin:auto;padding:.01em 32px}</style><title>` + urln + `</title><header><h1>` + urln + `</h1></header><h3>Contents of directory</h3><div>`))
 	for _, d := range dirs {
 		name := d.Name()
 		if d.IsDir() {
@@ -131,7 +131,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 		url := url.URL{Path: name}
 		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + ">" + url.String() + "</a>"))
 	}
-	w.Write([]byte("</div></div></div>"))
+	w.Write([]byte("</div>"))
 	return nil
 }
 
@@ -139,5 +139,5 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 func StyledError(w http.ResponseWriter, title string, content string, status int) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px;padding:16px 0}h3{font-size:24px}header{color:#fff;background-color:#222d32;padding:64px 16px 64px 32px}</style><title>` + title + `</title><header><h1>` + title + `</h1></header><div style="padding:16px;"><h3>` + content + `</h3></div></div>`))
+	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding:16px}header{color:#fff;background-color:#222d32;padding:80px 32px}</style><title>` + title + `</title><header><h1>` + title + `</h1></header><h3>` + content + `</h3>`))
 }
