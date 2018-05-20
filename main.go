@@ -224,11 +224,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		Log(r, "WebUnAuth", url)
 		return
 	}
-	if r.Method == "BREW" {
-		StyledError(w, "418 I'm a Teapot", "The requested entity body is short and stout. Tip me over and pour me out.", http.StatusTeapot)
-		Log(r, "WebTeapot", url)
-		return
-	}
 
 	// Serve the content, and return an error if needed
 	if ServeFile(w, r, path+url, url) != nil {
