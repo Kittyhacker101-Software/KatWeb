@@ -3,6 +3,7 @@ package main
 
 import (
 	"github.com/klauspost/compress/gzip"
+	"html/template"
 	"io"
 	"mime"
 	"net/http"
@@ -18,13 +19,6 @@ import (
 const IndexFile = "index.html"
 
 var (
-	htmlReplacer = strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&#34;",
-		"'", "&#39;",
-	)
 	zippers = sync.Pool{New: func() interface{} {
 		gz, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
 		return gz
@@ -114,22 +108,21 @@ func getMime(f io.ReadSeeker, fi os.FileInfo) string {
 }
 
 func dirList(w http.ResponseWriter, f os.File, urln string) error {
-	dirs, err := f.Readdir(-1)
+	dirs, err := f.Readdirnames(0)
 	if err != nil {
 		return err
 	}
-	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() < dirs[j].Name() })
+	sort.Strings(dirs)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding-top:16px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;background-color:#333e42;padding:8px 16px}a,h3{text-align:center}header{background-color:#222d32;padding:80px 32px}div{max-width:800px;margin:auto;padding:.01em 32px}</style><title>` + urln + `</title><header><h1>` + urln + `</h1></header><h3>Contents of directory</h3><div>`))
 	for _, d := range dirs {
-		name := d.Name()
-		if d.IsDir() {
-			name += "/"
-		}
 		// Escape special characters from the url path
-		url := url.URL{Path: name}
-		w.Write([]byte("<p></p><a href=" + htmlReplacer.Replace(name) + ">" + url.String() + "</a>"))
+		if strings.HasSuffix(d, ".br") || (strings.HasSuffix(d, ".gz") && !strings.HasSuffix(d, ".tar.gz")) {
+			continue
+		}
+		url := url.URL{Path: d}
+		w.Write([]byte("<p></p><a href=" + template.HTMLEscapeString(url.String()) + ">" + template.HTMLEscapeString(d) + "</a>"))
 	}
 	w.Write([]byte("</div>"))
 	return nil
