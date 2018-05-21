@@ -146,7 +146,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 	if conf.Adv.Pro {
 		w.Header().Add("Referrer-Policy", "no-referrer")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
-		w.Header().Add("Content-Security-Policy", "default-src https: 'unsafe-inline' 'self'; frame-ancestors 'self'")
+		w.Header().Add("Content-Security-Policy", "default-src https: data: 'unsafe-inline' 'unsafe-eval' 'self'; frame-ancestors 'self'")
 		w.Header().Add("X-XSS-Protection", "1; mode=block")
 	}
 
