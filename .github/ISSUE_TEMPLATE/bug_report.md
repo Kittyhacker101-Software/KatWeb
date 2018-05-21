@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Found a bug? Help us fix it.
+about: Found a bug in KatWeb? Help us fix it.
 
 ---
 
