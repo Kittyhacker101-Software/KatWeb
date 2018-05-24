@@ -36,9 +36,12 @@ func DetectPasswd(url string, path string) []string {
 		for s.Scan() {
 			data = append(data, s.Text())
 		}
-		if len(data) > 0 {
-			return data
+		if len(data) == 0 {
+			// If the passwd file is blank, make the contents of the folder inaccessible.
+			return []string{"forbid"}
 		}
+
+		return data
 	}
 
 	return []string{"err"}
