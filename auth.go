@@ -2,32 +2,44 @@
 package main
 
 import (
-	"io/ioutil"
+	"bufio"
+	"crypto/sha512"
+	"encoding/hex"
 	"net/http"
+	"os"
 	"path/filepath"
-	"strings"
 )
 
 // RunAuth runs basic authentication on a http.Request
 func RunAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Please enter your login credentials."`)
+	user, pass, _ := r.BasicAuth()
+	hn := sha512.Sum512([]byte(user + ":" + pass))
+	hash := hex.EncodeToString(hn[:])
 
-	if user, pass, _ := r.BasicAuth(); len(a) == 2 && user == a[0] && pass == a[1] {
-		return true
+	for _, e := range a {
+		if e == hash {
+			return true
+		}
 	}
 
 	return false
 }
 
 // DetectPasswd gets password protection settings, and authentication credentials.
-func DetectPasswd(url string, path string) ([]string, bool) {
+func DetectPasswd(url string, path string) []string {
 	tmp, _ := filepath.Split(url)
 
-	if b, err := ioutil.ReadFile(path + tmp + "passwd"); err == nil {
-		if tmpa := strings.Split(strings.TrimSpace(string(b)), ":"); len(tmpa) == 2 {
-			return tmpa, true
+	if f, err := os.Open(path + tmp + "passwd"); err == nil {
+		var data []string
+		s := bufio.NewScanner(f)
+		for s.Scan() {
+			data = append(data, s.Text())
+		}
+		if len(data) > 0 {
+			return data
 		}
 	}
 
-	return []string{"err"}, false
+	return []string{"err"}
 }

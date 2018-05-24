@@ -157,12 +157,6 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
-	var (
-		authg bool
-		auth  []string
-	)
-
-	// Get the correct content control options for the file.
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		StyledError(w, "400 Bad Request", "The server cannot process the request due to an apparent client error", http.StatusBadRequest)
@@ -205,7 +199,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 			redir(w, r.URL.EscapedPath()+"/")
 			return
 		}
-		auth, authg = DetectPasswd(url, path)
 	}
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
@@ -219,7 +212,8 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		Log(r, "WebForbid", url)
 		return
 	}
-	if authg && !RunAuth(w, r, auth) {
+	auth := DetectPasswd(url, path)
+	if auth[0] != "err" && !RunAuth(w, r, auth) {
 		StyledError(w, "401 Unauthorized", "Correct authentication credentials are required to access this resource.", http.StatusUnauthorized)
 		Log(r, "WebUnAuth", url)
 		return
