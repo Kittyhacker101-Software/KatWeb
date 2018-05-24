@@ -207,12 +207,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		Log(r, "WebNotFound", url)
 		return
 	}
-	if finfo.Name() == "passwd" {
+	auth := DetectPasswd(url, path)
+	if finfo.Name() == "passwd" || auth[0] == "forbid" {
 		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
 		Log(r, "WebForbid", url)
 		return
 	}
-	auth := DetectPasswd(url, path)
 	if auth[0] != "err" && !RunAuth(w, r, auth) {
 		StyledError(w, "401 Unauthorized", "Correct authentication credentials are required to access this resource.", http.StatusUnauthorized)
 		Log(r, "WebUnAuth", url)
