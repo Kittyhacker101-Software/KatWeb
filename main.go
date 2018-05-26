@@ -250,6 +250,9 @@ func main() {
 	flag.Parse()
 	fmt.Println("[Info] : Loading KatWeb...")
 	os.Chdir(*rootl)
+	if finfo, err := os.Stat("/etc/katweb"); err == nil && finfo.IsDir() && *rootl == "." {
+		os.Chdir("/etc/katweb")
+	}
 
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
