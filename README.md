@@ -3,6 +3,10 @@
 ## Getting KatWeb
 To download KatWeb, you can either download a compiled release from the [releases page](https://github.com/kittyhacker101/KatWeb/releases), or compile KatWeb from the source code in the repository (**not recommended, code in the repository is not suitable for production use**).
 
+### Linux Packages
+- Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
+- Debian/Ubuntu packages are currently in development.
+
 ## Using KatWeb
 After you have extracted the compressed release, you can run the right build for your platform.
 The root folder for serving files is /html/, the configuration is /conf.json.
