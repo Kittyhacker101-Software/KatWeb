@@ -115,7 +115,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	sort.Strings(dirs)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding-top:16px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;background-color:#333e42;padding:8px 16px}a,h3{text-align:center}header{background-color:#222d32;padding:80px 32px}div{max-width:800px;margin:auto;padding:.01em 32px}</style><title>` + urln + `</title><header><h1>` + urln + `</h1></header><h3>Contents of directory</h3><div>`))
+	w.Write([]byte(`<!DOCTYPE html><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:15px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding-top:16px}a,header{color:#fff}a{width:98.5%;display:inline-block;text-decoration:none;background-color:#333e42;padding:8px 16px}a,h3{text-align:center}header{background-color:#222d32;padding:80px 32px}div{max-width:800px;margin:auto;padding:.01em 64px}</style><title>` + urln + `</title><header><h1>` + urln + `</h1></header><h3>Contents of directory</h3><div>`))
 	for _, d := range dirs {
 		// Escape special characters from the url path
 		if strings.HasSuffix(d, ".br") || (strings.HasSuffix(d, ".gz") && !strings.HasSuffix(d, ".tar.gz")) {
