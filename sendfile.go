@@ -122,7 +122,7 @@ func dirList(w http.ResponseWriter, f os.File, urln string) error {
 			continue
 		}
 		url := url.URL{Path: d}
-		w.Write([]byte("<p></p><a href=" + template.HTMLEscapeString(url.String()) + ">" + template.HTMLEscapeString(d) + "</a>"))
+		w.Write([]byte("<p><a href=" + template.HTMLEscapeString(url.String()) + ">" + template.HTMLEscapeString(d) + "</a>"))
 	}
 	w.Write([]byte("</div>"))
 	return nil
