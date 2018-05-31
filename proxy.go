@@ -2,6 +2,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"github.com/yhat/wsutil"
 	"net/http"
 	"net/http/httputil"
@@ -12,13 +13,31 @@ import (
 )
 
 var (
+	tlsp = &tls.Config{
+		CurvePreferences: []tls.CurveID{
+			tls.X25519,
+			tls.CurveP521,
+			tls.CurveP384,
+			tls.CurveP256,
+		},
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
+
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox, loc := GetProxy(r)
 			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
 		},
 		Transport: &http.Transport{
-			TLSClientConfig:     tlsc,
+			TLSClientConfig:     tlsp,
 			MaxIdleConns:        4096,
 			MaxIdleConnsPerHost: 256,
 			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
@@ -35,7 +54,7 @@ var (
 				r.URL.Scheme = "ws://"
 			}
 		},
-		TLSClientConfig: tlsc,
+		TLSClientConfig: tlsp,
 	}
 
 	proxyMap, redirMap sync.Map
