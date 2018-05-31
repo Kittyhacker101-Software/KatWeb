@@ -8,7 +8,7 @@ function createWindow () {
 	win.loadFile('index.html')
 
 	// Open the DevTools.
-	//win.webContents.openDevTools()
+	win.webContents.openDevTools()
 
 	win.once('ready-to-show', () => {
 		win.show()
@@ -39,6 +39,25 @@ app.on('browser-window-created',function(e,window) {
 	window.setMenu(null);
 });
 
+function detectKatWeb() {
+	var ost = os.platform()
+	var osa = os.arch()
+
+	if (ost == "win32") {
+		ost = "windows"
+	}
+
+	if (osa == "x64") {
+		return "katweb-" + ost + "-amd64"
+	}
+	if (osa == "ia32") {
+		return "katweb-" + ost + "-i386"
+	}
+
+	return "katweb-" + ost + "-" + osa
+
+}
+
 ipcMain.on('asynchronous-message', (event, arg) => {
 	if (arg == "restart") {
 		prc.stdout.destroy()
@@ -57,7 +76,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 		prc.kill('SIGHUP')
 	}
 	if (arg == "init" || arg == "restart") {
-		prc = spawn('KatWeb/katweb', ['-root=KatWeb/'])
+		prc = spawn('KatWeb/' + detectKatWeb(), ['-root=KatWeb/'])
 		prc.stdout.setEncoding('utf8')
 		prc.stderr.setEncoding('utf8')
 		prc.stdout.on('data', function (data) {
