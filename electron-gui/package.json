@@ -1,0 +1,15 @@
+{
+  "name": "katwebui",
+  "version": "1.9.6",
+  "description": "A electron control panel for KatWeb.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "kittyhacker101",
+  "license": "Unlicense",
+  "devDependencies": {
+    "electron": "^2.0.2"
+  },
+  "dependencies": {}
+}
