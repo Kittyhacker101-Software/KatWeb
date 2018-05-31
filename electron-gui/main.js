@@ -1,5 +1,6 @@
 const {app, BrowserWindow, ipcMain} = require('electron')
 const spawn = require('child_process').spawn
+const os = require('os')
 let win, prc
 
 function createWindow () {
@@ -49,6 +50,10 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 		prc.kill('SIGTERM')
 	}
 	if (arg == "reload") {
+		if (os.platform() == "win32") {
+			event.sender.send('asynchronous-message', "[Panel] : Reloading configuration is not currently supported on Windows.\n")
+			return
+		}
 		prc.kill('SIGHUP')
 	}
 	if (arg == "init" || arg == "restart") {
