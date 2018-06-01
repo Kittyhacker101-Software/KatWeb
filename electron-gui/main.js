@@ -87,10 +87,10 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 		});
 		prc.stdin.on('end', function () {
 			event.sender.send('asynchronous-message', "[Panel] : KatWeb process has stopped running.\n")
-			event.sender.send('asynchronous-reply', "KatWeb is not running.")
+			event.sender.send('asynchronous-reply', "not")
 		});
 
 		event.sender.send('asynchronous-message', "[Panel] : KatWeb started with pid " + prc.pid + ".\n")
-		event.sender.send('asynchronous-reply', "KatWeb PID : " + prc.pid)
+		event.sender.send('asynchronous-reply', prc.pid)
 	}
 })

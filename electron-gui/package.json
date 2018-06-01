@@ -11,5 +11,7 @@
   "devDependencies": {
     "electron": "^2.0.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "pidusage": "^2.0.6"
+  }
 }
