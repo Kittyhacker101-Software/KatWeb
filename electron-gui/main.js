@@ -4,7 +4,7 @@ const os = require('os')
 let win, prc
 
 function createWindow () {
-	win = new BrowserWindow({width: 800, height: 600, icon: "logo.png", show: false, frame: false})
+	win = new BrowserWindow({width: 800, height: 600, minWidth: 300, minHeight: 400, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, webPreferences: {webgl: false, webaudio: false}})
 	win.loadFile('index.html')
 
 	// Open the DevTools.
