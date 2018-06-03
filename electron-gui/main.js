@@ -109,5 +109,5 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 })
 
 dialog.showErrorBox = function(title, content) {
-	console.log(`${title}\n${content}`);
+	console.error(`${title}\n${content}`);
 }
