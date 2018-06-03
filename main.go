@@ -291,7 +291,7 @@ func main() {
 		fmt.Println("\n[Info] : Shutting down KatWeb...")
 		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
-		os.Exit(1)
+		os.Exit(0)
 	}()
 
 	// Reload config when a SIGHUP is recived
@@ -319,4 +319,5 @@ func main() {
 
 	go srvh.ListenAndServe()
 	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
+	os.Exit(1)
 }
