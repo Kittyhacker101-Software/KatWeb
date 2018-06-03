@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog} = require('electron')
 const spawn = require('child_process').spawn
 const os = require('os')
 let win, prc
@@ -77,6 +77,12 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 	}
 	if (arg == "init" || arg == "restart") {
 		prc = spawn('KatWeb/' + detectKatWeb(), ['-root=KatWeb/'])
+		if (prc.pid == undefined) {
+			event.sender.send('asynchronous-message', "[PanelError] : Unable to locate KatWeb.\n")
+			event.sender.send('asynchronous-reply', "err")
+			return
+		}
+
 		prc.stdout.setEncoding('utf8')
 		prc.stderr.setEncoding('utf8')
 		prc.stdout.on('data', function (data) {
@@ -90,7 +96,18 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 			event.sender.send('asynchronous-reply', "not")
 		});
 
+		prc.on('close', function (code) {
+			if (code == 1) {
+				event.sender.send('asynchronous-reply', "err")
+				event.sender.send('asynchronous-message', "[Panel] : KatWeb has crashed!\n");
+			}
+		});
+
 		event.sender.send('asynchronous-message', "[Panel] : KatWeb started with pid " + prc.pid + ".\n")
 		event.sender.send('asynchronous-reply', prc.pid)
 	}
 })
+
+dialog.showErrorBox = function(title, content) {
+	console.log(`${title}\n${content}`);
+}

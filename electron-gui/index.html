@@ -34,6 +34,10 @@
 			if (arg == "not") {
 				return document.getElementById("statbar").innerHTML = "KatWeb is not running."
 			}
+			if (arg == "err") {
+				out.innerHTML = out.innerHTML.trimdata(-49)
+				return document.getElementById("statbar").innerHTML = "Unable to start KatWeb!"
+			}
 			pid = arg
 		})
 		ipcRenderer.on('asynchronous-message', (event, arg) => {
@@ -55,15 +59,18 @@
 		})
 
 		setInterval(function () {
-			if (pid == undefined) {
-				return
-			}
 			pidusage(pid, function (err, stats) {
-				document.getElementById("statbar").innerHTML = stats.cpu + "% Avg CPU | " + Math.round(stats.memory/100000)/10 + "mb RAM | PID : " + pid
+				if (stats == null) {
+					return
+				}
+				document.getElementById("statbar").innerHTML = stats.cpu + "% Avg CPU | " + Math.round(stats.memory/100000)/10 + "mb RAM | PID : " + stats.pid
 			})
 		}, 250)
 
 		String.prototype.trimdata = function (length) {
+			if (0 > length) {
+				return this.substring(0, this.length+length)
+			}
 			return this.length > length*1.5 ? this.substring(this.length-length, this.length) : this;
 		}
 		</script>
