@@ -36,6 +36,7 @@ var (
 			prox, loc := GetProxy(r)
 			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
 		},
+		ErrorLog: Logger,
 		Transport: &http.Transport{
 			TLSClientConfig:     tlsp,
 			MaxIdleConns:        4096,
@@ -54,6 +55,7 @@ var (
 				r.URL.Scheme = "ws://"
 			}
 		},
+		ErrorLog:        Logger,
 		TLSClientConfig: tlsp,
 	}
 
