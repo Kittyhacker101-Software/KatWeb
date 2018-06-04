@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/acme/autocert"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -57,6 +58,9 @@ var (
 
 	rootl = flag.String("root", ".", "Root folder location")
 	svrh  = flag.String("serverName", "KatWeb", `String set in the "server" HTTP header.`)
+
+	// Logger is a custom logger for net/http and httputil
+	Logger = log.New(os.Stderr, "[Error] : ", 0)
 
 	// tlsc provides an TLS configuration for use with http.Server
 	tlsc = &tls.Config{
@@ -270,6 +274,7 @@ func main() {
 		Addr:         ":" + strconv.Itoa(conf.Adv.HTTPS),
 		Handler:      http.HandlerFunc(mainHandle),
 		TLSConfig:    tlsc,
+		ErrorLog:     Logger,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
 		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
@@ -278,6 +283,7 @@ func main() {
 	srvh := &http.Server{
 		Addr:         ":" + strconv.Itoa(conf.Adv.HTTP),
 		Handler:      wrapLoad(mainHandle),
+		ErrorLog:     Logger,
 		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
 		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
 		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
