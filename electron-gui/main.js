@@ -89,7 +89,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 			event.sender.send('asynchronous-message', data.toString())
 		});
 		prc.stderr.on('data', function (data) {
-			event.sender.send('asynchronous-message', '[Error] : ' + data.toString())
+			event.sender.send('asynchronous-message', data.toString())
 		});
 		prc.stdin.on('end', function () {
 			event.sender.send('asynchronous-message', "[Panel] : KatWeb process has stopped running.\n")
