@@ -271,22 +271,26 @@ func main() {
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
-		Addr:         ":" + strconv.Itoa(conf.Adv.HTTPS),
-		Handler:      http.HandlerFunc(mainHandle),
-		TLSConfig:    tlsc,
-		ErrorLog:     Logger,
-		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
-		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
-		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
+		Addr:              ":" + strconv.Itoa(conf.Adv.HTTPS),
+		Handler:           http.HandlerFunc(mainHandle),
+		TLSConfig:         tlsc,
+		ErrorLog:          Logger,
+		MaxHeaderBytes:    2048,
+		ReadTimeout:       time.Duration(conf.DatTime) * time.Second,
+		ReadHeaderTimeout: time.Duration(conf.DatTime/2) * time.Second,
+		WriteTimeout:      time.Duration(conf.DatTime) * time.Second,
+		IdleTimeout:       time.Duration(conf.DatTime*4) * time.Second,
 	}
 	// srvh handles all configuration for HTTP.
 	srvh := &http.Server{
-		Addr:         ":" + strconv.Itoa(conf.Adv.HTTP),
-		Handler:      wrapLoad(mainHandle),
-		ErrorLog:     Logger,
-		ReadTimeout:  time.Duration(conf.DatTime) * time.Second,
-		WriteTimeout: time.Duration(conf.DatTime) * time.Second,
-		IdleTimeout:  time.Duration(conf.DatTime*4) * time.Second,
+		Addr:              ":" + strconv.Itoa(conf.Adv.HTTP),
+		Handler:           wrapLoad(mainHandle),
+		ErrorLog:          Logger,
+		MaxHeaderBytes:    2048,
+		ReadTimeout:       time.Duration(conf.DatTime) * time.Second,
+		ReadHeaderTimeout: time.Duration(conf.DatTime/2) * time.Second,
+		WriteTimeout:      time.Duration(conf.DatTime) * time.Second,
+		IdleTimeout:       time.Duration(conf.DatTime*4) * time.Second,
 	}
 
 	// Handle graceful shutdown from crtl+c
