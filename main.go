@@ -256,15 +256,16 @@ func wrapLoad(origin http.HandlerFunc) http.Handler {
 
 func main() {
 	flag.Parse()
+	if *vers {
+		fmt.Println("KatWeb " + currentVersion + ", built for " + runtime.GOOS + "-" + runtime.GOARCH + ", using " + runtime.Compiler + " compiler.")
+		return
+	}
+
 	fmt.Println("[Info] : Loading KatWeb...")
 	os.Chdir(*rootl)
 
 	if !*noup {
 		fmt.Print(CheckUpdate(currentVersion))
-	}
-	if *vers {
-		fmt.Println("KatWeb " + currentVersion + ", built for " + runtime.GOOS + "-" + runtime.GOARCH + ", using " + runtime.Compiler + " compiler.")
-		return
 	}
 
 	data, err := ioutil.ReadFile("conf.json")
