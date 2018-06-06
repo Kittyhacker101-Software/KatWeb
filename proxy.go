@@ -122,8 +122,9 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CheckUpdate checks if you are using the latest version of KatWeb
 func CheckUpdate(current string) string {
-	resp, err := UpdateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
+	resp, _ := UpdateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if resp.Body == nil {
 		return ""
 	}
