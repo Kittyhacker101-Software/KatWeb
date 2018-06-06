@@ -3,7 +3,9 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"github.com/yhat/wsutil"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -12,7 +14,14 @@ import (
 	"time"
 )
 
+// UpdateData contains a struct for parsing returned json from the request
+type UpdateData struct {
+	Latest string `json:"tag_name"`
+}
+
 var (
+	upd UpdateData
+
 	tlsp = &tls.Config{
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,
@@ -59,6 +68,15 @@ var (
 		TLSClientConfig: tlsp,
 	}
 
+	// UpdateClient is the http.Client used for checking the latest version of KatWeb
+	UpdateClient = &http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			TLSClientConfig:   tlsp,
+		},
+		Timeout: 2 * time.Second,
+	}
+
 	proxyMap, redirMap sync.Map
 )
 
@@ -102,4 +120,31 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	} else {
 		proxy.ServeHTTP(w, r)
 	}
+}
+
+func CheckUpdate(current string) string {
+	resp, err := UpdateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
+	if resp.Body == nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+	if json.Unmarshal(body, &upd) != nil {
+		return ""
+	}
+
+	if strings.HasSuffix(current, "-dev") {
+		return "[Info] : Running a development version of KatWeb is not reccomended.\n"
+	}
+	if !strings.HasPrefix(current, upd.Latest[:4]) && current[5:] != "0" {
+		return "[Warn] : KatWeb is very out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Please update to the latest version as soon as possible.\n"
+	}
+	if upd.Latest != current {
+		return "[Info] : KatWeb is out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Using the latest version is reccomended.\n"
+	}
+	return ""
 }

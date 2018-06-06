@@ -58,6 +58,7 @@ var (
 
 	rootl = flag.String("root", ".", "Root folder location")
 	svrh  = flag.String("serverName", "KatWeb", `String set in the "server" HTTP header.`)
+	noup  = flag.Bool("ignoreUpdates", false, "Disable checking if KatWeb is up to date.")
 
 	// Logger is a custom logger for net/http and httputil
 	Logger = log.New(os.Stderr, "[Error] : ", 0)
@@ -254,6 +255,10 @@ func main() {
 	flag.Parse()
 	fmt.Println("[Info] : Loading KatWeb...")
 	os.Chdir(*rootl)
+
+	if !*noup {
+		fmt.Print(CheckUpdate("v1.9.7-dev"))
+	}
 
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
