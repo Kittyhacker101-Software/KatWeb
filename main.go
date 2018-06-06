@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -47,6 +48,7 @@ type Conf struct {
 }
 
 const typeProxy = "proxy%"
+const currentVersion = "v1.9.7-dev"
 
 var (
 	conf Conf
@@ -59,6 +61,7 @@ var (
 	rootl = flag.String("root", ".", "Root folder location")
 	svrh  = flag.String("serverName", "KatWeb", `String set in the "server" HTTP header.`)
 	noup  = flag.Bool("ignoreUpdates", false, "Disable checking if KatWeb is up to date.")
+	vers  = flag.Bool("version", false, "View info about this KatWeb binary.")
 
 	// Logger is a custom logger for net/http and httputil
 	Logger = log.New(os.Stderr, "[Error] : ", 0)
@@ -257,7 +260,11 @@ func main() {
 	os.Chdir(*rootl)
 
 	if !*noup {
-		fmt.Print(CheckUpdate("v1.9.7-dev"))
+		fmt.Print(CheckUpdate(currentVersion))
+	}
+	if *vers {
+		fmt.Println("KatWeb " + currentVersion + ", built for " + runtime.GOOS + "-" + runtime.GOARCH + ", using " + runtime.Compiler + " compiler.")
+		return
 	}
 
 	data, err := ioutil.ReadFile("conf.json")
