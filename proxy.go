@@ -139,13 +139,13 @@ func CheckUpdate(current string) string {
 	}
 
 	if strings.HasSuffix(current, "-dev") {
-		return "[Info] : Running a development version of KatWeb is not reccomended.\n"
+		return "[Info] : Running a development version of KatWeb is not recommended.\n"
 	}
 	if !strings.HasPrefix(current, upd.Latest[:4]) && current[5:] != "0" {
 		return "[Warn] : KatWeb is very out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Please update to the latest version as soon as possible.\n"
 	}
 	if upd.Latest != current {
-		return "[Info] : KatWeb is out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Using the latest version is reccomended.\n"
+		return "[Info] : KatWeb is out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Using the latest version is recommended.\n"
 	}
 	return ""
 }
