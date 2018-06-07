@@ -149,7 +149,7 @@ func CheckUpdate(current string) string {
 		return "[Warn] : Unable to check for updates!"
 	}
 
-	if math.Round(currenti) < math.Round(latesti) {
+	if math.Ceil(currenti) < math.Ceil(latesti) {
 		return "[Warn] : KatWeb is very out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Please update to the latest version as soon as possible.\n"
 	}
 	if currenti < latesti {
