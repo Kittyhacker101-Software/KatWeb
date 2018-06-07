@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"github.com/yhat/wsutil"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -135,17 +137,27 @@ func CheckUpdate(current string) string {
 		return ""
 	}
 	if json.Unmarshal(body, &upd) != nil {
-		return ""
+		return "[Warn] : Unable to check for updates!"
 	}
 
-	if !strings.HasPrefix(current, upd.Latest[:4]) && current[5:] != "0" {
+	currenti, err := strconv.ParseFloat(current[3:], 32)
+	if err != nil {
+		return "[Warn] : Unable to check for updates!"
+	}
+	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
+	if err != nil {
+		return "[Warn] : Unable to check for updates!"
+	}
+
+	if math.Round(currenti) < math.Round(latesti) {
 		return "[Warn] : KatWeb is very out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Please update to the latest version as soon as possible.\n"
 	}
-	if strings.HasSuffix(current, "-dev") {
-		return "[Info] : Running a development version of KatWeb is not recommended.\n"
-	}
-	if upd.Latest != current {
+	if currenti < latesti {
 		return "[Info] : KatWeb is out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Using the latest version is recommended.\n"
 	}
+	if currenti > latesti {
+		return "[Info] : Running a development version of KatWeb is not recommended.\n"
+	}
+
 	return ""
 }

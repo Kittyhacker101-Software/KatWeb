@@ -48,7 +48,7 @@ type Conf struct {
 }
 
 const typeProxy = "proxy%"
-const currentVersion = "v1.9.7-dev"
+const currentVersion = "v1.9.7"
 
 var (
 	conf Conf
