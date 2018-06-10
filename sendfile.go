@@ -20,7 +20,10 @@ const IndexFile = "index.html"
 
 var (
 	zippers = sync.Pool{New: func() interface{} {
-		gz, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
+		gz, err := gzip.NewWriterLevel(nil, gzip.BestCompression)
+		if err != nil {
+			gz = gzip.NewWriter(nil)
+		}
 		return gz
 	}}
 	gztypes = []string{"application/javascript", "application/json", "application/x-javascript", "image/svg+xml", "text/css", "text/csv", "text/html", "text/plain", "text/xml"}
@@ -43,7 +46,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	if err != nil {
 		if strings.HasSuffix(location, IndexFile) {
 			// If the index file is not present, create a list of files in the directory
-			if file, err := os.Open(loc); err == nil {
+			if file, err = os.Open(loc); err == nil {
 				return dirList(w, *file, folder)
 			}
 		}

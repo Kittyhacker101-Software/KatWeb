@@ -53,15 +53,24 @@ var (
 	vers  = flag.Bool("version", false, "View info about this KatWeb binary.")
 )
 
+// Print writes a message to the console
+func Print(content string) {
+	if _, err := os.Stdout.WriteString(content + "\n"); err != nil {
+		fmt.Println(content)
+	}
+}
+
 func main() {
 	flag.Parse()
 	if *vers {
-		fmt.Println("KatWeb " + currentVersion + ", built for " + runtime.GOOS + "-" + runtime.GOARCH + ", using " + runtime.Compiler + " compiler.")
+		Print("KatWeb " + currentVersion + ", built for " + runtime.GOOS + "-" + runtime.GOARCH + ", using " + runtime.Compiler + " compiler.")
 		return
 	}
 
-	fmt.Println("[Info] : Loading KatWeb...")
-	os.Chdir(*rootl)
+	Print("[Info] : Loading KatWeb...")
+	if os.Chdir(*rootl) != nil {
+		Print("[Warn] : Unable to change working directory!")
+	}
 
 	if !*noup {
 		go fmt.Print(CheckUpdate(currentVersion))
@@ -69,12 +78,11 @@ func main() {
 
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		fmt.Println("[Fatal] : Unable to read config file! Debugging info will be printed below.")
-		fmt.Println(err)
+		Print("[Fatal] : Unable to read config file!")
 		os.Exit(1)
 	}
 	if json.Unmarshal(data, &conf) != nil {
-		fmt.Println("[Fatal] : Unable to parse config file!")
+		Print("[Fatal] : Unable to parse config file!")
 		os.Exit(1)
 	}
 
@@ -110,7 +118,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("\n[Info] : Shutting down KatWeb...")
+		Print("\n[Info] : Shutting down KatWeb...")
 		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
 		os.Exit(0)
@@ -122,24 +130,24 @@ func main() {
 	go func() {
 		for {
 			<-cr
-			fmt.Println("[Info] : Reloading config...")
+			Print("[Info] : Reloading config...")
 			data, err := ioutil.ReadFile("conf.json")
 			if err != nil {
-				fmt.Println("[Error] : Unable to read config file!")
+				Print("[Error] : Unable to read config file!")
 				continue
 			}
 			if json.Unmarshal(data, &conf) != nil {
-				fmt.Println("[Error] : Unable to parse config file!")
+				Print("[Error] : Unable to parse config file!")
 				continue
 			}
 			MakeProxyMap()
-			fmt.Println("[Info] : Config reloaded.")
+			Print("[Info] : Config reloaded.")
 		}
 	}()
 
-	fmt.Println("[Info] : KatWeb Started.")
+	Print("[Info] : KatWeb Started.")
 
 	go srvh.ListenAndServe()
-	fmt.Println(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key"))
+	Print(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key").Error())
 	os.Exit(1)
 }

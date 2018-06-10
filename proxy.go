@@ -45,7 +45,12 @@ var (
 	proxy = &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox, loc := GetProxy(r)
-			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
+			u, err := url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
+			if err == nil {
+				r.URL = u
+				return
+			}
+			r.URL = fixProxy(r.URL, loc)
 		},
 		ErrorLog: Logger,
 		Transport: &http.Transport{
@@ -59,19 +64,26 @@ var (
 	wsproxy = &wsutil.ReverseProxy{
 		Director: func(r *http.Request) {
 			prox, loc := GetProxy(r)
-			r.URL, _ = url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
-			if r.URL.Scheme == "https" {
-				r.URL.Scheme = "wss://"
-			} else {
-				r.URL.Scheme = "ws://"
+			u, err := url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
+			if err != nil {
+				r.URL = fixProxy(r.URL, loc)
+				return
 			}
+
+			if r.URL.Scheme == "https" {
+				u.Scheme = "wss://"
+			} else {
+				u.Scheme = "ws://"
+			}
+
+			r.URL = u
 		},
 		ErrorLog:        Logger,
 		TLSClientConfig: tlsp,
 	}
 
-	// UpdateClient is the http.Client used for checking the latest version of KatWeb
-	UpdateClient = &http.Client{
+	// updateClient is the http.Client used for checking the latest version of KatWeb
+	updateClient = &http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives: true,
 			TLSClientConfig:   tlsp,
@@ -81,6 +93,25 @@ var (
 
 	proxyMap, redirMap sync.Map
 )
+
+// fixProxy proxies requests to the local server if the proxy's URL cannot be parsed
+func fixProxy(u *url.URL, loc string) *url.URL {
+	u = &url.URL{
+		Scheme: "http",
+		Host:   "localhost",
+		Path:   strings.TrimPrefix(u.String(), "/"+loc),
+	}
+	if conf.HSTS {
+		u.Scheme = "https"
+		if conf.Adv.HTTPS != 443 {
+			u.Host = u.Host + strconv.Itoa(conf.Adv.HTTPS)
+		}
+	} else if conf.Adv.HTTP != 80 {
+		u.Host = u.Host + strconv.Itoa(conf.Adv.HTTP)
+	}
+
+	return u
+}
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
 func GetProxy(r *http.Request) (string, string) {
@@ -126,7 +157,7 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 
 // CheckUpdate checks if you are using the latest version of KatWeb
 func CheckUpdate(current string) string {
-	resp, _ := UpdateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
+	resp, _ := updateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if resp.Body == nil {
 		return ""
 	}
@@ -137,16 +168,16 @@ func CheckUpdate(current string) string {
 		return ""
 	}
 	if json.Unmarshal(body, &upd) != nil {
-		return "[Warn] : Unable to check for updates!"
+		return "[Warn] : Unable to parse GitHub API response!"
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to check for updates!"
+		return "[Warn] : Unable to parse version number!"
 	}
 	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to check for updates!"
+		return "[Warn] : Unable to parse latest version number!"
 	}
 
 	if math.Ceil(currenti) < math.Ceil(latesti) {
