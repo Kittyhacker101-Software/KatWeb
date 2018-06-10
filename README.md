@@ -13,7 +13,7 @@ The root folder for serving files is /html/, the configuration is /conf.json.
 Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/kittyhacker101/KatWeb/wiki).
 
 ### Running as root
-Running KatWeb as root is not recommended for security reasons. You can allow non-root processes to bind to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
+Running KatWeb as root is not recommended for security reasons. You can allow KatWeb to use to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
 
 ## Features
 - TLS 1.2 Support (with partial support for TLS 1.3 draft #22)
