@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"os"
 )
 
 func testHost(client *http.Client, host, url string) int {
@@ -103,5 +104,45 @@ func Test_HTTP_Redir(t *testing.T) {
 		t.Error("Redirection headers not sent!")
 		t.Error(resp.StatusCode)
 	}
+	resp.Body.Close()
+}
+
+func Test_HTTP_Virtual_Hosts(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	if testHost(client, "nonexistenthost", server.URL) != http.StatusOK {
+		t.Error("Missing hosts are not handled correctly!")
+	}
+
+	os.Mkdir("testinghost", 0777)
+	file, err := os.Create("testinghost/index.html")
+	if err != nil {
+		t.Error("Unable to create testing data")
+	}
+	file.WriteString("Hello KatWeb!")
+	file.Close()
+
+	defer os.RemoveAll("testinghost")
+
+	req, err := http.NewRequest("GET", server.URL, nil)
+	if err != nil {
+		t.Error("Unable to create request!")
+	}
+	req.Host = "testinghost"
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	if string(body) != "Hello KatWeb!" {
+		t.Error("Virtual hosts are not handled correctly!")
+	}
+
 	resp.Body.Close()
 }
