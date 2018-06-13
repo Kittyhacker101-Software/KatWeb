@@ -104,10 +104,10 @@ func fixProxy(u *url.URL, loc string) *url.URL {
 	if conf.HSTS {
 		u.Scheme = "https"
 		if conf.Adv.HTTPS != 443 {
-			u.Host = u.Host + strconv.Itoa(conf.Adv.HTTPS)
+			u.Host = u.Host + ":" + strconv.Itoa(conf.Adv.HTTPS)
 		}
 	} else if conf.Adv.HTTP != 80 {
-		u.Host = u.Host + strconv.Itoa(conf.Adv.HTTP)
+		u.Host = u.Host + ":" + strconv.Itoa(conf.Adv.HTTP)
 	}
 
 	return u
