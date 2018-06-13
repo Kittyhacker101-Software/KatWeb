@@ -15,7 +15,7 @@ Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/ki
 ### Running as root
 Running KatWeb as root is not recommended for security reasons. You can allow KatWeb to use to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
 
-### KatWeb's Discord Server
+### Additional Info
 Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
 
 ## Features
