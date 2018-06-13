@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
-	"os"
 )
 
 func testHost(client *http.Client, host, url string) int {
@@ -25,6 +25,16 @@ func testHost(client *http.Client, host, url string) int {
 	}
 	resp.Body.Close()
 	return resp.StatusCode
+}
+
+func testHostFull(client *http.Client, host, url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return &http.Response{}, err
+	}
+	req.Host = host
+
+	return client.Do(req)
 }
 
 func Test_Map_IO(t *testing.T) {
@@ -125,15 +135,9 @@ func Test_HTTP_Virtual_Hosts(t *testing.T) {
 
 	defer os.RemoveAll("testinghost")
 
-	req, err := http.NewRequest("GET", server.URL, nil)
+	resp, err := testHostFull(client, "testinghost", server.URL)
 	if err != nil {
 		t.Error("Unable to create request!")
-	}
-	req.Host = "testinghost"
-
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Error("Unable to connect to server!")
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -141,6 +145,46 @@ func Test_HTTP_Virtual_Hosts(t *testing.T) {
 		t.Error("Unable to read request body!")
 	}
 	if string(body) != "Hello KatWeb!" {
+		t.Error("Virtual hosts are not handled correctly!")
+	}
+
+	resp.Body.Close()
+}
+
+func Test_HTTP_Proxy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`Hello proxy!`))
+	}))
+
+	proxyMap.Store("testProxy", server2.URL)
+
+	resp, err := testHostFull(client, "localhost", server.URL + "/testProxy")
+	if err != nil {
+		t.Error("Unable to create request!")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	if string(body) != "Hello proxy!" {
+		t.Error("Virtual hosts are not handled correctly!")
+	}
+
+	resp, err = testHostFull(client, "testProxy", server.URL)
+	if err != nil {
+		t.Error("Unable to create request!")
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	if string(body) != "Hello proxy!" {
 		t.Error("Virtual hosts are not handled correctly!")
 	}
 
