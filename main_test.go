@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"os"
 	"strings"
 	"testing"
@@ -155,14 +156,14 @@ func Test_HTTP_Proxy(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
 
-	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(`Hello proxy!`))
 	}))
 
 	proxyMap.Store("testProxy", server2.URL)
 
-	resp, err := testHostFull(client, "localhost", server.URL + "/testProxy")
+	resp, err := testHostFull(client, "localhost", server.URL+"/testProxy")
 	if err != nil {
 		t.Error("Unable to create request!")
 	}
@@ -172,8 +173,10 @@ func Test_HTTP_Proxy(t *testing.T) {
 		t.Error("Unable to read request body!")
 	}
 	if string(body) != "Hello proxy!" {
-		t.Error("Virtual hosts are not handled correctly!")
+		t.Error("Reverse proxies are not handled correctly!")
 	}
+	
+	resp.Body.Close()
 
 	resp, err = testHostFull(client, "testProxy", server.URL)
 	if err != nil {
@@ -185,7 +188,60 @@ func Test_HTTP_Proxy(t *testing.T) {
 		t.Error("Unable to read request body!")
 	}
 	if string(body) != "Hello proxy!" {
-		t.Error("Virtual hosts are not handled correctly!")
+		t.Error("Reverse proxies are not handled correctly!")
+	}
+
+	resp.Body.Close()
+}
+
+func Test_HTTP_Broken_Proxy(t *testing.T) {
+	var err error
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	parsedURL := strings.Split(server.URL, ":")
+	if len(parsedURL) != 3 {
+		t.Error("Unable to parse server url!")
+	}
+
+	conf.Adv.HTTP, err = strconv.Atoi(parsedURL[2])
+	if err != nil {
+		t.Error("Unable to edit server configuration!")
+	}
+
+	proxyMap.Store("testProxy", "htt:/exampl./%%%")
+
+	fdata, err := ioutil.ReadFile("html/index.html")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	resp, err := testHostFull(client, "localhost", server.URL+"/testProxy")
+	if err != nil {
+		t.Error("Unable to create request!")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	if string(body) != string(fdata) {
+		t.Error("Reverse proxies are not handled correctly!")
+	}
+
+	resp.Body.Close()
+
+	resp, err = testHostFull(client, "testProxy", server.URL)
+	if err != nil {
+		t.Error("Unable to create request!")
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	if string(body) != string(fdata) {
+		t.Error("Reverse proxies are not handled correctly!")
 	}
 
 	resp.Body.Close()
