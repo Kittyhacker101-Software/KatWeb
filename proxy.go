@@ -51,6 +51,7 @@ var (
 				return
 			}
 			r.URL = fixProxy(r.URL, loc)
+			r.Host = r.URL.Host
 		},
 		ErrorLog: Logger,
 		Transport: &http.Transport{
