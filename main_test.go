@@ -1,5 +1,5 @@
 // KatWeb by kittyhacker101 - Unit Tests
-// NOTE: These tests will not work properly if you have edited the contents of the "html" folder in any way!
+// NOTE: These tests have many points of failure. These tests are written only for the purpose of telling if something has gone wrong, not where the issue is located.
 package main
 
 import (
@@ -186,6 +186,17 @@ func Test_HTTP_File_Serving(t *testing.T) {
 	if !testHostCompare(client, "testinghost", server.URL, "Hello KatWeb!") {
 		t.Error("Virtual hosts are not handled correctly!")
 	}
+
+	if testHost(client, "localhost", server.URL+"/nonexistentfile") != http.StatusNotFound {
+		t.Error("Missing files are not handled correctly!")
+	}
+
+	os.Remove("testinghost/index.html")
+
+	if testHost(client, "testinghost", server.URL) != http.StatusOK {
+		t.Error("Folders with no index are not handled correctly!")
+	}
+
 }
 
 func Test_HTTP_Proxy(t *testing.T) {
