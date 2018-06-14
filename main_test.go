@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -24,11 +24,13 @@ func testHost(client *http.Client, host, url string) int {
 	if err != nil {
 		return 0
 	}
-	resp.Body.Close()
 	return resp.StatusCode
 }
 
 func testHostFull(client *http.Client, host, url string) (*http.Response, error) {
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return &http.Response{}, err
@@ -36,6 +38,27 @@ func testHostFull(client *http.Client, host, url string) (*http.Response, error)
 	req.Host = host
 
 	return client.Do(req)
+}
+
+func testHostCompare(client *http.Client, host, url, expect string) bool {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false
+	}
+	req.Host = host
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+
+	return string(body) != expect
 }
 
 func Test_Map_IO(t *testing.T) {
@@ -92,8 +115,9 @@ func Test_HTTP_Sandbox(t *testing.T) {
 	server.Close()
 }
 
-func Test_HTTP_Redir(t *testing.T) {
+func Test_HTTP_Redirect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
 
 	parsedURL := strings.Split(server.URL, ":")
 	if len(parsedURL) != 3 {
@@ -101,21 +125,36 @@ func Test_HTTP_Redir(t *testing.T) {
 	}
 
 	redirMap.Store("localhost:"+parsedURL[2]+"/redirect", "http://example.com")
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
 
-	resp, err := client.Get("http://localhost:" + parsedURL[2] + "/redirect")
+	resp, err := testHostFull(client, "localhost", "http://localhost:"+parsedURL[2]+"/redirect")
 	if err != nil {
 		t.Error("Unable to connect to server!")
 	}
 	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "http://example.com" {
 		t.Error("Redirection headers not sent!")
-		t.Error(resp.StatusCode)
 	}
-	resp.Body.Close()
+
+	resp, err = testHostFull(client, "localhost", server.URL+"/index.html")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "./" {
+		t.Error("Redirection headers not sent!")
+	}
+}
+
+func Test_HTTP_File_Serving(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	fdata, err := ioutil.ReadFile("html/index.html")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	if testHostCompare(client, "localhost", server.URL, string(fdata)) {
+		t.Error("File serving is not handled correctly!")
+	}
 }
 
 func Test_HTTP_Virtual_Hosts(t *testing.T) {
@@ -136,20 +175,9 @@ func Test_HTTP_Virtual_Hosts(t *testing.T) {
 
 	defer os.RemoveAll("testinghost")
 
-	resp, err := testHostFull(client, "testinghost", server.URL)
-	if err != nil {
-		t.Error("Unable to create request!")
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error("Unable to read request body!")
-	}
-	if string(body) != "Hello KatWeb!" {
+	if testHostCompare(client, "testinghost", server.URL, "Hello KatWeb!") {
 		t.Error("Virtual hosts are not handled correctly!")
 	}
-
-	resp.Body.Close()
 }
 
 func Test_HTTP_Proxy(t *testing.T) {
@@ -163,38 +191,16 @@ func Test_HTTP_Proxy(t *testing.T) {
 
 	proxyMap.Store("testProxy", server2.URL)
 
-	resp, err := testHostFull(client, "localhost", server.URL+"/testProxy")
-	if err != nil {
-		t.Error("Unable to create request!")
+	if testHostCompare(client, "localhost", server.URL+"/testProxy", "Hello proxy!") {
+		t.Error("Virtual hosts are not handled correctly!")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error("Unable to read request body!")
+	if testHostCompare(client, "testProxy", server.URL, "Hello proxy!") {
+		t.Error("Virtual hosts are not handled correctly!")
 	}
-	if string(body) != "Hello proxy!" {
-		t.Error("Reverse proxies are not handled correctly!")
-	}
-	
-	resp.Body.Close()
-
-	resp, err = testHostFull(client, "testProxy", server.URL)
-	if err != nil {
-		t.Error("Unable to create request!")
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error("Unable to read request body!")
-	}
-	if string(body) != "Hello proxy!" {
-		t.Error("Reverse proxies are not handled correctly!")
-	}
-
-	resp.Body.Close()
 }
 
-func Test_HTTP_Broken_Proxy(t *testing.T) {
+func Test_HTTP_Proxy_Broken(t *testing.T) {
 	var err error
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
@@ -216,33 +222,45 @@ func Test_HTTP_Broken_Proxy(t *testing.T) {
 		t.Error("Unable to read testing data!")
 	}
 
-	resp, err := testHostFull(client, "localhost", server.URL+"/testProxy")
+	if testHostCompare(client, "localhost", server.URL+"/testProxy", string(fdata)) {
+		t.Error("Virtual hosts are not handled correctly!")
+	}
+
+	if testHostCompare(client, "testProxy", server.URL, string(fdata)) {
+		t.Error("Virtual hosts are not handled correctly!")
+	}
+}
+
+func Test_HTTPS_Proxy_Broken(t *testing.T) {
+	var err error
+	server := httptest.NewTLSServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	conf.HSTS = true
+	tlsp.InsecureSkipVerify = true
+
+	parsedURL := strings.Split(server.URL, ":")
+	if len(parsedURL) != 3 {
+		t.Error("Unable to parse server url!")
+	}
+
+	conf.Adv.HTTPS, err = strconv.Atoi(parsedURL[2])
 	if err != nil {
-		t.Error("Unable to create request!")
+		t.Error("Unable to edit server configuration!")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	proxyMap.Store("testProxy", "htt:/exampl./%%%")
+
+	fdata, err := ioutil.ReadFile("html/index.html")
 	if err != nil {
-		t.Error("Unable to read request body!")
-	}
-	if string(body) != string(fdata) {
-		t.Error("Reverse proxies are not handled correctly!")
+		t.Error("Unable to read testing data!")
 	}
 
-	resp.Body.Close()
-
-	resp, err = testHostFull(client, "testProxy", server.URL)
-	if err != nil {
-		t.Error("Unable to create request!")
+	if testHostCompare(client, "localhost", server.URL+"/testProxy", string(fdata)) {
+		t.Error("Virtual hosts are not handled correctly!")
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error("Unable to read request body!")
+	if testHostCompare(client, "testProxy", server.URL, string(fdata)) {
+		t.Error("Virtual hosts are not handled correctly!")
 	}
-	if string(body) != string(fdata) {
-		t.Error("Reverse proxies are not handled correctly!")
-	}
-
-	resp.Body.Close()
 }
