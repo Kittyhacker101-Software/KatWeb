@@ -396,6 +396,7 @@ func Test_HTTP_Proxy(t *testing.T) {
 	}
 
 	server.Close()
+	server2.Close()
 }
 
 func Test_HTTPS_Proxy_Broken(t *testing.T) {
