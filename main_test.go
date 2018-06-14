@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,10 +25,12 @@ func testHost(client *http.Client, host, url string) int {
 	if err != nil {
 		return 0
 	}
+	resp.Body.Close()
 	return resp.StatusCode
 }
 
 func testHostFull(client *http.Client, host, url string) (*http.Response, error) {
+	client.Transport.(*http.Transport).DisableCompression = true
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
@@ -41,6 +44,8 @@ func testHostFull(client *http.Client, host, url string) (*http.Response, error)
 }
 
 func testHostAuth(client *http.Client, username, password, url string) (*http.Response, error) {
+	client.Transport.(*http.Transport).DisableCompression = true
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return &http.Response{}, err
@@ -51,6 +56,8 @@ func testHostAuth(client *http.Client, username, password, url string) (*http.Re
 }
 
 func testHostCompare(client *http.Client, host, url, expect string) bool {
+	client.Transport.(*http.Transport).DisableCompression = true
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false
@@ -79,35 +86,186 @@ func fileToString(path string) string {
 	return string(data)
 }
 
-func Test_Map_IO(t *testing.T) {
+// ----- Benchmarks -----
+
+func Benchmark_Request_Ideal(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`Hello proxy!`))
+	}))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL)
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		io.Copy(ioutil.Discard, resp.Body)
+	}
+	server.Close()
+}
+
+func Benchmark_Request_Missing(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL+"/nonexistentfile")
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		io.Copy(ioutil.Discard, resp.Body)
+	}
+	server.Close()
+}
+
+func Benchmark_Request_Index(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL)
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		io.Copy(ioutil.Discard, resp.Body)
+	}
+	server.Close()
+}
+
+func Benchmark_Request_Proxy(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`Hello proxy!`))
+	}))
+	client := server.Client()
+	conf.Adv.Dev = false
+	proxyMap.Store("benchProxy", server2.URL)
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL+"/benchProxy")
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		io.Copy(ioutil.Discard, resp.Body)
+	}
+	server.Close()
+	server2.Close()
+}
+
+func Benchmark_Request_NoKeepAlive_Ideal(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`Hello proxy!`))
+	}))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL)
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		resp.Body.Close()
+	}
+	server.Close()
+}
+
+func Benchmark_Request_NoKeepAlive_Missing(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL+"/nonexistentfile")
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		resp.Body.Close()
+	}
+	server.Close()
+}
+
+func Benchmark_Request_NoKeepAlive_Index(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+	conf.Adv.Dev = false
+
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL)
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		resp.Body.Close()
+	}
+	server.Close()
+}
+
+func Benchmark_Request_NoKeepAlive_Proxy(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`Hello proxy!`))
+	}))
+	client := server.Client()
+	conf.Adv.Dev = false
+	proxyMap.Store("benchProxy", server2.URL)
+
+	for n := 0; n < b.N; n++ {
+		resp, err := testHostFull(client, "localhost", server.URL+"/benchProxy")
+		if err != nil {
+			b.Error("Unable to request server!")
+			return
+		}
+		resp.Body.Close()
+	}
+	server.Close()
+	server2.Close()
+}
+
+// ----- Unit Tests -----
+
+func TestMain(m *testing.M) {
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		t.Error("Unable to read testing data!")
+		return
 	}
 
 	if json.Unmarshal(data, &conf) != nil {
-		t.Error("Unable to read parse testing data!")
+		return
 	}
 
 	MakeProxyMap()
+	conf.Adv.Dev = false
 
-	if val, ok := proxyMap.Load(conf.Proxy[0].Loc); ok {
-		if !ok {
-			t.Error("Could not read data from map!")
-		}
-		if val != conf.Proxy[0].URL {
-			t.Error("Data from map is incorrect!")
-		}
-	}
-
-	if val, ok := redirMap.Load(conf.Redir[0].Loc); ok {
-		if !ok {
-			t.Error("Could not read data from map!")
-		}
-		if val != conf.Redir[0].URL {
-			t.Error("Data from map is incorrect!")
-		}
-	}
+	m.Run()
 }
 
 func Test_HTTP_Sandbox(t *testing.T) {
@@ -159,6 +317,8 @@ func Test_HTTP_Redirect(t *testing.T) {
 	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "./" {
 		t.Error("Redirection headers not sent!")
 	}
+
+	server.Close()
 }
 
 func Test_HTTP_File_Serving(t *testing.T) {
@@ -197,6 +357,7 @@ func Test_HTTP_File_Serving(t *testing.T) {
 		t.Error("Folders with no index are not handled correctly!")
 	}
 
+	server.Close()
 }
 
 func Test_HTTP_Proxy(t *testing.T) {
@@ -233,6 +394,8 @@ func Test_HTTP_Proxy(t *testing.T) {
 	if !testHostCompare(client, "testProxy2", server.URL, fileToString("html/index.html")) {
 		t.Error("Reverse proxies are not handled correctly!")
 	}
+
+	server.Close()
 }
 
 func Test_HTTPS_Proxy_Broken(t *testing.T) {
@@ -262,6 +425,8 @@ func Test_HTTPS_Proxy_Broken(t *testing.T) {
 	if !testHostCompare(client, "testProxy", server.URL, fileToString("html/index.html")) {
 		t.Error("Reverse proxies are not handled correctly!")
 	}
+
+	server.Close()
 }
 
 func Test_HTTP_Auth(t *testing.T) {
@@ -326,4 +491,6 @@ func Test_HTTP_Auth(t *testing.T) {
 	if testHost(client, "localhost", server.URL+"/AuthTest/") != http.StatusForbidden {
 		t.Error("Sandbox is not secure!")
 	}
+
+	server.Close()
 }
