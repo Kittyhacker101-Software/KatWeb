@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
@@ -86,6 +88,11 @@ func fileToString(path string) string {
 	return string(data)
 }
 
+func clearGarbage() {
+	debug.SetGCPercent(720)
+	runtime.GC()
+}
+
 // ----- Benchmarks -----
 
 func Benchmark_Request_Ideal(b *testing.B) {
@@ -100,6 +107,7 @@ func Benchmark_Request_Ideal(b *testing.B) {
 		MaxIdleConns:        4096,
 		MaxIdleConnsPerHost: 4096,
 	}
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL)
 		if err != nil {
@@ -120,6 +128,7 @@ func Benchmark_Request_Missing(b *testing.B) {
 		MaxIdleConns:        4096,
 		MaxIdleConnsPerHost: 4096,
 	}
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL+"/nonexistentfile")
 		if err != nil {
@@ -140,6 +149,7 @@ func Benchmark_Request_Index(b *testing.B) {
 		MaxIdleConns:        4096,
 		MaxIdleConnsPerHost: 4096,
 	}
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL)
 		if err != nil {
@@ -165,6 +175,7 @@ func Benchmark_Request_Proxy(b *testing.B) {
 		MaxIdleConns:        4096,
 		MaxIdleConnsPerHost: 4096,
 	}
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL+"/benchProxy")
 		if err != nil {
@@ -185,6 +196,7 @@ func Benchmark_Request_NoKeepAlive_Ideal(b *testing.B) {
 	client := server.Client()
 	conf.Adv.Dev = false
 
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL)
 		if err != nil {
@@ -201,6 +213,7 @@ func Benchmark_Request_NoKeepAlive_Missing(b *testing.B) {
 	client := server.Client()
 	conf.Adv.Dev = false
 
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL+"/nonexistentfile")
 		if err != nil {
@@ -217,6 +230,7 @@ func Benchmark_Request_NoKeepAlive_Index(b *testing.B) {
 	client := server.Client()
 	conf.Adv.Dev = false
 
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL)
 		if err != nil {
@@ -238,6 +252,7 @@ func Benchmark_Request_NoKeepAlive_Proxy(b *testing.B) {
 	conf.Adv.Dev = false
 	proxyMap.Store("benchProxy", server2.URL)
 
+	clearGarbage()
 	for n := 0; n < b.N; n++ {
 		resp, err := testHostFull(client, "localhost", server.URL+"/benchProxy")
 		if err != nil {
