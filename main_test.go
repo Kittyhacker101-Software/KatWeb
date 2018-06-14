@@ -40,6 +40,16 @@ func testHostFull(client *http.Client, host, url string) (*http.Response, error)
 	return client.Do(req)
 }
 
+func testHostAuth(client *http.Client, username, password, url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return &http.Response{}, err
+	}
+	req.SetBasicAuth(username, password)
+
+	return client.Do(req)
+}
+
 func testHostCompare(client *http.Client, host, url, expect string) bool {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -58,7 +68,15 @@ func testHostCompare(client *http.Client, host, url, expect string) bool {
 	}
 	resp.Body.Close()
 
-	return string(body) != expect
+	return string(body) == expect
+}
+
+func fileToString(path string) string {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 func Test_Map_IO(t *testing.T) {
@@ -147,22 +165,12 @@ func Test_HTTP_File_Serving(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
 
-	fdata, err := ioutil.ReadFile("html/index.html")
-	if err != nil {
-		t.Error("Unable to read testing data!")
-	}
-
-	if testHostCompare(client, "localhost", server.URL, string(fdata)) {
+	if !testHostCompare(client, "localhost", server.URL, fileToString("html/index.html")) {
 		t.Error("File serving is not handled correctly!")
 	}
-}
 
-func Test_HTTP_Virtual_Hosts(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(mainHandle))
-	client := server.Client()
-
-	if testHost(client, "nonexistenthost", server.URL) != http.StatusOK {
-		t.Error("Missing hosts are not handled correctly!")
+	if !testHostCompare(client, "nonexistenthost", server.URL, fileToString("html/index.html")) {
+		t.Error("Missing virtual hosts are not handled correctly!")
 	}
 
 	os.Mkdir("testinghost", 0777)
@@ -175,12 +183,13 @@ func Test_HTTP_Virtual_Hosts(t *testing.T) {
 
 	defer os.RemoveAll("testinghost")
 
-	if testHostCompare(client, "testinghost", server.URL, "Hello KatWeb!") {
+	if !testHostCompare(client, "testinghost", server.URL, "Hello KatWeb!") {
 		t.Error("Virtual hosts are not handled correctly!")
 	}
 }
 
 func Test_HTTP_Proxy(t *testing.T) {
+	var err error
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
 
@@ -190,44 +199,28 @@ func Test_HTTP_Proxy(t *testing.T) {
 	}))
 
 	proxyMap.Store("testProxy", server2.URL)
-
-	if testHostCompare(client, "localhost", server.URL+"/testProxy", "Hello proxy!") {
-		t.Error("Virtual hosts are not handled correctly!")
-	}
-
-	if testHostCompare(client, "testProxy", server.URL, "Hello proxy!") {
-		t.Error("Virtual hosts are not handled correctly!")
-	}
-}
-
-func Test_HTTP_Proxy_Broken(t *testing.T) {
-	var err error
-	server := httptest.NewServer(http.HandlerFunc(mainHandle))
-	client := server.Client()
+	proxyMap.Store("testProxy2", "htt:/exampl./%%%")
 
 	parsedURL := strings.Split(server.URL, ":")
-	if len(parsedURL) != 3 {
-		t.Error("Unable to parse server url!")
-	}
-
 	conf.Adv.HTTP, err = strconv.Atoi(parsedURL[2])
 	if err != nil {
 		t.Error("Unable to edit server configuration!")
 	}
 
-	proxyMap.Store("testProxy", "htt:/exampl./%%%")
-
-	fdata, err := ioutil.ReadFile("html/index.html")
-	if err != nil {
-		t.Error("Unable to read testing data!")
+	if !testHostCompare(client, "localhost", server.URL+"/testProxy", "Hello proxy!") {
+		t.Error("Reverse proxies are not handled correctly!")
 	}
 
-	if testHostCompare(client, "localhost", server.URL+"/testProxy", string(fdata)) {
-		t.Error("Virtual hosts are not handled correctly!")
+	if !testHostCompare(client, "testProxy", server.URL, "Hello proxy!") {
+		t.Error("Reverse proxies are not handled correctly!")
 	}
 
-	if testHostCompare(client, "testProxy", server.URL, string(fdata)) {
-		t.Error("Virtual hosts are not handled correctly!")
+	if !testHostCompare(client, "localhost", server.URL+"/testProxy2", fileToString("html/index.html")) {
+		t.Error("Reverse proxies are not handled correctly!")
+	}
+
+	if !testHostCompare(client, "testProxy2", server.URL, fileToString("html/index.html")) {
+		t.Error("Reverse proxies are not handled correctly!")
 	}
 }
 
@@ -251,16 +244,75 @@ func Test_HTTPS_Proxy_Broken(t *testing.T) {
 
 	proxyMap.Store("testProxy", "htt:/exampl./%%%")
 
-	fdata, err := ioutil.ReadFile("html/index.html")
+	if !testHostCompare(client, "localhost", server.URL+"/testProxy", fileToString("html/index.html")) {
+		t.Error("Reverse proxies are not handled correctly!")
+	}
+
+	if !testHostCompare(client, "testProxy", server.URL, fileToString("html/index.html")) {
+		t.Error("Reverse proxies are not handled correctly!")
+	}
+}
+
+func Test_HTTP_Auth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mainHandle))
+	client := server.Client()
+
+	os.Mkdir("html/AuthTest", 0777)
+
+	file, err := os.Create("html/AuthTest/index.html")
 	if err != nil {
-		t.Error("Unable to read testing data!")
+		t.Error("Unable to create testing data")
+	}
+	file.WriteString("Hello KatWeb!")
+	file.Close()
+
+	file, err = os.Create("html/AuthTest/passwd")
+	if err != nil {
+		t.Error("Unable to create testing data")
+	}
+	file.WriteString("3d8d3a0e7221998c93dc16df692c786fb170bfa93713f7f686f65d022f3040d8f50c845551b9c4f23c7c7068017c388db0bae3775307cf80d45451619f13c0b9\n2cbf59e5f532df22ea8d4f54566f35a3c885a12d2a8aa0c3ca3763b33740cc7a5605cd7b47f8495feeb1e6b019af7b6e6cefa697d43748718610031b551add5a\n")
+	file.Close()
+
+	defer os.RemoveAll("html/AuthTest")
+
+	resp, err := testHostAuth(client, "KatWeb", "KatAuth", server.URL+"/AuthTest/")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	resp.Body.Close()
+	if string(body) != "Hello KatWeb!" {
+		t.Error("Basic authentication does not work correctly!")
 	}
 
-	if testHostCompare(client, "localhost", server.URL+"/testProxy", string(fdata)) {
-		t.Error("Virtual hosts are not handled correctly!")
+	resp, err = testHostAuth(client, "KatWeb", "KatWeb", server.URL+"/AuthTest/")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("Unable to read request body!")
+	}
+	resp.Body.Close()
+	if string(body) != "Hello KatWeb!" {
+		t.Error("Basic authentication does not work correctly!")
 	}
 
-	if testHostCompare(client, "testProxy", server.URL, string(fdata)) {
-		t.Error("Virtual hosts are not handled correctly!")
+	if testHost(client, "localhost", server.URL+"/AuthTest/passwd") != http.StatusForbidden {
+		t.Error("Sandbox is not secure!")
+	}
+
+	if testHost(client, "localhost", server.URL+"/AuthTest/") != http.StatusUnauthorized {
+		t.Error("Basic authentication does not work correctly!")
+	}
+
+	os.Remove("html/AuthTest/passwd")
+	os.Create("html/AuthTest/passwd")
+
+	if testHost(client, "localhost", server.URL+"/AuthTest/") != http.StatusForbidden {
+		t.Error("Sandbox is not secure!")
 	}
 }
