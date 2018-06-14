@@ -62,7 +62,7 @@ var (
 
 // logr logs a request to the console.
 func logr(r *http.Request, head, url string) {
-	if !conf.Adv.Dev && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir") {
+	if !conf.Adv.Dev && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir" || head == "WebNotFound") {
 		return
 	}
 
