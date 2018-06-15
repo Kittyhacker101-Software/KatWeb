@@ -60,6 +60,25 @@ func Print(content string) {
 	}
 }
 
+func ParseConfig(file string) string {
+	data, err := ioutil.ReadFile("conf.json")
+	if err != nil {
+		return "Unable to read config file!"
+	}
+	if json.Unmarshal(data, &conf) != nil {
+		return "Unable to parse config file!"
+	}
+
+	data, err = json.MarshalIndent(conf, "", "  ")
+	if err != nil {
+		return "Unable to load configuration!"
+	}
+
+	ioutil.WriteFile("conf.json", data, 0644)
+	MakeProxyMap()
+	return ""
+}
+
 func main() {
 	flag.Parse()
 	if *vers {
@@ -76,18 +95,12 @@ func main() {
 		go fmt.Print(CheckUpdate(currentVersion))
 	}
 
-	data, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		Print("[Fatal] : Unable to read config file!")
-		os.Exit(1)
-	}
-	if json.Unmarshal(data, &conf) != nil {
-		Print("[Fatal] : Unable to parse config file!")
+	if errt := ParseConfig("conf.json"); errt != "" {
+		Print("[Fatal] : " + errt)
 		os.Exit(1)
 	}
 
 	debug.SetGCPercent(720)
-	MakeProxyMap()
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{
@@ -119,8 +132,8 @@ func main() {
 	go func() {
 		<-c
 		Print("\n[Info] : Shutting down KatWeb...")
-		srv.Shutdown(context.Background())
 		srvh.Shutdown(context.Background())
+		srv.Shutdown(context.Background())
 		os.Exit(0)
 	}()
 
@@ -131,16 +144,9 @@ func main() {
 		for {
 			<-cr
 			Print("[Info] : Reloading config...")
-			data, err := ioutil.ReadFile("conf.json")
-			if err != nil {
-				Print("[Error] : Unable to read config file!")
-				continue
+			if errt := ParseConfig("conf.json"); errt != "" {
+				Print("[Error] : " + errt)
 			}
-			if json.Unmarshal(data, &conf) != nil {
-				Print("[Error] : Unable to parse config file!")
-				continue
-			}
-			MakeProxyMap()
 			Print("[Info] : Config reloaded.")
 		}
 	}()

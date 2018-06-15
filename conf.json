@@ -4,7 +4,9 @@
   "hsts": false,
   "letsencrypt": {
     "enabled": false,
-    "domains": ["example.com"]
+    "domains": [
+      "example.com"
+    ]
   },
   "proxy": [
     {
@@ -18,13 +20,13 @@
   ],
   "redir": [
     {
-	"location": "localhost/redirect",
-	"dest": "http://example.com"
+      "location": "localhost/redirect",
+      "dest": "http://example.com"
     }
   ],
   "advanced": {
-    "protect": true,
     "devmode": true,
+    "protect": true,
     "httpPort": 80,
     "sslPort": 443
   }
