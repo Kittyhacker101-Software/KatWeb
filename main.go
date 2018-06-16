@@ -60,6 +60,7 @@ func Print(content string) {
 	}
 }
 
+// ParseConfig parses a configuration file into the conf struct
 func ParseConfig(file string) string {
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
@@ -73,8 +74,10 @@ func ParseConfig(file string) string {
 	if err != nil {
 		return "Unable to load configuration!"
 	}
+	if ioutil.WriteFile("conf.json", data, 0644) != nil {
+		return "Unable to write configuration!"
+	}
 
-	ioutil.WriteFile("conf.json", data, 0644)
 	MakeProxyMap()
 	return ""
 }
