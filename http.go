@@ -49,7 +49,6 @@ var (
 		},
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{
-			// NOTE: Please compile with TLS-Tris if you would like to take advantage of TLS 1.3
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
