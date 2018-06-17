@@ -31,7 +31,10 @@ var (
 
 // ServeFile writes the contents of a file or directory into the HTTP response
 func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string) error {
-	var location = loc
+	var (
+		location = loc
+		filen    *os.File
+	)
 
 	finfo, err := os.Stat(loc)
 	if err != nil {
@@ -61,13 +64,13 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 
 	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && !conf.Adv.Dev {
 		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
-			if filen, err := os.Open(location + ".br"); err == nil {
+			if filen, err = os.Open(location + ".br"); err == nil {
 				file.Close()
 				file = filen
 				w.Header().Set("Content-Encoding", "br")
 			}
 		} else if _, err = os.Stat(location + ".gz"); err == nil {
-			if filen, err := os.Open(location + ".gz"); err == nil {
+			if filen, err = os.Open(location + ".gz"); err == nil {
 				file.Close()
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
@@ -76,7 +79,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 			ct := strings.Split(w.Header().Get("Content-Type"), ";")
 			i := sort.SearchStrings(gztypes, ct[0])
 			if i < len(gztypes) && gztypes[i] == ct[0] {
-				if filen, err := os.Create(location + ".gz"); err == nil {
+				if filen, err = os.Create(location + ".gz"); err == nil {
 					gz := zippers.Get().(*gzip.Writer)
 					gz.Reset(filen)
 
