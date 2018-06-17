@@ -135,8 +135,12 @@ func main() {
 	go func() {
 		<-c
 		Print("\n[Info] : Shutting down KatWeb...")
-		srvh.Shutdown(context.Background())
-		srv.Shutdown(context.Background())
+		if srvh.Shutdown(context.Background()) != nil {
+			Print("[Warn] : Unable to shutdown server!")
+		}
+		if srv.Shutdown(context.Background()) != nil {
+			Print("[Warn] : Unable to shutdown server!")
+		}
 		os.Exit(0)
 	}()
 
@@ -157,6 +161,6 @@ func main() {
 	Print("[Info] : KatWeb Started.")
 
 	go srvh.ListenAndServe()
-	Print(srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key").Error())
+	Print("[Fatal] : " + srv.ListenAndServeTLS("ssl/server.crt", "ssl/server.key").Error())
 	os.Exit(1)
 }
