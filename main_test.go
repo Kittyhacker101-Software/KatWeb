@@ -270,11 +270,11 @@ func Benchmark_Request_NoKeepAlive_Proxy(b *testing.B) {
 func TestMain(m *testing.M) {
 	data, err := ioutil.ReadFile("conf.json")
 	if err != nil {
-		return
+		os.Exit(1)
 	}
 
 	if json.Unmarshal(data, &conf) != nil {
-		return
+		os.Exit(1)
 	}
 
 	MakeProxyMap()
