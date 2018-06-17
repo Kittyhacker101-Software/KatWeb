@@ -42,7 +42,7 @@ type Conf struct {
 	} `json:"advanced"`
 }
 
-const currentVersion = "v1.9.8"
+const currentVersion = "v1.10.0"
 
 var (
 	conf Conf
