@@ -6,7 +6,7 @@ let win, prc
 var path = "KatWeb"
 
 function createWindow() {
-	win = new BrowserWindow({width: 420, height: 465, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, resizable: false, webPreferences: {webgl: false, webaudio: false}})
+	win = new BrowserWindow({width: 450, height: 463, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, resizable: false, webPreferences: {webgl: false, webaudio: false}})
 	win.loadFile('index.html')
 
 	//win.webContents.openDevTools()
@@ -43,6 +43,9 @@ app.on('browser-window-created',function(e,window) {
 ipcMain.on('asynchronous-message', (event, arg) => {
 	if (arg == "folder") {
 		shell.showItemInFolder(path + '/.')
+	}
+	if (arg == "copy") {
+		event.sender.send('asynchronous-message', "[Panel] : Selected text copied to clipboard!\n")
 	}
 	if (arg == "config") {
 		shell.openItem(path + '/conf.json')

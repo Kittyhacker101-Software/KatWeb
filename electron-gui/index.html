@@ -20,7 +20,7 @@
 			<p><a onclick="ipcRenderer.send('asynchronous-message', 'reload')" style="margin-right: 8px">Reload Config</a>
 			<a onclick="ipcRenderer.send('asynchronous-message', 'restart')">Restart Server</a>
 			<h3>Console</h3>
-			<p id=output>
+			<p id=output oncontextmenu="document.execCommand('copy');ipcRenderer.send('asynchronous-message', 'copy')">
 		</div>
 		<script>
 		const {ipcRenderer, remote} = require('electron')
@@ -49,16 +49,6 @@
 		window.onbeforeunload = function(){
 			ipcRenderer.send('asynchronous-message', 'kill')
 		}
-		/*out.addEventListener("mousedown", function(evt) {
-			var resize = function(evt) {
-				out.style.height = window.innerHeight + 25 - evt.clientY + "px"
-				out.scrollTop = out.scrollHeight
-			}
-			document.body.addEventListener("mousemove", resize);
-			document.body.addEventListener("mouseup", function() {
-				document.body.removeEventListener("mousemove", resize);
-			});
-		})*/
 
 		setInterval(function () {
 			pidusage(pid, function (err, stats) {
