@@ -15,13 +15,13 @@
 		<div id=div>
 			<h3>Controls</h3>
 			<p id=statbar>Waiting for backend...
-			<p><a onclick="shell.showItemInFolder('KatWeb/.')">View KatWeb Folder</a>
+			<p><a onclick="ipcRenderer.send('asynchronous-message', 'folder')">View KatWeb Folder</a>
 			<p><a onclick="ipcRenderer.send('asynchronous-message', 'reload')">Reload Config</a>
 			<p><a onclick="ipcRenderer.send('asynchronous-message', 'restart')">Restart Server</a>
 		</div>
 		<p id=output>
 		<script>
-		const {ipcRenderer, shell, remote} = require('electron')
+		const {ipcRenderer, remote} = require('electron')
 		const pidusage = require('pidusage')
 		var out = document.getElementById("output")
 		var pid

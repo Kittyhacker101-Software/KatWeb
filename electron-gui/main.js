@@ -1,13 +1,37 @@
-const {app, BrowserWindow, ipcMain, dialog} = require('electron')
+const {app, BrowserWindow, shell, ipcMain, dialog} = require('electron')
 const spawn = require('child_process').spawn
 const os = require('os')
 let win, prc
 
-function createWindow () {
+function detectKatWeb() {
+	var ost = os.platform()
+	var osa = os.arch()
+
+	if (ost == "win32") {
+		ost = "windows"
+	}
+
+	if (ost == "sunos") {
+		ost = "solaris"
+	}
+
+	if (osa == "x64") {
+		return "katweb-" + ost + "-amd64"
+	}
+	if (osa == "ia32" || osa == "x32") {
+		return "katweb-" + ost + "-i386"
+	}
+
+	return "katweb-" + ost + "-" + osa
+}
+
+var path = "KatWeb"
+var pathBin = "KatWeb/" + detectKatWeb()
+
+function createWindow() {
 	win = new BrowserWindow({width: 800, height: 600, minWidth: 300, minHeight: 400, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, webPreferences: {webgl: false, webaudio: false}})
 	win.loadFile('index.html')
 
-	// Open the DevTools.
 	win.webContents.openDevTools()
 
 	win.once('ready-to-show', () => {
@@ -39,26 +63,10 @@ app.on('browser-window-created',function(e,window) {
 	window.setMenu(null);
 });
 
-function detectKatWeb() {
-	var ost = os.platform()
-	var osa = os.arch()
-
-	if (ost == "win32") {
-		ost = "windows"
-	}
-
-	if (osa == "x64") {
-		return "katweb-" + ost + "-amd64"
-	}
-	if (osa == "ia32") {
-		return "katweb-" + ost + "-i386"
-	}
-
-	return "katweb-" + ost + "-" + osa
-
-}
-
 ipcMain.on('asynchronous-message', (event, arg) => {
+	if (arg == "folder") {
+		shell.showItemInFolder(path + '/.')
+	}
 	if (arg == "restart") {
 		prc.stdout.destroy()
 		prc.stderr.destroy()
@@ -76,7 +84,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 		prc.kill('SIGHUP')
 	}
 	if (arg == "init" || arg == "restart") {
-		prc = spawn('KatWeb/' + detectKatWeb(), ['-root=KatWeb/'])
+		prc = spawn(pathBin, ['-root=' + path + '/'])
 		if (prc.pid == undefined) {
 			event.sender.send('asynchronous-message', "[PanelError] : Unable to locate KatWeb.\n")
 			event.sender.send('asynchronous-reply', "err")
