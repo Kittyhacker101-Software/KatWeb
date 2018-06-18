@@ -3,36 +3,13 @@ const spawn = require('child_process').spawn
 const os = require('os')
 let win, prc
 
-function detectKatWeb() {
-	var ost = os.platform()
-	var osa = os.arch()
-
-	if (ost == "win32") {
-		ost = "windows"
-	}
-
-	if (ost == "sunos") {
-		ost = "solaris"
-	}
-
-	if (osa == "x64") {
-		return "katweb-" + ost + "-amd64"
-	}
-	if (osa == "ia32" || osa == "x32") {
-		return "katweb-" + ost + "-i386"
-	}
-
-	return "katweb-" + ost + "-" + osa
-}
-
 var path = "KatWeb"
-var pathBin = "KatWeb/" + detectKatWeb()
 
 function createWindow() {
-	win = new BrowserWindow({width: 800, height: 600, minWidth: 300, minHeight: 400, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, webPreferences: {webgl: false, webaudio: false}})
+	win = new BrowserWindow({width: 420, height: 465, icon: "logo.png", title: "KatWeb Control Panel", show: false, frame: false, resizable: false, webPreferences: {webgl: false, webaudio: false}})
 	win.loadFile('index.html')
 
-	win.webContents.openDevTools()
+	//win.webContents.openDevTools()
 
 	win.once('ready-to-show', () => {
 		win.show()
@@ -67,6 +44,9 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 	if (arg == "folder") {
 		shell.showItemInFolder(path + '/.')
 	}
+	if (arg == "config") {
+		shell.openItem(path + '/conf.json')
+	}
 	if (arg == "restart") {
 		prc.stdout.destroy()
 		prc.stderr.destroy()
@@ -84,7 +64,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 		prc.kill('SIGHUP')
 	}
 	if (arg == "init" || arg == "restart") {
-		prc = spawn(pathBin, ['-root=' + path + '/'])
+		prc = spawn(path + "/katweb-bin", ['-root=' + path + '/'])
 		if (prc.pid == undefined) {
 			event.sender.send('asynchronous-message', "[PanelError] : Unable to locate KatWeb.\n")
 			event.sender.send('asynchronous-reply', "err")

@@ -2,7 +2,7 @@
 <html lang=en>
 	<head>
 		<meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport>
-		<style>body{margin:0;font:16px/1.5 sans-serif;overflow:hidden;-webkit-user-select:none;cursor:default}#div{padding:16px}h3{font-weight:400;margin:0;font-size:24px}#output,a{color:#fff;background-color:#222d32}a,span{text-align:center}a{display:inline-block;text-decoration:none;max-width:800px;margin:auto;padding:8px 16px;width:90%}#output,span{position:absolute;width:100%}#output{overflow-y:scroll;word-wrap:break-word;display:flex;flex-direction:column-reverse;font-size:14px;font-family:monospace;bottom:0;height:150px;cursor:ns-resize;margin:0}.titlebar{background-color:#222d32;height:29px!important;-webkit-app-region:drag}.close{right:0!important}.close:hover{background-color:#e81123!important}.tb{top:0;width:45px;height:29px;right:45px;position:absolute;-webkit-app-region:no-drag}.tb:hover{background-color:rgba(196,196,196,.4)}.tbutton{margin-top:8.5px;margin-left:16.5px}span{padding:3px 0;color:#fff;right:20px}.corner{height:22px;padding:3px}::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}::-webkit-scrollbar-thumb{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}a:hover{box-shadow:0 8px 16px 0 rgba(0,0,0,.2),0 6px 20px 0 rgba(0,0,0,.19);transition:box-shadow .15s,opacity .25s,filter .25s,border .15s}</style>
+		<style>body{margin:0;font:16px/1.5 sans-serif;overflow:hidden;-webkit-user-select:none;cursor:default}#div{padding:16px}h3{font-weight:400;margin:0;font-size:24px}#output,a{color:#fff;background-color:#222d32}#output::selection{background:#fff;color:#222d32}a,span{text-align:center}a{display:inline-block;text-decoration:none;max-width:800px;margin:auto;padding:8px 16px;width:40%}span{position:absolute;width:100%;padding:3px 0;color:#fff;right:20px}#output{overflow-y:scroll;word-wrap:break-word;display:flex;flex-direction:column-reverse;font-size:14px;font-family:monospace;bottom:0;height:150px;-webkit-user-select:auto}.titlebar{background-color:#222d32;height:29px!important;-webkit-app-region:drag}.close{right:0!important}.close:hover{background-color:#e81123!important}.tb{top:0;width:45px;height:29px;right:45px;position:absolute;-webkit-app-region:no-drag}.tb:hover{background-color:rgba(196,196,196,.4)}.tbutton{margin-top:8.5px;margin-left:16.5px}.corner{height:22px;padding:3px}::-webkit-scrollbar{width:12px}::-webkit-scrollbar-track{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}::-webkit-scrollbar-thumb{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}a:hover{box-shadow:0 8px 16px 0 rgba(0,0,0,.2),0 6px 20px 0 rgba(0,0,0,.19);transition:box-shadow .15s,opacity .25s,filter .25s,border .15s}</style>
 	</head>
 	<body>
 		<div class=titlebar>
@@ -15,11 +15,13 @@
 		<div id=div>
 			<h3>Controls</h3>
 			<p id=statbar>Waiting for backend...
-			<p><a onclick="ipcRenderer.send('asynchronous-message', 'folder')">View KatWeb Folder</a>
-			<p><a onclick="ipcRenderer.send('asynchronous-message', 'reload')">Reload Config</a>
-			<p><a onclick="ipcRenderer.send('asynchronous-message', 'restart')">Restart Server</a>
+			<p><a onclick="ipcRenderer.send('asynchronous-message', 'folder')" style="margin-right: 8px">View KatWeb Folder</a>
+			<a onclick="ipcRenderer.send('asynchronous-message', 'config')">Edit Config File</a>
+			<p><a onclick="ipcRenderer.send('asynchronous-message', 'reload')" style="margin-right: 8px">Reload Config</a>
+			<a onclick="ipcRenderer.send('asynchronous-message', 'restart')">Restart Server</a>
+			<h3>Console</h3>
+			<p id=output>
 		</div>
-		<p id=output>
 		<script>
 		const {ipcRenderer, remote} = require('electron')
 		const pidusage = require('pidusage')
@@ -47,7 +49,7 @@
 		window.onbeforeunload = function(){
 			ipcRenderer.send('asynchronous-message', 'kill')
 		}
-		out.addEventListener("mousedown", function(evt) {
+		/*out.addEventListener("mousedown", function(evt) {
 			var resize = function(evt) {
 				out.style.height = window.innerHeight + 25 - evt.clientY + "px"
 				out.scrollTop = out.scrollHeight
@@ -56,7 +58,7 @@
 			document.body.addEventListener("mouseup", function() {
 				document.body.removeEventListener("mousemove", resize);
 			});
-		})
+		})*/
 
 		setInterval(function () {
 			pidusage(pid, function (err, stats) {
