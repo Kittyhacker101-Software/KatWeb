@@ -16,9 +16,9 @@
 			<h3>Controls</h3>
 			<p id=statbar>Waiting for backend...
 			<p><a onclick="ipcRenderer.send('asynchronous-message', 'folder')" style="margin-right: 8px">View KatWeb Folder</a>
-			<a onclick="ipcRenderer.send('asynchronous-message', 'config')">Edit Config File</a>
-			<p><a onclick="ipcRenderer.send('asynchronous-message', 'reload')" style="margin-right: 8px">Reload Config</a>
 			<a onclick="ipcRenderer.send('asynchronous-message', 'restart')">Restart Server</a>
+			<p><a onclick="ipcRenderer.send('asynchronous-message', 'config')" style="margin-right: 8px">Edit Config File</a>
+			<a onclick="ipcRenderer.send('asynchronous-message', 'reload')">Reload Config</a>
 			<h3>Console</h3>
 			<p id=output oncontextmenu="document.execCommand('copy');ipcRenderer.send('asynchronous-message', 'copy')">
 		</div>
@@ -37,8 +37,10 @@
 				return document.getElementById("statbar").innerHTML = "KatWeb is not running."
 			}
 			if (arg == "err") {
-				out.innerHTML = out.innerHTML.trimdata(-49)
 				return document.getElementById("statbar").innerHTML = "Unable to start KatWeb!"
+			}
+			if (arg == "trim") {
+				return out.innerHTML = out.innerHTML.trimdata(-49)
 			}
 			pid = arg
 		})

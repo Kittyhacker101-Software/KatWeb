@@ -68,9 +68,11 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 	}
 	if (arg == "init" || arg == "restart") {
 		prc = spawn(path + "/katweb-bin", ['-root=' + path + '/'])
-		if (prc.pid == undefined) {
-			event.sender.send('asynchronous-message', "[PanelError] : Unable to locate KatWeb.\n")
+		prc.on('error', (err) => {
+			event.sender.send('asynchronous-message', "[Panel] : Unable to start KatWeb!\n")
 			event.sender.send('asynchronous-reply', "err")
+		});
+		if (prc.pid == undefined) {
 			return
 		}
 
@@ -89,6 +91,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 
 		prc.on('close', function (code) {
 			if (code == 1) {
+				event.sender.send('asynchronous-reply', "trim")
 				event.sender.send('asynchronous-reply', "err")
 				event.sender.send('asynchronous-message', "[Panel] : KatWeb has crashed!\n");
 			}
