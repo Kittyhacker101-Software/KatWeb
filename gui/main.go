@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/zserge/webview"
 	"net/http"
 	"os"
@@ -112,6 +113,12 @@ func manageKatWeb() {
 			if katweb != nil {
 				katweb.Signal(syscall.SIGHUP)
 			}
+		}
+		if data == "folder" {
+			open.Run("./KatWeb/")
+		}
+		if data == "config" {
+			open.Run("./KatWeb/conf.json")
 		}
 	}
 }
