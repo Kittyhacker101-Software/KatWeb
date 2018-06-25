@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/grafov/bcast"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/zserge/webview"
 	"net/http"
@@ -22,14 +23,13 @@ var (
 	}
 	katchan = make(chan string)
 	katctrl = make(chan string)
-	lock    bool
+	load    bool
+	katstat bool
+	guicast = bcast.NewGroup()
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
-	//if lock {
-	//	http.Error(w, "You do not have permission to access this resource.", http.StatusForbidden)
-	//	return
-	//}
+	load = true
 	if !strings.HasSuffix(r.URL.EscapedPath(), "/socket") {
 		http.ServeFile(w, r, "index.html")
 		return
@@ -42,12 +42,6 @@ func guiHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	if lock {
-		c.WriteMessage(websocket.TextMessage, []byte("locked"))
-		return
-	}
-	lock = true
-
 	go func() {
 		for {
 			_, message, err := c.ReadMessage()
@@ -58,8 +52,15 @@ func guiHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	if katstat {
+		c.WriteMessage(websocket.TextMessage, []byte("start"))
+	} else {
+		c.WriteMessage(websocket.TextMessage, []byte("stop"))
+	}
+
+	member := guicast.Join()
 	for {
-		data := <-katchan
+		data := member.Recv().(string)
 		c.WriteMessage(websocket.TextMessage, []byte(data))
 	}
 
@@ -136,7 +137,6 @@ func main() {
 		}
 	}()
 	go func() {
-		time.Sleep(1 * time.Second)
 		katctrl <- "start"
 		webview.New(webview.Settings{
 			Title:     "KatWeb Control Panel",
@@ -147,6 +147,19 @@ func main() {
 			Debug:     true,
 		}).Run()
 		katctrl <- "kill"
+	}()
+	go guicast.Broadcast(0)
+	go func() {
+		time.Sleep(1 * time.Second)
+		for {
+			val := <-katchan
+			guicast.Send(val)
+			if val == "start" {
+				katstat = true
+			} else if val == "stop" {
+				katstat = false
+			}
+		}
 	}()
 	manageKatWeb()
 }
