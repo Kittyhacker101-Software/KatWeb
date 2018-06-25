@@ -26,22 +26,27 @@ var (
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
-	if lock {
-		http.Error(w, "You do not have permission to access this resource.", http.StatusForbidden)
-		return
-	}
+	//if lock {
+	//	http.Error(w, "You do not have permission to access this resource.", http.StatusForbidden)
+	//	return
+	//}
 	if !strings.HasSuffix(r.URL.EscapedPath(), "/socket") {
 		http.ServeFile(w, r, "index.html")
 		return
 	}
 
-	lock = true
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Unable to upgrade websocket!", http.StatusInternalServerError)
 		return
 	}
 	defer c.Close()
+
+	if lock {
+		c.WriteMessage(websocket.TextMessage, []byte("locked"))
+		return
+	}
+	lock = true
 
 	go func() {
 		for {

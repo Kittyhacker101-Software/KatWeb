@@ -36,10 +36,16 @@
 				return
 			}
 			if (event.data == "err") {
-				out.innerHTML = "Unable to start KatWeb!"
+				out.innerHTML = "[Panel] : Unable to start KatWeb!"
 				return
 			}
 			if (event.data == "reload") {
+				return
+			}
+			if (event.data == "locked") {
+				document.getElementById("statbar").innerHTML = "Control panel is locked!"
+				out.innerHTML = "This control panel is locked. If you would like to regain access, restart the application."
+				document.body.innerHTML = document.body.innerHTML + "<style>a{color:#999}</style>"
 				return
 			}
 			return document.getElementById("statbar").innerHTML = event.data
