@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -74,7 +75,7 @@ func manageKatWeb() {
 
 	go func() {
 		for {
-			if katweb == nil {
+			if !katstat {
 				continue
 			}
 			for katcon.Scan() {
@@ -87,10 +88,10 @@ func manageKatWeb() {
 		data := <-katctrl
 		if data == "stop" || data == "kill" || data == "restart" {
 			katchan <- "clear"
-			if katweb != nil {
+			if katstat {
 				katweb.Signal(syscall.SIGTERM)
 				katweb.Wait()
-				katweb = nil
+				katstat = false
 			}
 		}
 		if data == "start" || data == "restart" {
@@ -99,18 +100,27 @@ func manageKatWeb() {
 			if err != nil {
 				katchan <- "[Panel] : Unable to start katweb!"
 				katchan <- "stop"
-				katweb = nil
+				katstat = false
+				continue
 			}
 
 			katcon = bufio.NewScanner(stdout)
 			if c.Start() != nil {
 				katchan <- "[Panel] : Unable to connect to katweb!"
 				katchan <- "stop"
-				katweb = nil
+				katstat = false
+				continue
 			}
 
 			katweb = c.Process
 			katchan <- "start"
+			katchan <- "[Panel] : KatWeb started with pid " + strconv.Itoa(katweb.Pid) + "."
+			katstat = true
+			go func() {
+				katweb.Wait()
+				katchan <- "stop"
+				katstat = false
+			}()
 		}
 		if data == "kill" {
 			os.Exit(0)
@@ -154,11 +164,7 @@ func main() {
 		for {
 			val := <-katchan
 			guicast.Send(val)
-			if val == "start" {
-				katstat = true
-			} else if val == "stop" {
-				katstat = false
-			}
+			//fmt.Println(val)
 		}
 	}()
 	manageKatWeb()
