@@ -168,11 +168,11 @@ func CheckUpdate(current string) string {
 	if err != nil {
 		return "[Warn] : Unable to read request body!\n"
 	}
-	if upd.Latest == "" {
-		return "[Warn] : GitHub API response is empty!\n"
-	}
 	if json.Unmarshal(body, &upd) != nil {
 		return "[Warn] : Unable to parse GitHub API response!\n"
+	}
+	if upd.Latest == "" {
+		return "[Warn] : GitHub API response is empty!\n"
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
