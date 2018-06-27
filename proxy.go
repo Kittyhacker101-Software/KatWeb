@@ -160,25 +160,28 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 func CheckUpdate(current string) string {
 	resp, err := updateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if err != nil {
-		return ""
+		return "[Warn] : Unable to contact GitHub API!\n"
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ""
+		return "[Warn] : Unable to read request body!\n"
+	}
+	if upd.Latest == "" {
+		return "[Warn] : GitHub API response is empty!\n"
 	}
 	if json.Unmarshal(body, &upd) != nil {
-		return "[Warn] : Unable to parse GitHub API response!"
+		return "[Warn] : Unable to parse GitHub API response!\n"
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to parse version number!"
+		return "[Warn] : Unable to parse version number!\n"
 	}
 	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to parse latest version number!"
+		return "[Warn] : Unable to parse latest version number!\n"
 	}
 
 	if math.Ceil(currenti) < math.Ceil(latesti) {
