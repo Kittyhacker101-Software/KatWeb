@@ -119,6 +119,7 @@ func manageKatWeb() {
 			go func() {
 				katweb.Wait()
 				katchan <- "stop"
+				katchan <- "[Panel] : KatWeb has stopped running!"
 				katstat = false
 			}()
 		}
@@ -153,7 +154,7 @@ func main() {
 			URL:       "http://localhost:8090",
 			Width:     450,
 			Height:    438,
-			Resizable: true,
+			Resizable: false,
 			Debug:     true,
 		}).Run()
 		katctrl <- "kill"
