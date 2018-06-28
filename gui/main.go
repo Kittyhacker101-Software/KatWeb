@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/grafov/bcast"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
@@ -29,6 +31,7 @@ var (
 	load    bool
 	katstat bool
 	guicast = bcast.NewGroup()
+	noui    = flag.Bool("headless", false, "Launch only the web GUI, don't launch the webview interface.")
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
@@ -180,15 +183,22 @@ func main() {
 		}
 	}()
 	go func() {
+		flag.Parse()
 		katctrl <- "start"
-		webview.New(webview.Settings{
-			Title:     "KatWeb Control Panel",
-			URL:       "http://localhost:8090",
-			Width:     450,
-			Height:    438,
-			Resizable: false,
-			Debug:     true,
-		}).Run()
+		if *noui {
+			c := make(chan os.Signal, 2)
+			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+			<-c
+		} else {
+			webview.New(webview.Settings{
+				Title:     "KatWeb Control Panel",
+				URL:       "http://localhost:8090",
+				Width:     450,
+				Height:    438,
+				Resizable: false,
+				Debug:     true,
+			}).Run()
+		}
 		katctrl <- "kill"
 	}()
 	go guicast.Broadcast(0)
