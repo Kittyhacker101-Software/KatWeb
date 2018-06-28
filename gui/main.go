@@ -193,9 +193,9 @@ func main() {
 			webview.New(webview.Settings{
 				Title:     "KatWeb Control Panel",
 				URL:       "http://localhost:8090",
-				Width:     450,
+				Width:     436,
 				Height:    438,
-				Resizable: false,
+				Resizable: true,
 				Debug:     true,
 			}).Run()
 		}
