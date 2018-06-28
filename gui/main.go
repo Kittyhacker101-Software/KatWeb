@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/grafov/bcast"
+	"github.com/shirou/gopsutil/process"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/zserge/webview"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -67,6 +69,10 @@ func guiHandle(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func floatToString(i float64) string {
+	return strconv.FormatFloat(math.Round(i*10)/10, 'f', -1, 64)
+}
+
 func manageKatWeb() {
 	var (
 		katweb *os.Process = nil
@@ -81,6 +87,32 @@ func manageKatWeb() {
 			for katcon.Scan() {
 				katchan <- katcon.Text()
 			}
+		}
+	}()
+
+	go func() {
+		for {
+			if !katstat {
+				continue
+			}
+
+			proc, err := process.NewProcess(int32(katweb.Pid))
+			if err != nil {
+				continue
+			}
+
+			cpu, err := proc.CPUPercent()
+			if err != nil {
+				continue
+			}
+
+			mem, err := proc.MemoryInfo()
+			if err != nil {
+				continue
+			}
+
+			katchan <- floatToString(cpu) + "% Avg CPU | " + floatToString(float64(mem.RSS)/1000000) + "mb RAM | PID : " + strconv.Itoa(katweb.Pid)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 
