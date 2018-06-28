@@ -85,6 +85,7 @@ func manageKatWeb() {
 	go func() {
 		for {
 			if !katstat {
+				time.Sleep(1)
 				continue
 			}
 			for katcon.Scan() {
@@ -95,6 +96,7 @@ func manageKatWeb() {
 
 	go func() {
 		for {
+			time.Sleep(1 * time.Second)
 			if !katstat {
 				continue
 			}
@@ -115,19 +117,19 @@ func manageKatWeb() {
 			}
 
 			katchan <- floatToString(cpu) + "% Avg CPU | " + floatToString(float64(mem.RSS)/1000000) + "mb RAM | PID : " + strconv.Itoa(katweb.Pid)
-			time.Sleep(1 * time.Second)
 		}
 	}()
 
 	for {
 		data := <-katctrl
 		if data == "stop" || data == "kill" || data == "restart" {
-			katchan <- "clear"
 			if katstat {
 				katweb.Signal(syscall.SIGTERM)
 				katweb.Wait()
 				katstat = false
 			}
+			katchan <- "clear"
+			time.Sleep(250 * time.Millisecond)
 		}
 		if data == "start" || data == "restart" {
 			c := exec.Command("./KatWeb/katweb-bin", "-root=./KatWeb")
