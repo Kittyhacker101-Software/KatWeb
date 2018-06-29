@@ -19,7 +19,7 @@ Running KatWeb as root is not recommended for security reasons. You can allow Ka
 Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
 
 ## Features
-- TLS 1.2 Support (with partial support for TLS 1.3 draft #22)
+- TLS 1.2 Support (with partial support for TLS 1.3 draft #23, if compiled with TLS-Tris)
 - HSTS Support
 - JSON Config Files
 - HTTP/2 and Keep-Alive
