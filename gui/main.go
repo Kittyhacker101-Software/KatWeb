@@ -14,11 +14,14 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
+
+const katloc = ".."
 
 var (
 	upgrader = websocket.Upgrader{}
@@ -132,7 +135,12 @@ func manageKatWeb() {
 			time.Sleep(250 * time.Millisecond)
 		}
 		if data == "start" || data == "restart" {
-			c := exec.Command("./KatWeb/katweb-bin", "-root=./KatWeb")
+			os := runtime.GOARCH
+			if os == "386" {
+				os = "i386"
+			}
+
+			c := exec.Command(katloc+"/katweb-"+runtime.GOOS+"-"+os, "-root="+katloc)
 			stdout, err := c.StdoutPipe()
 			if err != nil {
 				katchan <- "[Panel] : Unable to start katweb!"
@@ -169,10 +177,14 @@ func manageKatWeb() {
 			}
 		}
 		if data == "folder" {
-			open.Run("./KatWeb/")
+			if open.Start(katloc+"/") != nil {
+				katchan <- "[Panel] : Unable to open KatWeb folder!"
+			}
 		}
 		if data == "config" {
-			open.Run("./KatWeb/conf.json")
+			if open.Start(katloc+"/conf.json") != nil {
+				katchan <- "[Panel] : Unable to open KatWeb configuration!"
+			}
 		}
 	}
 }
@@ -209,7 +221,6 @@ func main() {
 		for {
 			val := <-katchan
 			guicast.Send(val)
-			//fmt.Println(val)
 		}
 	}()
 	manageKatWeb()
