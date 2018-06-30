@@ -164,28 +164,28 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 func CheckUpdate(current string) (int, string, error) {
 	resp, err := updateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if err != nil {
-		return 0, "", errors.New("Unable to contact GitHub API")
+		return 0, "", errors.New("unable to contact GitHub API")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return 0, "", errors.New("Unable to read request body")
+		return 0, "", errors.New("unable to read request body")
 	}
 	if json.Unmarshal(body, &upd) != nil {
-		return 0, "", errors.New("Unable to parse GitHub API response")
+		return 0, "", errors.New("unable to parse GitHub API response")
 	}
 	if upd.Latest == "" {
-		return 0, "", errors.New("GitHub API response is empty")
+		return 0, "", errors.New("gitHub API response is empty")
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
 	if err != nil {
-		return 0, upd.Latest, errors.New("Unable to parse version number")
+		return 0, upd.Latest, errors.New("unable to parse version number")
 	}
 	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
 	if err != nil {
-		return 0, upd.Latest, errors.New("Unable to parse latest version number")
+		return 0, upd.Latest, errors.New("unable to parse latest version number")
 	}
 
 	if math.Round(currenti) < math.Round(latesti) {

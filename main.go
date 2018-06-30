@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -98,7 +99,9 @@ func main() {
 		go func() {
 			up, vers, err := CheckUpdate(currentVersion)
 			if err != nil {
-				Print("[Warn] : " + err.Error() + "!")
+				err := err.Error()
+				err = strings.ToUpper(string(err[0])) + err[1:]
+				Print("[Warn] : " + err + "!")
 			}
 
 			switch up {
