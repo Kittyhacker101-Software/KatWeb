@@ -4,6 +4,7 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"github.com/yhat/wsutil"
 	"io/ioutil"
 	"math"
@@ -156,43 +157,46 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CheckUpdate checks if you are using the latest version of KatWeb
-func CheckUpdate(current string) string {
+// CheckUpdate checks if you are using the latest version of KatWeb.
+// It will return 0 if KatWeb is up to date, -1 if a development version is being used, and 1 if an older version of KatWeb is being used.
+// If the KatWeb release being used is behind by multiple versions, 2 will be returned.
+// It will also return the latest version from the GitHub API as a string.
+func CheckUpdate(current string) (int, string, error) {
 	resp, err := updateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if err != nil {
-		return "[Warn] : Unable to contact GitHub API!\n"
+		return 0, "", errors.New("Unable to contact GitHub API")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "[Warn] : Unable to read request body!\n"
+		return 0, "", errors.New("Unable to read request body")
 	}
 	if json.Unmarshal(body, &upd) != nil {
-		return "[Warn] : Unable to parse GitHub API response!\n"
+		return 0, "", errors.New("Unable to parse GitHub API response")
 	}
 	if upd.Latest == "" {
-		return "[Warn] : GitHub API response is empty!\n"
+		return 0, "", errors.New("GitHub API response is empty")
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to parse version number!\n"
+		return 0, upd.Latest, errors.New("Unable to parse version number")
 	}
 	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
 	if err != nil {
-		return "[Warn] : Unable to parse latest version number!\n"
+		return 0, upd.Latest, errors.New("Unable to parse latest version number")
 	}
 
-	if math.Ceil(currenti) < math.Ceil(latesti) {
-		return "[Warn] : KatWeb is very out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Please update to the latest version as soon as possible.\n"
+	if math.Round(currenti) < math.Round(latesti) {
+		return 2, upd.Latest, nil
 	}
 	if currenti < latesti {
-		return "[Info] : KatWeb is out of date (" + upd.Latest[1:] + " > " + current[1:] + "). Using the latest version is recommended.\n"
+		return 1, upd.Latest, nil
 	}
 	if currenti > latesti {
-		return "[Info] : Running a development version of KatWeb is not recommended.\n"
+		return -1, upd.Latest, nil
 	}
 
-	return ""
+	return 0, upd.Latest, nil
 }

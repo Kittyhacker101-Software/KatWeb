@@ -95,7 +95,21 @@ func main() {
 	}
 
 	if !*noup {
-		go fmt.Print(CheckUpdate(currentVersion))
+		go func() {
+			up, vers, err := CheckUpdate(currentVersion)
+			if err != nil {
+				Print("[Warn] : " + err.Error() + "!")
+			}
+
+			switch up {
+			case -1:
+				Print("[Info] : Running a development version of KatWeb is not recommended.")
+			case 1:
+				Print("[Info] : KatWeb is out of date (" + vers[1:] + " > " + currentVersion[1:] + "). Using the latest version is recommended.")
+			case 2:
+				Print("[Warn] : KatWeb is very out of date (" + vers[1:] + " > " + currentVersion[1:] + "). Please update to the latest version as soon as possible")
+			}
+		}()
 	}
 
 	if errt := ParseConfig("conf.json"); errt != "" {
