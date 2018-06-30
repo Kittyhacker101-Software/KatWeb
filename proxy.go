@@ -176,7 +176,7 @@ func CheckUpdate(current string) (int, string, error) {
 		return 0, "", errors.New("unable to parse GitHub API response")
 	}
 	if upd.Latest == "" {
-		return 0, "", errors.New("gitHub API response is empty")
+		return 0, "", errors.New("the GitHub API response is empty")
 	}
 
 	currenti, err := strconv.ParseFloat(current[3:], 32)
