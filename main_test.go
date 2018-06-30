@@ -283,6 +283,43 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+
+func Test_Updater(t *testing.T) {
+	up, vers, err := CheckUpdate("v1.0")
+	if err != nil {
+		t.Error("Unable to run updater!")
+	}
+
+	if up != 2 {
+		t.Error("Updater is not comparing version numbers correctly!")
+	}
+
+	latest, err := strconv.ParseFloat(vers[3:], 32)
+	if err != nil {
+		t.Error("Updater is not providing correct version numbers!")
+	}
+
+	latest = latest + 0.2
+	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest, 'f', -1, 32))
+	if err != nil {
+		t.Error("Unable to run updater!")
+	}
+
+	if up != -1 {
+		t.Error("Updater is not comparing version numbers correctly!")
+	}
+
+	latest = latest - 0.3
+	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest, 'f', -1, 32))
+	if err != nil {
+		t.Error("Unable to run updater!")
+	}
+
+	if !(up == 1 || up == 2) {
+		t.Error("Updater is not comparing version numbers correctly!")
+	}
+}
+
 func Test_HTTP_Sandbox(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
