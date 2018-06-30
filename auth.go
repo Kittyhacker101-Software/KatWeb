@@ -11,6 +11,8 @@ import (
 )
 
 // RunAuth runs basic authentication on a http.Request
+// The input []string must be a list of sha512 hashes.
+// If the user provided a correct login, this function will return true.
 func RunAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Please enter your login credentials."`)
 	user, pass, _ := r.BasicAuth()
@@ -27,6 +29,8 @@ func RunAuth(w http.ResponseWriter, r *http.Request, a []string) bool {
 }
 
 // DetectPasswd gets password protection settings, and authentication credentials.
+// If the file does not exist, the value ["err"] will be returned.
+// If the file is blank, ["forbid"] will be returned.
 func DetectPasswd(url string, path string) []string {
 	tmp, _ := filepath.Split(url)
 
@@ -37,7 +41,6 @@ func DetectPasswd(url string, path string) []string {
 			data = append(data, s.Text())
 		}
 		if len(data) == 0 {
-			// If the passwd file is blank, make the contents of the folder inaccessible.
 			return []string{"forbid"}
 		}
 
