@@ -1,3 +1,4 @@
+// KatWeb by kittyhacker101 - Webview Control Panel
 package main
 
 import (
@@ -52,8 +53,9 @@ func guiHandle(w http.ResponseWriter, r *http.Request) {
 	defer c.Close()
 
 	go func() {
+		var message []byte
 		for {
-			_, message, err := c.ReadMessage()
+			_, message, err = c.ReadMessage()
 			if err != nil {
 				return
 			}
@@ -62,15 +64,20 @@ func guiHandle(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if katstat {
-		c.WriteMessage(websocket.TextMessage, []byte("start"))
+		err = c.WriteMessage(websocket.TextMessage, []byte("start"))
 	} else {
-		c.WriteMessage(websocket.TextMessage, []byte("stop"))
+		err = c.WriteMessage(websocket.TextMessage, []byte("stop"))
+	}
+	if err != nil {
+		return
 	}
 
 	member := guicast.Join()
 	for {
 		data := member.Recv().(string)
-		c.WriteMessage(websocket.TextMessage, []byte(data))
+		if c.WriteMessage(websocket.TextMessage, []byte(data)) != nil {
+			return
+		}
 	}
 
 }
@@ -81,14 +88,14 @@ func floatToString(i float64) string {
 
 func manageKatWeb() {
 	var (
-		katweb *os.Process = nil
+		katweb *os.Process
 		katcon *bufio.Scanner
 	)
 
 	go func() {
 		for {
 			if !katstat {
-				time.Sleep(1)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			for katcon.Scan() {
@@ -200,6 +207,7 @@ func main() {
 		flag.Parse()
 		katctrl <- "start"
 		if *noui {
+			fmt.Println("GUI server started on port :8090!")
 			c := make(chan os.Signal, 2)
 			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 			<-c
