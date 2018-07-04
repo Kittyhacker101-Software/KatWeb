@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -184,11 +185,24 @@ func manageKatWeb() {
 			}
 		}
 		if data == "folder" {
+			if *noui {
+				abs, err := filepath.Abs(filepath.Dir(katloc + "/"))
+				if err != nil {
+					katchan <- "[Panel] : Unable to get KatWeb's working directory!"
+				} else {
+					katchan <- "[Panel] : KatWeb's working directory is " + abs
+				}
+				continue
+			}
 			if open.Start(katloc+"/") != nil {
 				katchan <- "[Panel] : Unable to open KatWeb folder!"
 			}
 		}
 		if data == "config" {
+			if *noui {
+				katchan <- "[Panel] : Applications cannot be launched while the GUI is in headless mode."
+				continue
+			}
 			if open.Start(katloc+"/conf.json") != nil {
 				katchan <- "[Panel] : Unable to open KatWeb configuration!"
 			}
