@@ -195,6 +195,7 @@ func Benchmark_Request_NoKeepAlive_Ideal(b *testing.B) {
 	}))
 	client := server.Client()
 	conf.Adv.Dev = false
+	conf.Adv.Pro = false
 
 	clearGarbage()
 	for n := 0; n < b.N; n++ {
@@ -282,7 +283,6 @@ func TestMain(m *testing.M) {
 
 	m.Run()
 }
-
 
 func Test_Updater(t *testing.T) {
 	up, vers, err := CheckUpdate("v1.0")
