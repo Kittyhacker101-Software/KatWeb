@@ -35,6 +35,7 @@ type Conf struct {
 		Loc string `json:"location"`
 		URL string `json:"dest"`
 	} `json:"redir"`
+	No  []string `json:"hide"`
 	Adv struct {
 		Dev   bool `json:"devmode"`
 		Pro   bool `json:"protect"`

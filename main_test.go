@@ -280,6 +280,7 @@ func TestMain(m *testing.M) {
 
 	MakeProxyMap()
 	conf.Adv.Dev = false
+	conf.No = []string{"hiddenhost"}
 
 	m.Run()
 }
@@ -383,6 +384,12 @@ func Test_HTTP_File_Serving(t *testing.T) {
 
 	if !testHostCompare(client, "nonexistenthost", server.URL, fileToString("html/index.html")) {
 		t.Error("Missing virtual hosts are not handled correctly!")
+	}
+
+	os.Mkdir("hiddenhost", 0777)
+	defer os.RemoveAll("hiddenhost")
+	if !testHostCompare(client, "hiddenhost", server.URL, fileToString("html/index.html")) {
+		t.Error("File serving is not handled correctly!")
 	}
 
 	os.Mkdir("testinghost", 0777)

@@ -24,6 +24,9 @@
       "dest": "http://example.com"
     }
   ],
+  "hide": [
+    "gui"
+  ],
   "advanced": {
     "devmode": true,
     "protect": true,

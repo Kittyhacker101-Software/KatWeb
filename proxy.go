@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -146,6 +147,7 @@ func MakeProxyMap() {
 	for i := range conf.Redir {
 		redirMap.Store(conf.Redir[i].Loc, conf.Redir[i].URL)
 	}
+	sort.Strings(conf.No)
 }
 
 // ProxyRequest reverse-proxies a request, or websocket

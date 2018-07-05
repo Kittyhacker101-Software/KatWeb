@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -96,7 +97,10 @@ func detectPath(path string, url string, r *http.Request) (string, string) {
 	}
 
 	if _, err := os.Stat(path); err == nil {
-		return path, url
+		i := sort.SearchStrings(conf.No, path[:len(path)-1])
+		if i >= len(conf.No) || conf.No[i] != path[:len(path)-1] {
+			return path, url
+		}
 	}
 
 	return "html/", url
