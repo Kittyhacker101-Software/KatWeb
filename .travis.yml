@@ -2,6 +2,3 @@ language: go
 
 go:
   - master
-
-before_install: 
-  - rm -r gui
