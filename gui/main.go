@@ -1,4 +1,4 @@
-// KatWeb by kittyhacker101 - Webview Control Panel
+// KatWeb by kittyhacker101 - KatWeb Control Panel
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 	"github.com/grafov/bcast"
 	"github.com/shirou/gopsutil/process"
 	"github.com/skratchdot/open-golang/open"
-	"github.com/zserge/webview"
+	//"github.com/zserge/webview"
 	"math"
 	"net/http"
 	"os"
@@ -36,7 +36,7 @@ var (
 	load    bool
 	katstat bool
 	guicast = bcast.NewGroup()
-	noui    = flag.Bool("headless", false, "Launch only the web GUI, don't launch the webview interface.")
+	//noui    = flag.Bool("headless", false, "Launch only the web GUI, don't launch the webview interface.")
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
@@ -185,27 +185,16 @@ func manageKatWeb() {
 			}
 		}
 		if data == "folder" {
-			if *noui {
-				abs, err := filepath.Abs(filepath.Dir(katloc + "/"))
-				if err != nil {
-					katchan <- "[Panel] : Unable to get KatWeb's working directory!"
-				} else {
-					katchan <- "[Panel] : KatWeb's working directory is " + abs
-				}
-				continue
+			abs, err := filepath.Abs(filepath.Dir(katloc + "/"))
+			if err != nil {
+				katchan <- "[Panel] : Unable to get KatWeb's working directory!"
+			} else {
+				katchan <- "[Panel] : KatWeb's working directory is " + abs
 			}
-			if open.Start(katloc+"/") != nil {
-				katchan <- "[Panel] : Unable to open KatWeb folder!"
-			}
+			open.Start(katloc + "/")
 		}
 		if data == "config" {
-			if *noui {
-				katchan <- "[Panel] : Applications cannot be launched while the GUI is in headless mode."
-				continue
-			}
-			if open.Start(katloc+"/conf.json") != nil {
-				katchan <- "[Panel] : Unable to open KatWeb configuration!"
-			}
+			open.Start(katloc + "/conf.json")
 		}
 	}
 }
@@ -220,12 +209,13 @@ func main() {
 	go func() {
 		flag.Parse()
 		katctrl <- "start"
-		if *noui {
-			fmt.Println("GUI server started on port :8090!")
-			c := make(chan os.Signal, 2)
-			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-			<-c
-		} else {
+		//if *noui {
+		fmt.Println("GUI server started on port :8090!")
+		open.Start("http://localhost:8090")
+		c := make(chan os.Signal, 2)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		<-c
+		/*} else {
 			webview.New(webview.Settings{
 				Title:     "KatWeb Control Panel",
 				URL:       "http://localhost:8090",
@@ -234,7 +224,7 @@ func main() {
 				Resizable: true,
 				Debug:     true,
 			}).Run()
-		}
+		}*/
 		katctrl <- "kill"
 	}()
 	go guicast.Broadcast(0)
