@@ -9,7 +9,6 @@ import (
 	"github.com/grafov/bcast"
 	"github.com/shirou/gopsutil/process"
 	"github.com/skratchdot/open-golang/open"
-	//"github.com/zserge/webview"
 	"math"
 	"net/http"
 	"os"
