@@ -27,16 +27,12 @@ const katloc = ".."
 
 var (
 	upgrader = websocket.Upgrader{}
-	srv      = &http.Server{
-		Addr:    "127.0.0.1:8090",
-		Handler: http.HandlerFunc(guiHandle),
-	}
-	katchan = make(chan string)
-	katctrl = make(chan string)
-	load    bool
-	katstat bool
-	guicast = bcast.NewGroup()
-	//noui    = flag.Bool("headless", false, "Launch only the web GUI, don't launch the webview interface.")
+	katchan  = make(chan string)
+	katctrl  = make(chan string)
+	load     bool
+	katstat  bool
+	guicast  = bcast.NewGroup()
+	bind     = flag.String("bind", "127.0.0.1:8090", `Port and IP to bind to.`)
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
@@ -200,31 +196,24 @@ func manageKatWeb() {
 }
 
 func main() {
+	flag.Parse()
 	go func() {
+		srv := &http.Server{
+			Addr:    *bind,
+			Handler: http.HandlerFunc(guiHandle),
+		}
 		if srv.ListenAndServe() != nil {
 			fmt.Println("Unable to start GUI backend!")
 			os.Exit(1)
 		}
 	}()
 	go func() {
-		flag.Parse()
 		katctrl <- "start"
-		//if *noui {
-		fmt.Println("GUI server started on port :8090!")
-		open.Start("http://localhost:8090")
+		fmt.Println("GUI server started on port " + *bind + "!")
+		open.Start("http://" + *bind)
 		c := make(chan os.Signal, 2)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		<-c
-		/*} else {
-			webview.New(webview.Settings{
-				Title:     "KatWeb Control Panel",
-				URL:       "http://localhost:8090",
-				Width:     448,
-				Height:    436,
-				Resizable: true,
-				Debug:     true,
-			}).Run()
-		}*/
 		katctrl <- "kill"
 	}()
 	go guicast.Broadcast(0)
