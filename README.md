@@ -6,6 +6,7 @@ To download KatWeb, you can either download a compiled release from the [release
 ### Linux Packages
 - Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
 - Debian/Ubuntu packages are currently in development.
+- Snapcraft packages are currently in development.
 
 ## Using KatWeb
 After you have extracted the compressed release, you can run the right build for your platform.
