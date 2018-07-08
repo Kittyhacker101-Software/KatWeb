@@ -19,7 +19,7 @@
 			<p id=output>
 		</div>
 		<script>
-		var socket = new WebSocket("ws://localhost:8090/socket")
+		var socket = new WebSocket("ws://" +  window.location.hostname+(location.port ? ':'+location.port: '') + "/socket")
 		var out = document.getElementById("output")
 
 		socket.onmessage = function (event) {
