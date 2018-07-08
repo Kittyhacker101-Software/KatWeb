@@ -33,3 +33,4 @@ Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](ht
 - Websocket Reverse Proxy
 - Material Design Directory Listings
 - Material Design Error Pages
+- Easy to use Browser Control Panel
