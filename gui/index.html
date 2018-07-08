@@ -2,13 +2,14 @@
 <html lang=en>
 	<head>
 		<meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport>
+		<title>KatWeb Control Panel - Disconnected</title>
 		<style>body{margin:0;font:16px/1.5 sans-serif;overflow-x:hidden;-webkit-user-select:none;cursor:default}div{padding:16px}#div{padding:0!important}h3{font-weight:400;margin:0;font-size:24px}#output,a{color:#fff;background-color:#222d32}#output::selection{background:#fff;color:#222d32}a,span{text-align:center}a{display:inline-block;text-decoration:none;max-width:200px;padding:8px 16px;width:40%;margin:8px 4px auto auto}span{position:absolute;width:100%;padding:3px 0;color:#fff;right:20px}#output{overflow-y:scroll;word-wrap:break-word;display:flex;flex-direction:column-reverse;font-size:14px;font-family:monospace;bottom:0;width:100%;min-height:150px;-webkit-user-select:text;margin-bottom:0}::-webkit-scrollbar{width:12px;background-color:#222d32}::-webkit-scrollbar-track{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}::-webkit-scrollbar-thumb{-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,.8)}a:hover{box-shadow:0 8px 16px 0 rgba(0,0,0,.2),0 6px 20px 0 rgba(0,0,0,.19);transition:box-shadow .15s,opacity .25s,filter .25s,border .15s}@media (max-width:435px){a{width:90%!important;max-width:440px!important}}@media (min-width:900px){a{width:20%!important;max-width:none!important}}</style>
 	</head>
 	<body>
 		<div>
 			<div id=div>
 			<h3>Controls</h3>
-			<p id=statbar>Waiting for backend...</p>
+			<p id=statbar>Connecting to control panel...</p>
 			<a onclick="socket.send('folder')">View KatWeb Folder</a>
 			<a onclick="socket.send('config')">Edit Config File</a>
 			<a onclick="socket.send('restart')">Restart Server</a>
@@ -22,16 +23,23 @@
 		var socket = new WebSocket("ws://" +  window.location.hostname+(location.port ? ':'+location.port: '') + "/socket")
 		var out = document.getElementById("output")
 
+		socket.onopen = function(event) {
+			document.title = "KatWeb Control Panel - Connected"
+			document.getElementById("statbar").innerHTML = "Connected to control panel."
+			out.innerHTML = "[Panel] : Connected to control panel websocket.</br>"
+		}
 		socket.onmessage = function (event) {
+			console.log(event.data)
 			if (event.data.startsWith("[")) {
 				out.innerHTML = out.innerHTML.trimdata(2500) + event.data + "</br>"
 				return
 			}
 			if (event.data == "start" || event.data == "restart") {
-				document.getElementById("statbar").innerHTML = "Connected to KatWeb."
+				document.getElementById("statbar").innerHTML = "KatWeb is running."
 			}
-			if (event.data == "clear" || event.data == "start" || event.data == "restart") {
+			if (event.data == "start" || event.data == "restart") {
 				out.innerHTML = ""
+				//out.innerHTML = out.innerHTML.trimdata(2500) + "</br>"
 				return
 			}
 			if (event.data == "stop") {
@@ -46,6 +54,11 @@
 				return
 			}
 			return document.getElementById("statbar").innerHTML = event.data
+		}
+		socket.onclose = function(event) {
+			document.title = "KatWeb Control Panel - Disconnected"
+			document.getElementById("statbar").innerHTML = "Disconnected from control panel!"
+			out.innerHTML = out.innerHTML.trimdata(2500) + "[Panel] : Control panel websocket has closed!</br>"
 		}
 
 		function resizeConsole() {
