@@ -321,6 +321,27 @@ func Test_Updater(t *testing.T) {
 	}
 }
 
+func Test_Address_Trim(t *testing.T) {
+	if trimPort("localhost") != "localhost" {
+		t.Error("Address trimming is not working correctly!")
+	}
+	if trimPort("localhost:8080") != "localhost" {
+		t.Error("Address trimming is not working correctly!")
+	}
+	if trimPort("127.0.0.1") != "127.0.0.1" {
+		t.Error("IPv4 address trimming is not working correctly!")
+	}
+	if trimPort("127.0.0.1:8080") != "127.0.0.1" {
+		t.Error("IPv4 address trimming is not working correctly!")
+	}
+	if trimPort("[::1]") != "[::1]" {
+		t.Error("IPv6 address trimming is not working correctly!")
+	}
+	if trimPort("[::1]:8080") != "[::1]" {
+		t.Error("IPv6 address trimming is not working correctly!")
+	}
+}
+
 func Test_HTTP_Sandbox(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()

@@ -83,8 +83,7 @@ func redir(w http.ResponseWriter, loc string) {
 
 // trimPort trims the port from a domain or IPv4/IPv6 address.
 func trimPort(path string) string {
-	pathn, _, err := net.SplitHostPort(path[:len(path)-1])
-	if err == nil {
+	if pathn, _, err := net.SplitHostPort(path[:len(path)-1]); err == nil {
 		if strings.Contains(pathn, ":") {
 			return "[" + pathn + "]"
 		}
