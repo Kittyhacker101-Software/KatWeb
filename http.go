@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"golang.org/x/crypto/acme/autocert"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -70,10 +71,7 @@ func logr(r *http.Request, head, url string) {
 		return
 	}
 
-	host := r.Host
-	if strings.Contains(r.Host, ":") {
-		host = strings.Split(r.Host, ":")[0]
-	}
+	host := trimPort(r.Host)
 	Print("[" + head + "][" + host + url + "] : " + r.RemoteAddr)
 }
 
@@ -83,11 +81,23 @@ func redir(w http.ResponseWriter, loc string) {
 	w.WriteHeader(http.StatusMovedPermanently)
 }
 
+// trimPort trims the port from a domain or IPv4/IPv6 address.
+func trimPort(path string) string {
+	pathn, _, err := net.SplitHostPort(path[:len(path)-1])
+	if err == nil {
+		if strings.Contains(pathn, ":") {
+			return "[" + pathn + "]"
+		}
+
+		return pathn
+	}
+
+	return path
+}
+
 // detectPath allows dynamic content control by domain and path.
 func detectPath(path string, url string, r *http.Request) (string, string) {
-	if strings.Contains(path, ":") {
-		path = strings.Split(path, ":")[0]
-	}
+	path = trimPort(path) + "/"
 
 	if len(conf.Proxy) > 0 {
 		prox, _ := GetProxy(r)
@@ -136,7 +146,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path, url := detectPath(r.Host+"/", urlo, r)
+	path, url := detectPath(r.Host, urlo, r)
 	if url == typeProxy {
 		ProxyRequest(w, r)
 		logr(r, "WebProxy", urlo)
