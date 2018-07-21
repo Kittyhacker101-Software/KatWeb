@@ -322,6 +322,9 @@ func Test_Updater(t *testing.T) {
 }
 
 func Test_Address_Trim(t *testing.T) {
+	if trimPort("") != "html" {
+		t.Error("Address trimming is not working correctly!")
+	}
 	if trimPort("localhost") != "localhost" {
 		t.Error("Address trimming is not working correctly!")
 	}
