@@ -20,18 +20,18 @@ Running KatWeb as root is not recommended for security reasons. You can allow Ka
 Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
 
 ## Features
-- TLS 1.2 Support (with partial support for TLS 1.3 draft #23, if compiled with TLS-Tris)
-- HSTS Support
-- JSON Config Files
-- HTTP/2 and Keep-Alive
-- HTTP Compression
-- Let's Encrypt Integration
-- Dynamic Serving
-- Modern Default Pages
-- Logging to Console
-- Password Protected Directories
-- HTTP Reverse Proxy
-- Websocket Reverse Proxy
-- Material Design Directory Listings
-- Material Design Error Pages
-- Easy to use Browser Control Panel
+- TLS 1.2 Support (v1.0+)
+- HSTS Support (v1.0+)
+- JSON Config Files (v1.0+)
+- HTTP/2 and Keep-Alive (v1.8.1+, partial support since v1.0)
+- Brotli Compression Support (v1.9.5+)
+- GZIP Compression Support (v1.5.4+, partial support since v1.0)
+- Let's Encrypt Integration (v1.9+)
+- Dynamic Serving (v1.0+)
+- Multiple logging formats (v1.10.1+)
+- Password Protected Directories (v1.0+)
+- HTTP Reverse Proxy (v1.2.7+)
+- Websocket Reverse Proxy (v1.8+)
+- Material Design Directory Listings (v1.6+)
+- Material Design Error Pages (v1.9.1+)
+- Easy to use Browser Control Panel (v1.10+)
