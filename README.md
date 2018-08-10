@@ -25,7 +25,7 @@ Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](ht
 - JSON Config Files (v1.0+)
 - HTTP/2 and Keep-Alive (v1.8.1+, partial support since v1.0)
 - Brotli Compression Support (v1.9.5+)
-- GZIP Compression Support (v1.5.4+, partial support since v1.0)
+- GZIP Compression Support (v1.0+)
 - Let's Encrypt Integration (v1.9+)
 - Dynamic Serving (v1.0+)
 - Multiple logging formats (v1.10.1+)
