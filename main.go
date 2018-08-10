@@ -44,14 +44,15 @@ type Conf struct {
 	} `json:"advanced"`
 }
 
-const currentVersion = "v1.10.0"
+const currentVersion = "v1.10.1"
 
 var (
 	conf Conf
 
-	rootl = flag.String("root", ".", "Root folder location")
+	rootl = flag.String("root", ".", "Root folder location.")
 	svrh  = flag.String("serverName", "KatWeb", `String set in the "server" HTTP header.`)
 	noup  = flag.Bool("ignoreUpdates", false, "Disable checking if KatWeb is up to date.")
+	logt  = flag.String("logType", "none", `Type of logging displayed to the console. Supported values are "none", "common", "combined", and "simple".`)
 	vers  = flag.Bool("version", false, "View info about this KatWeb binary.")
 )
 

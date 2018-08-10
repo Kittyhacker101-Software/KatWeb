@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const typeProxy = "proxy%"
@@ -67,12 +68,55 @@ var (
 
 // logr logs a request to the console.
 func logr(r *http.Request, head, url string) {
-	if !conf.Adv.Dev && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir" || head == "WebNotFound") {
+	if (!conf.Adv.Dev && *logt == "none") && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir" || head == "WebNotFound") {
 		return
 	}
 
 	host := trimPort(r.Host)
-	Print("[" + head + "][" + host + url + "] : " + r.RemoteAddr)
+	switch *logt {
+	case "common", "combined":
+		user, _, _ := r.BasicAuth()
+		if user == "" || head != "Web" {
+			user = "-"
+		}
+
+		status := 0
+		switch head {
+		case "WebHSTS", "WebRedir":
+			status = http.StatusMovedPermanently
+		case "WebBad":
+			status = http.StatusBadRequest
+		case "WebProxy", "Web":
+			status = http.StatusOK
+		case "WebForbid":
+			status = http.StatusForbidden
+		case "WebNotFound":
+			status = http.StatusNotFound
+		case "WebUnAuth":
+			status = http.StatusUnauthorized
+		case "WebError":
+			status = http.StatusInternalServerError
+		}
+
+		if *logt == "common" {
+			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " -")
+			return
+		}
+
+		refer := `"` + r.Header.Get("Referer") + `"`
+		if refer == `""` {
+			refer = "-"
+		}
+
+		usra := `"` + r.Header.Get("User-agent") + `"`
+		if usra == `""` {
+			usra = "-"
+		}
+
+		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " - " + refer + " " + usra)
+	default:
+		Print("[" + head + "][" + host + url + "] : " + r.RemoteAddr)
+	}
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
