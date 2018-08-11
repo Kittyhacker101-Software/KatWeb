@@ -34,7 +34,7 @@ var (
 		}
 
 		redir(w, "https://"+host+r.URL.EscapedPath())
-		logr(r, "WebHSTS", r.URL.EscapedPath())
+		logr(r, "WebHSTS", "", r.URL.EscapedPath())
 	})
 
 	// Logger is a custom logger for net/http and httputil
@@ -67,17 +67,24 @@ var (
 )
 
 // logr logs a request to the console.
-func logr(r *http.Request, head, url string) {
+func logr(r *http.Request, head, host, url string) {
 	if (!conf.Adv.Dev && *logt == "none") && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir" || head == "WebNotFound") {
 		return
 	}
 
-	host := trimPort(r.Host)
 	switch *logt {
 	case "common", "combined":
 		user, _, _ := r.BasicAuth()
 		if user == "" || head != "Web" {
 			user = "-"
+		}
+
+		size := "-"
+		if head == "Web" {
+			fi, err := os.Stat(host + url)
+			if err == nil {
+				size = strconv.Itoa(int(fi.Size()))
+			}
 		}
 
 		status := 0
@@ -99,7 +106,7 @@ func logr(r *http.Request, head, url string) {
 		}
 
 		if *logt == "common" {
-			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " -")
+			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size)
 			return
 		}
 
@@ -113,9 +120,9 @@ func logr(r *http.Request, head, url string) {
 			usra = "-"
 		}
 
-		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " - " + refer + " " + usra)
+		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra)
 	default:
-		Print("[" + head + "][" + host + url + "] : " + r.RemoteAddr)
+		Print("[" + head + "][" + trimPort(r.Host) + url + "] : " + r.RemoteAddr)
 	}
 }
 
@@ -189,14 +196,14 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		StyledError(w, "400 Bad Request", "The server cannot process the request due to an apparent client error", http.StatusBadRequest)
-		logr(r, "WebBad", urlo)
+		logr(r, "WebBad", "", urlo)
 		return
 	}
 
 	path, url := detectPath(r.Host, urlo, r)
 	if url == typeProxy {
 		ProxyRequest(w, r)
-		logr(r, "WebProxy", urlo)
+		logr(r, "WebProxy", "", urlo)
 		return
 	}
 
@@ -209,7 +216,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	if val, ok := redirMap.Load(r.Host + url); ok {
 		redir(w, val.(string))
-		logr(r, "WebRedir", r.URL.EscapedPath())
+		logr(r, "WebRedir", "", r.URL.EscapedPath())
 		return
 	}
 
@@ -217,7 +224,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Also, don't allow access to the root folder.
 	if strings.Contains(url, "..") || path == "ssl/" || path[0] == 46 || path[0] == 47 {
 		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
-		logr(r, "WebForbid", url)
+		logr(r, "WebForbid", "", url)
 		return
 	}
 
@@ -233,29 +240,29 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
 		StyledError(w, "404 Not Found", "The requested resource could not be found but may be available in the future.", http.StatusNotFound)
-		logr(r, "WebNotFound", url)
+		logr(r, "WebNotFound", "", url)
 		return
 	}
 	auth := DetectPasswd(url, path)
 	if finfo.Name() == "passwd" || auth[0] == "forbid" {
 		StyledError(w, "403 Forbidden", "You do not have permission to access this resource.", http.StatusForbidden)
-		logr(r, "WebForbid", url)
+		logr(r, "WebForbid", "", url)
 		return
 	}
 	if auth[0] != "err" && !RunAuth(w, r, auth) {
 		StyledError(w, "401 Unauthorized", "Correct authentication credentials are required to access this resource.", http.StatusUnauthorized)
-		logr(r, "WebUnAuth", url)
+		logr(r, "WebUnAuth", "", url)
 		return
 	}
 
 	// Serve the content, and return an error if needed
 	if ServeFile(w, r, path+url, url) != nil {
 		StyledError(w, "500 Internal Server Error", "An unexpected condition was encountered, try again later", http.StatusInternalServerError)
-		logr(r, "WebError", url)
+		logr(r, "WebError", "", url)
 		return
 	}
 
-	logr(r, "Web", url)
+	logr(r, "Web", path, url)
 }
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
