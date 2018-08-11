@@ -73,7 +73,7 @@ func logr(r *http.Request, head, host, url string) {
 	}
 
 	switch *logt {
-	case "common", "combined":
+	case "common", "combined", "combinedvhost":
 		user, _, _ := r.BasicAuth()
 		if user == "" || head != "Web" {
 			user = "-"
@@ -120,7 +120,17 @@ func logr(r *http.Request, head, host, url string) {
 			usra = "-"
 		}
 
-		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra)
+		if *logt == "combined" {
+			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra)
+			return
+		}
+
+		vhost := trimPort(r.Host)
+		if vhost == "" {
+			vhost = "-"
+		}
+
+		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost)
 	default:
 		Print("[" + head + "][" + trimPort(r.Host) + url + "] : " + r.RemoteAddr)
 	}
