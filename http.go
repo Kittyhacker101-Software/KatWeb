@@ -66,27 +66,73 @@ var (
 	}
 )
 
+// logNCSA logs a request in either the common, combined, or combinedvhost formats.
+func logNCSA(r *http.Request, status int, url, host, format string) string {
+
+	user, _, _ := r.BasicAuth()
+	if user == "" || status != http.StatusOK {
+		user = "-"
+	}
+
+	size := "-"
+	urld := url
+	if url[len(url)-1:] == "/" {
+		urld = url + IndexFile
+	}
+	if status == http.StatusOK {
+		if fi, err := os.Stat(host + urld); err == nil {
+			size = strconv.Itoa(int(fi.Size()))
+		}
+
+		if size != "-" && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && !conf.Adv.Dev {
+			fi, err := os.Stat(host + urld + ".gz")
+			if err == nil {
+				size = strconv.Itoa(int(fi.Size()))
+			}
+
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
+				fi, err := os.Stat(host + urld + ".br")
+				if err == nil {
+					size = strconv.Itoa(int(fi.Size()))
+				}
+			}
+		}
+	}
+
+	if format == "common" {
+		return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size
+	}
+
+	refer := `"` + r.Header.Get("Referer") + `"`
+	if refer == `""` {
+		refer = "-"
+	}
+
+	usra := `"` + r.Header.Get("User-agent") + `"`
+	if usra == `""` {
+		usra = "-"
+	}
+
+	if format == "combined" {
+		return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
+	}
+
+	vhost := trimPort(r.Host)
+	if vhost == "" {
+		vhost = "-"
+	}
+
+	return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost
+}
+
 // logr logs a request to the console.
 func logr(r *http.Request, head, host, url string) {
-	if (!conf.Adv.Dev && *logt == "none") && (head == "WebProxy" || head == "Web" || head == "WebHSTS" || head == "WebRedir" || head == "WebNotFound") {
+	if !conf.Adv.Dev && *logt == "none" {
 		return
 	}
 
 	switch *logt {
 	case "common", "combined", "combinedvhost":
-		user, _, _ := r.BasicAuth()
-		if user == "" || head != "Web" {
-			user = "-"
-		}
-
-		size := "-"
-		if head == "Web" {
-			fi, err := os.Stat(host + url)
-			if err == nil {
-				size = strconv.Itoa(int(fi.Size()))
-			}
-		}
-
 		status := 0
 		switch head {
 		case "WebHSTS", "WebRedir":
@@ -105,32 +151,7 @@ func logr(r *http.Request, head, host, url string) {
 			status = http.StatusInternalServerError
 		}
 
-		if *logt == "common" {
-			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size)
-			return
-		}
-
-		refer := `"` + r.Header.Get("Referer") + `"`
-		if refer == `""` {
-			refer = "-"
-		}
-
-		usra := `"` + r.Header.Get("User-agent") + `"`
-		if usra == `""` {
-			usra = "-"
-		}
-
-		if *logt == "combined" {
-			Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra)
-			return
-		}
-
-		vhost := trimPort(r.Host)
-		if vhost == "" {
-			vhost = "-"
-		}
-
-		Print(trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost)
+		Print(logNCSA(r, status, url, host, *logt))
 	default:
 		Print("[" + head + "][" + trimPort(r.Host) + url + "] : " + r.RemoteAddr)
 	}
