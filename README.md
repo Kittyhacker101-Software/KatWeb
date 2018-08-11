@@ -1,7 +1,7 @@
 <img src="https://kittyhacker101.tk/KatWeb.png" alt="KatWeb - A modern and lightweight webserver designed for the modern web."></img> 
 
 ## Getting KatWeb
-To download KatWeb, you can either download a compiled release from the [releases page](https://github.com/kittyhacker101/KatWeb/releases), or compile KatWeb from the source code in the repository (**not recommended, code in the repository is not suitable for production use**).
+To download KatWeb, you can either download a packaged release from the [releases page](https://github.com/kittyhacker101/KatWeb/releases), or compile KatWeb from the source code in the repository (**not recommended, code in the repository is not suitable for production use**).
 
 ### Linux Packages
 - Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
@@ -15,6 +15,9 @@ Documentation for KatWeb can be found on the [KatWeb Wiki](https://github.com/ki
 
 ### Running as root
 Running KatWeb as root is not recommended for security reasons. You can allow KatWeb to use to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
+
+### Modifying KatWeb
+If you intend to modify KatWeb, please use the source code from one of the [release tags](https://github.com/kittyhacker101/KatWeb/tags). The latest code in the repository is often unstable and not fit for production use.
 
 ### Additional Info
 - Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
