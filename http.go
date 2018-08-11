@@ -124,7 +124,7 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 		vhost = "-"
 	}
 
-	return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost
+	return vhost + " " + ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
 }
 
 // logr logs a request to the console.
