@@ -69,6 +69,8 @@ var (
 // logNCSA logs a request in either the common, combined, or combinedvhost formats.
 func logNCSA(r *http.Request, status int, url, host, format string) string {
 
+	ip := strings.Trim(trimPort(r.RemoteAddr), "[]")
+
 	user, _, _ := r.BasicAuth()
 	if user == "" || status != http.StatusOK {
 		user = "-"
@@ -100,7 +102,7 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 	}
 
 	if format == "common" {
-		return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size
+		return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size
 	}
 
 	refer := `"` + r.Header.Get("Referer") + `"`
@@ -114,7 +116,7 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 	}
 
 	if format == "combined" {
-		return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
+		return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
 	}
 
 	vhost := trimPort(r.Host)
@@ -122,7 +124,7 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 		vhost = "-"
 	}
 
-	return trimPort(r.RemoteAddr) + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost
+	return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra + " " + vhost
 }
 
 // logr logs a request to the console.
