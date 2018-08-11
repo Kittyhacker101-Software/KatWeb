@@ -30,8 +30,8 @@
 		}
 		socket.onmessage = function (event) {
 			console.log(event.data)
-			if (event.data.startsWith("[")) {
-				out.innerHTML = out.innerHTML.trimdata(2500) + event.data + "</br>"
+			if (event.data.startsWith("^")) {
+				out.innerHTML = out.innerHTML.trimdata(2500) + event.data.substring(1) + "</br>"
 				return
 			}
 			if (event.data == "start" || event.data == "restart") {

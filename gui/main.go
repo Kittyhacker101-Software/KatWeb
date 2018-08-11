@@ -32,6 +32,7 @@ var (
 	katstat  bool
 	guicast  = bcast.NewGroup()
 	bind     = flag.String("bind", "127.0.0.1:8090", `Port and IP to bind to.`)
+	exlog    = flag.Bool("extLog", false, `Use the combined logging format, instead of the simplified logging.`)
 )
 
 func guiHandle(w http.ResponseWriter, r *http.Request) {
@@ -84,9 +85,13 @@ func floatToString(i float64) string {
 
 func manageKatWeb() {
 	var (
-		katweb *os.Process
-		katcon *bufio.Scanner
+		katweb  *os.Process
+		katcon  *bufio.Scanner
+		logType = "simple"
 	)
+	if *exlog {
+		logType = "combinedvhost"
+	}
 
 	go func() {
 		for {
@@ -95,7 +100,7 @@ func manageKatWeb() {
 				continue
 			}
 			for katcon.Scan() {
-				katchan <- katcon.Text()
+				katchan <- "^" + katcon.Text()
 			}
 		}
 	}()
@@ -142,10 +147,10 @@ func manageKatWeb() {
 				os = "i386"
 			}
 
-			c := exec.Command(katloc+"/katweb-"+runtime.GOOS+"-"+os, "-root="+katloc)
+			c := exec.Command(katloc+"/katweb-"+runtime.GOOS+"-"+os, "-root="+katloc, "-logType="+logType)
 			stdout, err := c.StdoutPipe()
 			if err != nil {
-				katchan <- "[Panel] : Unable to start katweb!"
+				katchan <- "^[Panel] : Unable to start katweb!"
 				katchan <- "stop"
 				katstat = false
 				continue
@@ -153,7 +158,7 @@ func manageKatWeb() {
 
 			katcon = bufio.NewScanner(stdout)
 			if c.Start() != nil {
-				katchan <- "[Panel] : Unable to connect to katweb!"
+				katchan <- "^[Panel] : Unable to connect to katweb!"
 				katchan <- "stop"
 				katstat = false
 				continue
@@ -161,12 +166,12 @@ func manageKatWeb() {
 
 			katweb = c.Process
 			katchan <- "start"
-			katchan <- "[Panel] : KatWeb started with pid " + strconv.Itoa(katweb.Pid) + "."
+			katchan <- "^[Panel] : KatWeb started with pid " + strconv.Itoa(katweb.Pid) + "."
 			katstat = true
 			go func() {
 				katweb.Wait()
 				katchan <- "stop"
-				katchan <- "[Panel] : KatWeb has stopped running!"
+				katchan <- "^[Panel] : KatWeb has stopped running!"
 				katstat = false
 			}()
 		}
@@ -181,9 +186,9 @@ func manageKatWeb() {
 		if data == "folder" {
 			abs, err := filepath.Abs(filepath.Dir(katloc + "/"))
 			if err != nil {
-				katchan <- "[Panel] : Unable to get KatWeb's working directory!"
+				katchan <- "^[Panel] : Unable to get KatWeb's working directory!"
 			} else {
-				katchan <- "[Panel] : KatWeb's working directory is " + abs
+				katchan <- "^[Panel] : KatWeb's working directory is " + abs
 			}
 			open.Start(katloc + "/")
 		}
