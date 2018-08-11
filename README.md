@@ -11,13 +11,15 @@ To download KatWeb, you can either download a compiled release from the [release
 ## Using KatWeb
 After you have extracted the compressed release, you can run the right build for your platform.
 The root folder for serving files is /html/, the configuration is /conf.json.
-Documentation for KatWeb can be found in the [KatWeb Wiki](https://github.com/kittyhacker101/KatWeb/wiki).
+Documentation for KatWeb can be found on the [wiki tab](https://github.com/kittyhacker101/KatWeb/wiki) of this repository.
 
 ### Running as root
 Running KatWeb as root is not recommended for security reasons. You can allow KatWeb to use to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
 
 ### Additional Info
-Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
+- Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
+- Want to help fund KatWeb's development? Consider donating to the Bitcoin address `1KyggZGHF4BfHoHEXxoGzDmLmcGLaHN2x2`.
+- Found a bug in KatWeb? Report it on the [issues tab](https://github.com/kittyhacker101/KatWeb/issues) of this repository.
 
 ## Features
 - TLS 1.2 Support (v1.0+)
