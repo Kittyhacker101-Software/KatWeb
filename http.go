@@ -105,6 +105,15 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 		return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size
 	}
 
+	vhost := trimPort(r.Host)
+	if vhost == "" {
+		vhost = "-"
+	}
+
+	if format == "commonvhost" {
+		return vhost + " " + ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size
+	}
+
 	refer := `"` + r.Header.Get("Referer") + `"`
 	if refer == `""` {
 		refer = "-"
@@ -119,11 +128,6 @@ func logNCSA(r *http.Request, status int, url, host, format string) string {
 		return ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
 	}
 
-	vhost := trimPort(r.Host)
-	if vhost == "" {
-		vhost = "-"
-	}
-
 	return vhost + " " + ip + " - " + user + " [" + time.Now().Format("02/Jan/2006:15:04:05 -0700") + `] "` + r.Method + " " + url + " " + r.Proto + `" ` + strconv.Itoa(status) + " " + size + " " + refer + " " + usra
 }
 
@@ -134,7 +138,7 @@ func logr(r *http.Request, head, host, url string) {
 	}
 
 	switch *logt {
-	case "common", "combined", "combinedvhost":
+	case "common", "commonvhost", "combined", "combinedvhost":
 		status := 0
 		switch head {
 		case "WebHSTS", "WebRedir":
