@@ -28,7 +28,7 @@ If you intend to modify KatWeb, please use the source code from one of the [rele
 - TLS 1.2 Support (v1.0+)
 - HSTS Support (v1.0+)
 - JSON Config Files (v1.0+)
-- HTTP/2 and Keep-Alive (v1.8.1+, partial support since v1.0)
+- High Peformance HTTP/2 (v1.0+)
 - Brotli Compression Support (v1.9.5+)
 - GZIP Compression Support (v1.0+)
 - Let's Encrypt Integration (v1.9+)
