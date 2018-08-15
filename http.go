@@ -251,10 +251,12 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		redir(w, "./")
 		return
 	}
-	if val, ok := redirMap.Load(r.Host + url); ok {
-		redir(w, val.(string))
-		logr(r, "WebRedir", "", r.URL.EscapedPath())
-		return
+	if i := sort.SearchStrings(redirSort, r.Host+url); i < len(redirSort) && redirSort[i] == r.Host+url {
+		if val, ok := redirMap.Load(r.Host + url); ok {
+			redir(w, val.(string))
+			logr(r, "WebRedir", "", r.URL.EscapedPath())
+			return
+		}
 	}
 
 	// Don't allow the client to access .. or . folders, and don't allow access to hidden files.

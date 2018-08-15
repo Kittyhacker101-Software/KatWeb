@@ -170,6 +170,7 @@ func Benchmark_Request_Proxy(b *testing.B) {
 	client := server.Client()
 	conf.Adv.Dev = false
 	proxyMap.Store("benchProxy", server2.URL)
+	proxySort = append(proxySort, "benchProxy")
 
 	client.Transport = &http.Transport{
 		MaxIdleConns:        4096,
@@ -252,6 +253,7 @@ func Benchmark_Request_NoKeepAlive_Proxy(b *testing.B) {
 	client := server.Client()
 	conf.Adv.Dev = false
 	proxyMap.Store("benchProxy", server2.URL)
+	proxySort = append(proxySort, "benchProxy")
 
 	clearGarbage()
 	for n := 0; n < b.N; n++ {
@@ -378,6 +380,7 @@ func Test_HTTP_Redirect(t *testing.T) {
 	}
 
 	redirMap.Store("localhost:"+parsedURL[2]+"/redirect", "http://example.com")
+	redirSort = append(redirSort, "localhost:"+parsedURL[2]+"/redirect")
 
 	resp, err := testHostFull(client, "localhost", "http://localhost:"+parsedURL[2]+"/redirect")
 	if err != nil {
@@ -454,7 +457,9 @@ func Test_HTTP_Proxy(t *testing.T) {
 	}))
 
 	proxyMap.Store("testProxy", server2.URL)
+	proxySort = append(proxySort, "testProxy")
 	proxyMap.Store("testProxy2", "htt:/exampl./%%%")
+	proxySort = append(proxySort, "testProxy2")
 
 	parsedURL := strings.Split(server.URL, ":")
 	conf.Adv.HTTP, err = strconv.Atoi(parsedURL[2])
@@ -501,6 +506,7 @@ func Test_HTTPS_Proxy_Broken(t *testing.T) {
 	}
 
 	proxyMap.Store("testProxy", "htt:/exampl./%%%")
+	proxySort = append(proxySort, "testProxy")
 
 	if !testHostCompare(client, "localhost", server.URL+"/testProxy", fileToString("html/index.html")) {
 		t.Error("Reverse proxies are not handled correctly!")

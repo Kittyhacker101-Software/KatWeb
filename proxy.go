@@ -94,7 +94,8 @@ var (
 		Timeout: 2 * time.Second,
 	}
 
-	proxyMap, redirMap sync.Map
+	proxyMap, redirMap   sync.Map
+	proxySort, redirSort []string
 )
 
 // fixProxy proxies requests to the local server if the proxy's URL cannot be parsed
@@ -124,16 +125,20 @@ func GetProxy(r *http.Request) (string, string) {
 	}
 	urlp := strings.Split(url, "/")
 
-	if val, ok := proxyMap.Load(r.Host); ok {
-		return val.(string), r.Host
+	if i := sort.SearchStrings(proxySort, r.Host); i < len(proxySort) && proxySort[i] == r.Host {
+		if val, ok := proxyMap.Load(r.Host); ok {
+			return val.(string), r.Host
+		}
 	}
 
 	if len(urlp) == 0 {
 		return "", ""
 	}
 
-	if val, ok := proxyMap.Load(urlp[1]); ok {
-		return val.(string), urlp[1]
+	if i := sort.SearchStrings(proxySort, urlp[1]); i < len(proxySort) && proxySort[i] == urlp[1] {
+		if val, ok := proxyMap.Load(urlp[1]); ok {
+			return val.(string), urlp[1]
+		}
 	}
 
 	return "", ""
@@ -141,12 +146,17 @@ func GetProxy(r *http.Request) (string, string) {
 
 // MakeProxyMap converts the conf.Proxy into a map[string]string
 func MakeProxyMap() {
+	proxySort, redirSort = []string{}, []string{}
 	for i := range conf.Proxy {
 		proxyMap.Store(conf.Proxy[i].Loc, conf.Proxy[i].URL)
+		proxySort = append(proxySort, conf.Proxy[i].Loc)
 	}
 	for i := range conf.Redir {
 		redirMap.Store(conf.Redir[i].Loc, conf.Redir[i].URL)
+		redirSort = append(redirSort, conf.Redir[i].Loc)
 	}
+	sort.Strings(proxySort)
+	sort.Strings(redirSort)
 	sort.Strings(conf.No)
 }
 
