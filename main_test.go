@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"regexp"
 )
 
 func testHost(client *http.Client, host, url string) int {
@@ -189,83 +190,57 @@ func Benchmark_Request_Proxy(b *testing.B) {
 	server2.Close()
 }
 
-func Benchmark_Request_NoKeepAlive_Ideal(b *testing.B) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(`Hello proxy!`))
-	}))
-	client := server.Client()
-	conf.Adv.Dev = false
-	conf.Adv.Pro = false
-
-	clearGarbage()
-	for n := 0; n < b.N; n++ {
-		resp, err := testHostFull(client, "localhost", server.URL)
-		if err != nil {
-			b.Error("Unable to request server!")
-			return
-		}
-		resp.Body.Close()
-	}
-	server.Close()
-}
-
-func Benchmark_Request_NoKeepAlive_Missing(b *testing.B) {
+func Benchmark_Request_Redirect(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
 	conf.Adv.Dev = false
 
+	parsedURL := strings.Split(server.URL, ":")
+	if len(parsedURL) != 3 {
+		b.Error("Unable to parse server url!")
+	}
+	redirMap.Store("localhost:"+parsedURL[2]+"/redirect", "http://example.com")
+	redirSort = append(redirSort, "localhost:"+parsedURL[2]+"/redirect")
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
 	clearGarbage()
 	for n := 0; n < b.N; n++ {
-		resp, err := testHostFull(client, "localhost", server.URL+"/nonexistentfile")
+		resp, err := testHostFull(client, "localhost", server.URL+"/redirect")
 		if err != nil {
 			b.Error("Unable to request server!")
 			return
 		}
-		resp.Body.Close()
+		io.Copy(ioutil.Discard, resp.Body)
 	}
 	server.Close()
 }
 
-func Benchmark_Request_NoKeepAlive_Index(b *testing.B) {
+func Benchmark_Request_Redirect_Regex(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 	client := server.Client()
 	conf.Adv.Dev = false
 
+	redirMap.Store(`.+\/redirect(\..+|)`, "http://google.com")
+	redirSort = append(redirSort, `.+\/redirect(\..+|)`)
+	redirRegex = append(redirRegex, regexp.MustCompile(`.+\/redirect(\..+|)`))
+
+	client.Transport = &http.Transport{
+		MaxIdleConns:        4096,
+		MaxIdleConnsPerHost: 4096,
+	}
 	clearGarbage()
 	for n := 0; n < b.N; n++ {
-		resp, err := testHostFull(client, "localhost", server.URL)
+		resp, err := testHostFull(client, "localhost", server.URL+"/redirect")
 		if err != nil {
 			b.Error("Unable to request server!")
 			return
 		}
-		resp.Body.Close()
+		io.Copy(ioutil.Discard, resp.Body)
 	}
 	server.Close()
-}
-
-func Benchmark_Request_NoKeepAlive_Proxy(b *testing.B) {
-	server := httptest.NewServer(http.HandlerFunc(mainHandle))
-	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(`Hello proxy!`))
-	}))
-	client := server.Client()
-	conf.Adv.Dev = false
-	proxyMap.Store("benchProxy", server2.URL)
-	proxySort = append(proxySort, "benchProxy")
-
-	clearGarbage()
-	for n := 0; n < b.N; n++ {
-		resp, err := testHostFull(client, "localhost", server.URL+"/benchProxy")
-		if err != nil {
-			b.Error("Unable to request server!")
-			return
-		}
-		resp.Body.Close()
-	}
-	server.Close()
-	server2.Close()
 }
 
 // ----- Unit Tests -----
@@ -381,6 +356,9 @@ func Test_HTTP_Redirect(t *testing.T) {
 
 	redirMap.Store("localhost:"+parsedURL[2]+"/redirect", "http://example.com")
 	redirSort = append(redirSort, "localhost:"+parsedURL[2]+"/redirect")
+	redirMap.Store(`.+\/redirect(\..+|)`, "http://google.com")
+	redirSort = append(redirSort, `.+\/redirect(\..+|)`)
+	redirRegex = append(redirRegex, regexp.MustCompile(`.+\/redirect(\..+|)`))
 
 	resp, err := testHostFull(client, "localhost", "http://localhost:"+parsedURL[2]+"/redirect")
 	if err != nil {
@@ -396,6 +374,30 @@ func Test_HTTP_Redirect(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "./" {
 		t.Error("Redirection headers not sent!")
+	}
+
+	resp, err = testHostFull(client, "testinghost", "http://localhost:"+parsedURL[2]+"/redirect")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "http://google.com" {
+		t.Error("Redirection headers not sent for regex-based redirects!")
+	}
+
+	resp, err = testHostFull(client, "testinghost", "http://localhost:"+parsedURL[2]+"/redirect.html")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "http://google.com" {
+		t.Error("Redirection headers not sent for regex-based redirects!")
+	}
+
+	resp, err = testHostFull(client, "localhost", "http://localhost:"+parsedURL[2]+"/redirect.")
+	if err != nil {
+		t.Error("Unable to connect to server!")
+	}
+	if resp.StatusCode == http.StatusMovedPermanently {
+		t.Error("Regex-based redirects are not parsed properly!")
 	}
 
 	server.Close()
