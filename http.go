@@ -251,9 +251,9 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 		redir(w, "./")
 		return
 	}
-	if i := sort.SearchStrings(redirSort, r.Host+url); i < len(redirSort) && redirSort[i] == r.Host+url {
-		if val, ok := redirMap.Load(r.Host + url); ok {
-			redir(w, val.(string))
+	if i := sort.SearchStrings(redirSort, r.Host+url); i < len(redirSort) && redirSort[i] == r.Host+url || len(redirRegex) > 0 {
+		if loc := GetRedir(r, url); loc != "" {
+			redir(w, loc)
 			logr(r, "WebRedir", "", r.URL.EscapedPath())
 			return
 		}
@@ -278,15 +278,6 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 	// Provide an error message if the content is unavailable, and run authentication if required.
 	if err != nil {
-		for _, re := range redirRegex {
-			if re.FindString(r.Host+url) == r.Host+url {
-				if val, ok := redirMap.Load(re.String()); ok {
-					redir(w, val.(string))
-					logr(r, "WebRedir", "", r.URL.EscapedPath())
-					return
-				}
-			}
-		}
 		StyledError(w, "404 Not Found", "The requested resource could not be found but may be available in the future.", http.StatusNotFound)
 		logr(r, "WebNotFound", "", url)
 		return

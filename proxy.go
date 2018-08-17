@@ -146,6 +146,24 @@ func GetProxy(r *http.Request) (string, string) {
 	return "", ""
 }
 
+// GetRedir returns the location a url should redirect to.
+func GetRedir(r *http.Request, url string) string {
+	if val, ok := redirMap.Load(r.Host + url); ok {
+		return val.(string)
+	}
+
+	for _, re := range redirRegex {
+		if re.FindString(r.Host+url) == r.Host+url {
+			if val, ok := redirMap.Load(re.String()); ok {
+				return val.(string)
+			}
+		}
+	}
+
+	return ""
+
+}
+
 // MakeProxyMap converts conf.Proxy and conf.Redir into a map, sorts them, and then compiles any regex used.
 func MakeProxyMap() {
 	proxySort, redirSort = []string{}, []string{}
@@ -157,8 +175,9 @@ func MakeProxyMap() {
 	for i := range conf.Redir {
 		redirMap.Store(conf.Redir[i].Loc, conf.Redir[i].URL)
 		redirSort = append(redirSort, conf.Redir[i].Loc)
+
 		regex, err := regexp.Compile(conf.Redir[i].Loc)
-		if err == nil {
+		if err == nil && (strings.Contains(conf.Redir[i].Loc, `\/`) || !strings.ContainsAny(conf.Redir[i].Loc, "/")) {
 			redirRegex = append(redirRegex, regex)
 		}
 	}
