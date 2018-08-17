@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -96,6 +97,7 @@ var (
 
 	proxyMap, redirMap   sync.Map
 	proxySort, redirSort []string
+	redirRegex           []*regexp.Regexp
 )
 
 // fixProxy proxies requests to the local server if the proxy's URL cannot be parsed
@@ -144,9 +146,10 @@ func GetProxy(r *http.Request) (string, string) {
 	return "", ""
 }
 
-// MakeProxyMap converts the conf.Proxy into a map[string]string
+// MakeProxyMap converts conf.Proxy and conf.Redir into a map, sorts them, and then compiles any regex used.
 func MakeProxyMap() {
 	proxySort, redirSort = []string{}, []string{}
+	redirRegex = []*regexp.Regexp{}
 	for i := range conf.Proxy {
 		proxyMap.Store(conf.Proxy[i].Loc, conf.Proxy[i].URL)
 		proxySort = append(proxySort, conf.Proxy[i].Loc)
@@ -154,6 +157,10 @@ func MakeProxyMap() {
 	for i := range conf.Redir {
 		redirMap.Store(conf.Redir[i].Loc, conf.Redir[i].URL)
 		redirSort = append(redirSort, conf.Redir[i].Loc)
+		regex, err := regexp.Compile(conf.Redir[i].Loc)
+		if err == nil {
+			redirRegex = append(redirRegex, regex)
+		}
 	}
 	sort.Strings(proxySort)
 	sort.Strings(redirSort)
