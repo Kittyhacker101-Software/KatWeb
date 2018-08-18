@@ -22,6 +22,10 @@
     {
       "location": "localhost/redirect",
       "dest": "http://example.com"
+    },
+    {
+      "location": ".+\\/redirect(\\..+|)",
+      "dest": "https://kittyhacker101.tk"
     }
   ],
   "hide": [
