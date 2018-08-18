@@ -27,15 +27,21 @@ If you intend to modify KatWeb, please use the source code from one of the [rele
 ## Features
 - High Peformance TLS 1.2 (v1.0+)
 - Let's Encrypt Integration (v1.9+)
+
 - High Peformance HTTP/2 (v1.0+)
 - GZIP Compression Support (v1.0+)
 - Brotli Compression Support (v1.9.5+)
+
 - High Peformance Reverse Proxy (v1.2.7+)
 - Websocket Reverse Proxy (v1.8+)
+- Regex-Based Redirect Support (v1.10.1+)
+
 - Simple JSON-based configuration (v1.0+)
 - Simple Browser Control Panel (v1.10+)
+
 - Virtual Hosting Support (v1.0+)
 - Password Protection Support (v1.0+)
 - Multiple Logging Formats (v1.10.1+)
+
 - Modern Directory Listings (v1.6+)
 - Modern Error Pages (v1.9.1+)
