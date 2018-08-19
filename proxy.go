@@ -161,7 +161,6 @@ func GetRedir(r *http.Request, url string) string {
 	}
 
 	return ""
-
 }
 
 // MakeProxyMap converts conf.Proxy and conf.Redir into a map, sorts them, and then compiles any regex used.
@@ -217,13 +216,18 @@ func CheckUpdate(current string) (int, string, error) {
 		return 0, "", errors.New("the GitHub API response is empty")
 	}
 
-	currenti, err := strconv.ParseFloat(current[3:], 32)
-	if err != nil {
-		return 0, upd.Latest, errors.New("unable to parse version number")
-	}
 	latesti, err := strconv.ParseFloat(upd.Latest[3:], 32)
 	if err != nil {
 		return 0, upd.Latest, errors.New("unable to parse latest version number")
+	}
+
+	if strings.HasSuffix(current, "-dev") {
+		return -1, upd.Latest, nil
+	}
+
+	currenti, err := strconv.ParseFloat(current[3:], 32)
+	if err != nil {
+		return 0, upd.Latest, errors.New("unable to parse version number")
 	}
 
 	if math.Round(currenti) < math.Round(latesti) {
