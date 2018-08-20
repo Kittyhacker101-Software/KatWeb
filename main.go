@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -113,6 +114,10 @@ func main() {
 				Print("[Info] : KatWeb is out of date (" + vers[1:] + " > " + currentVersion[1:] + "). Using the latest version is recommended.")
 			case 2:
 				Print("[Warn] : KatWeb is very out of date (" + vers[1:] + " > " + currentVersion[1:] + "). Please update to the latest version as soon as possible")
+			}
+
+			if user, err := user.Current(); err == nil && user.Username == "root" {
+				Print("[Warn] : Running KatWeb as root is not recommended, and should be avoided whenever possible.")
 			}
 		}()
 	}
