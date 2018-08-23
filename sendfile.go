@@ -48,7 +48,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	file, err := os.Open(location)
 	if err != nil {
 		if strings.HasSuffix(location, IndexFile) {
-			// If the index file is not present, create a list of files in the directory
+			// If the index file is not present, send a list of files in the directory
 			if file, err = os.Open(loc); err == nil {
 				return dirList(w, *file, folder)
 			}
@@ -62,36 +62,18 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 
 	w.Header().Set("Content-Type", getMime(file, finfo))
 
-	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && !conf.Adv.Dev {
+	if !conf.Adv.Dev && r.Header.Get("Accept-Encoding") != "" {
 		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			if filen, err = os.Open(location + ".br"); err == nil {
 				file.Close()
 				file = filen
 				w.Header().Set("Content-Encoding", "br")
 			}
-		} else if _, err = os.Stat(location + ".gz"); err == nil {
+		} else if isZipped(w, finfo, file, location) && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			if filen, err = os.Open(location + ".gz"); err == nil {
 				file.Close()
 				file = filen
 				w.Header().Set("Content-Encoding", "gzip")
-			}
-		} else if finfo.Size() < 100000 && finfo.Size() > 400 && w.Header().Get("Content-Type") != "application/gzip" {
-			ct := strings.Split(w.Header().Get("Content-Type"), ";")
-			i := sort.SearchStrings(gztypes, ct[0])
-			if i < len(gztypes) && gztypes[i] == ct[0] {
-				if filen, err = os.Create(location + ".gz"); err == nil {
-					gz := zippers.Get().(*gzip.Writer)
-					gz.Reset(filen)
-
-					io.Copy(gz, file)
-
-					gz.Close()
-					zippers.Put(gz)
-					file.Close()
-
-					file = filen
-					w.Header().Set("Content-Encoding", "gzip")
-				}
 			}
 		}
 	}
@@ -100,6 +82,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	return file.Close()
 }
 
+// getMime detects the correct value for the "Content-Type" header.
 func getMime(f io.ReadSeeker, fi os.FileInfo) string {
 	mime := mime.TypeByExtension(filepath.Ext(fi.Name()))
 	if mime != "" {
@@ -139,4 +122,35 @@ func StyledError(w http.ResponseWriter, title string, content string, status int
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(`<!DOCTYPE html><title>` + title + `</title><meta content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1" name=viewport><style>body{margin:0;font:16px/1.5 sans-serif}h1,h3{font-weight:400;margin:10px 0}h1{font-size:48px}h3{font-size:24px;padding:16px}header{color:#fff;background-color:#222d32;padding:80px 32px}</style><header><h1>` + title + `</h1></header><h3>` + content + `</h3>`))
+}
+
+// isZipped returns true if a gzipped version of the file exists.
+// If a gzipped version of the file does not exist, it will attempt
+// to compress the file in real time, and return true if the
+// attempt is sucessful.
+func isZipped(w http.ResponseWriter, finfo os.FileInfo, file *os.File, filePath string) bool {
+	if _, err := os.Stat(filePath + ".gz"); err == nil {
+		return true
+	}
+
+	if finfo.Size() < 100000 && finfo.Size() > 400 && w.Header().Get("Content-Type") != "application/gzip" {
+		ct := strings.Split(w.Header().Get("Content-Type"), ";")
+		i := sort.SearchStrings(gztypes, ct[0])
+		if i < len(gztypes) && gztypes[i] == ct[0] {
+			if filen, err := os.Create(filePath + ".gz"); err == nil {
+				gz := zippers.Get().(*gzip.Writer)
+				gz.Reset(filen)
+
+				io.Copy(gz, file)
+
+				gz.Close()
+				zippers.Put(gz)
+				file.Close()
+
+				return true
+			}
+		}
+	}
+
+	return false
 }
