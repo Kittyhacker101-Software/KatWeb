@@ -128,7 +128,7 @@ func StyledError(w http.ResponseWriter, title string, content string, status int
 // If a gzipped version of the file does not exist, it will attempt
 // to compress the file in real time, and return true if the
 // attempt is sucessful.
-func isZipped(w http.ResponseWriter, finfo os.FileInfo, file *os.File, filePath string) bool {
+func isZipped(w http.ResponseWriter, finfo os.FileInfo, file io.ReadCloser, filePath string) bool {
 	if _, err := os.Stat(filePath + ".gz"); err == nil {
 		return true
 	}
