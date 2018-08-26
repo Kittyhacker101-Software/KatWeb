@@ -3,7 +3,6 @@ package main
 
 import (
 	"crypto/tls"
-	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net"
 	"net/http"
@@ -13,16 +12,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 const typeProxy = "proxy%"
 
 var (
-	certManager = &autocert.Manager{
-		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache("ssl"),
-	}
-
 	// httpsredir is a http.HandlerFunc for redirecting HTTP requests to HTTPS
 	httpsredir = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
@@ -318,7 +314,13 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 
 // wrapLoad chooses the correct handler wrappers based on server configuration.
 func wrapLoad(origin http.HandlerFunc) http.Handler {
-	var wrap = origin
+	var (
+		wrap        = origin
+		certManager = &autocert.Manager{
+			Prompt: autocert.AcceptTOS,
+			Cache:  autocert.DirCache("ssl"),
+		}
+	)
 
 	if conf.HSTS {
 		wrap = httpsredir

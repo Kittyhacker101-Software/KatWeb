@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"github.com/yhat/wsutil"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/yhat/wsutil"
 )
 
 // UpdateData contains a struct for parsing returned json from the request
@@ -25,8 +26,6 @@ type UpdateData struct {
 }
 
 var (
-	upd UpdateData
-
 	tlsp = &tls.Config{
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,
@@ -198,6 +197,8 @@ func ProxyRequest(w http.ResponseWriter, r *http.Request) {
 // If the KatWeb release being used is behind by multiple versions, 2 will be returned.
 // It will also return the latest version from the GitHub API as a string.
 func CheckUpdate(current string) (int, string, error) {
+	var upd UpdateData
+
 	resp, err := updateClient.Get("https://api.github.com/repos/kittyhacker101/KatWeb/releases/latest")
 	if err != nil {
 		return 0, "", errors.New("unable to contact GitHub API")

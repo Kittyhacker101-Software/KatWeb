@@ -2,7 +2,6 @@
 package main
 
 import (
-	"github.com/klauspost/compress/gzip"
 	"html/template"
 	"io"
 	"mime"
@@ -13,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/klauspost/compress/gzip"
 )
 
 // IndexFile is the file name for directory index files
