@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
-	"regexp"
 )
 
 func testHost(client *http.Client, host, url string) int {
@@ -265,7 +265,7 @@ func TestMain(m *testing.M) {
 func Test_Updater(t *testing.T) {
 	up, vers, err := CheckUpdate("v1.0")
 	if err != nil {
-		t.Error("Unable to run updater!")
+		t.Fatal("Unable to run updater!")
 	}
 
 	if up != 2 {
@@ -280,7 +280,7 @@ func Test_Updater(t *testing.T) {
 	latest = latest + 0.2
 	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest, 'f', -1, 32))
 	if err != nil {
-		t.Error("Unable to run updater!")
+		t.Fatal("Unable to run updater!")
 	}
 
 	if up != -1 {
@@ -290,7 +290,7 @@ func Test_Updater(t *testing.T) {
 	latest = latest - 0.3
 	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest, 'f', -1, 32))
 	if err != nil {
-		t.Error("Unable to run updater!")
+		t.Fatal("Unable to run updater!")
 	}
 
 	if !(up == 1 || up == 2) {
@@ -538,7 +538,7 @@ func Test_HTTP_Auth(t *testing.T) {
 	if err != nil {
 		t.Error("Unable to create testing data")
 	}
-	file.WriteString("3d8d3a0e7221998c93dc16df692c786fb170bfa93713f7f686f65d022f3040d8f50c845551b9c4f23c7c7068017c388db0bae3775307cf80d45451619f13c0b9\n2cbf59e5f532df22ea8d4f54566f35a3c885a12d2a8aa0c3ca3763b33740cc7a5605cd7b47f8495feeb1e6b019af7b6e6cefa697d43748718610031b551add5a\n")
+	file.WriteString("34fd9b6eb9408de5480aebb8e97212744267e32c58edc03fcad62f8127c110d9685e7bd6469a28764703b03473355129cd53236cada12377fdb60b8c76ef4566\n2cbf59e5f532df22ea8d4f54566f35a3c885a12d2a8aa0c3ca3763b33740cc7a5605cd7b47f8495feeb1e6b019af7b6e6cefa697d43748718610031b551add5a\n")
 	file.Close()
 
 	defer os.RemoveAll("html/AuthTest")
@@ -556,7 +556,7 @@ func Test_HTTP_Auth(t *testing.T) {
 		t.Error("Basic authentication does not work correctly!")
 	}
 
-	resp, err = testHostAuth(client, "KatWeb", "KatWeb", server.URL+"/AuthTest/")
+	resp, err = testHostAuth(client, "KatWeb_", "KatWeb", server.URL+"/AuthTest/")
 	if err != nil {
 		t.Error("Unable to connect to server!")
 	}

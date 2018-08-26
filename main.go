@@ -168,7 +168,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	// Reload config when a SIGHUP is recived
+	// Reload config when a SIGHUP is received
 	cr := make(chan os.Signal, 1)
 	signal.Notify(cr, syscall.SIGHUP)
 	go func() {
