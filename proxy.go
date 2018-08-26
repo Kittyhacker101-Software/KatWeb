@@ -63,6 +63,9 @@ var (
 			MaxIdleConnsPerHost: 256,
 			IdleConnTimeout:     time.Duration(conf.DatTime*8) * time.Second,
 		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, e error) {
+			StyledError(w, "502 Bad Gateway", "The server was acting as a proxy and received an invalid response from the upstream server.", http.StatusBadGateway)
+		},
 	}
 
 	wsproxy = &wsutil.ReverseProxy{
@@ -121,11 +124,7 @@ func fixProxy(u *url.URL, loc string) *url.URL {
 
 // GetProxy finds the correct proxy index to use from the conf.Proxy struct
 func GetProxy(r *http.Request) (string, string) {
-	url, err := url.QueryUnescape(r.URL.EscapedPath())
-	if err != nil {
-		url = r.URL.EscapedPath()
-	}
-	urlp := strings.Split(url, "/")
+	urlp := strings.Split(getFormattedURL(r), "/")
 
 	if i := sort.SearchStrings(proxySort, r.Host); i < len(proxySort) && proxySort[i] == r.Host {
 		if val, ok := proxyMap.Load(r.Host); ok {

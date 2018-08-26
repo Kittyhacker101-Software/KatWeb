@@ -155,12 +155,24 @@ func logr(r *http.Request, head, host, url string) {
 			status = http.StatusUnauthorized
 		case "WebError":
 			status = http.StatusInternalServerError
+		case "WebProxyError":
+			status = http.StatusBadGateway
 		}
 
 		Print(logNCSA(r, status, url, host, *logt))
 	default:
 		Print("[" + head + "][" + trimPort(r.Host) + url + "] : " + r.RemoteAddr)
 	}
+}
+
+// getFormattedURL returns a formatted version of the URL, with query strings unescaped.
+func getFormattedURL(r *http.Request) string {
+	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
+	if err != nil {
+		return r.URL.EscapedPath()
+	}
+
+	return urlo
 }
 
 // redir does an HTTP permanent redirect without making the path absolute.
@@ -233,7 +245,7 @@ func mainHandle(w http.ResponseWriter, r *http.Request) {
 	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
 	if err != nil {
 		StyledError(w, "400 Bad Request", "The server cannot process the request due to an apparent client error", http.StatusBadRequest)
-		logr(r, "WebBad", "", urlo)
+		logr(r, "WebBad", "", r.URL.EscapedPath())
 		return
 	}
 
