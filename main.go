@@ -127,7 +127,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	debug.SetGCPercent(720)
+	debug.SetGCPercent(1250)
 
 	// srv handles all configuration for HTTPS.
 	srv := &http.Server{

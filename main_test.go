@@ -90,7 +90,7 @@ func fileToString(path string) string {
 }
 
 func clearGarbage() {
-	debug.SetGCPercent(720)
+	debug.SetGCPercent(1250)
 	runtime.GC()
 }
 
