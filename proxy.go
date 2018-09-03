@@ -57,6 +57,7 @@ var (
 		},
 		ErrorLog: Logger,
 		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
 			TLSClientConfig:     tlsp,
 			MaxIdleConns:        4096,
 			MaxIdleConnsPerHost: 256,
