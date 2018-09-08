@@ -64,7 +64,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	w.Header().Set("Content-Type", getMime(file, finfo))
 
 	if !conf.Adv.Dev && r.Header.Get("Accept-Encoding") != "" {
-		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
+		if fin, err := os.Stat(location + ".br"); err == nil && fin.Size() < finfo.Size() && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			if filen, err = os.Open(location + ".br"); err == nil {
 				file.Close()
 				file = filen
@@ -130,11 +130,14 @@ func StyledError(w http.ResponseWriter, title string, content string, status int
 // to compress the file in real time, and return true if the
 // attempt is successful.
 func isZipped(w http.ResponseWriter, finfo os.FileInfo, file io.ReadCloser, filePath string) bool {
-	if _, err := os.Stat(filePath + ".gz"); err == nil {
+	if fin, err := os.Stat(filePath + ".gz"); err == nil {
+		if fin.Size() > finfo.Size() {
+			return false
+		}
 		return true
 	}
 
-	if finfo.Size() < 100000 && finfo.Size() > 400 && w.Header().Get("Content-Type") != "application/gzip" {
+	if finfo.Size() < 100000 && finfo.Size() > 250 && w.Header().Get("Content-Type") != "application/gzip" {
 		ct := strings.Split(w.Header().Get("Content-Type"), ";")
 		i := sort.SearchStrings(gztypes, ct[0])
 		if i < len(gztypes) && gztypes[i] == ct[0] {
