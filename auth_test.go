@@ -65,7 +65,7 @@ func Test_DetectPasswd(t *testing.T) {
 func Test_RunAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if RunAuth(w, r, expectedLogins) {
-			http.Error(w, "Login sucessful", 200)
+			http.Error(w, "Login successful", 200)
 			return
 		}
 
