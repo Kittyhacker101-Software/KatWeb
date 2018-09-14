@@ -131,7 +131,7 @@ func StyledError(w http.ResponseWriter, title string, content string, status int
 // attempt is successful.
 func isZipped(w http.ResponseWriter, finfo os.FileInfo, file io.ReadCloser, filePath string) bool {
 	if fin, err := os.Stat(filePath + ".gz"); err == nil {
-		return fin.Size() > finfo.Size()
+		return fin.Size() < finfo.Size()
 	}
 
 	if finfo.Size() < 100000 && finfo.Size() > 250 && w.Header().Get("Content-Type") != "application/gzip" {
