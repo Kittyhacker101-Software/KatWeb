@@ -2,11 +2,13 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"bytes"
-	"strings"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +26,26 @@ func statOpen(path string) (*os.File, os.FileInfo, error) {
 	return file, finfo, nil
 }
 
+func readGzipFile(path string) ([]byte, error) {
+	fi, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer fi.Close()
+
+	fz, err := gzip.NewReader(fi)
+	if err != nil {
+		return nil, err
+	}
+	defer fz.Close()
+
+	s, err := ioutil.ReadAll(fz)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
 func Test_isZipped(t *testing.T) {
 	file, finfo, err := statOpen("html/index.html")
 	if err != nil {
@@ -37,6 +59,20 @@ func Test_isZipped(t *testing.T) {
 	os.Remove("html/index.html.gz")
 
 	if !isZipped(finfo, file, "html/index.html") {
+		t.Fatal("isZipped is not functioning correctly!")
+	}
+
+	data, err := ioutil.ReadFile("html/index.html")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	data1, err := readGzipFile("html/index.html.gz")
+	if err != nil {
+		t.Error("Unable to read gzipped file!")
+	}
+
+	if !bytes.Equal(data, data1) {
 		t.Fatal("isZipped is not functioning correctly!")
 	}
 
@@ -105,11 +141,11 @@ func Test_dirList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		file, err := os.Open("html")
 		if err != nil {
-			http.Error(w, "Unable to read directory" ,500)
+			http.Error(w, "Unable to read directory", 500)
 			return
 		}
 		if dirList(w, *file, "localTest/html") != nil {
-			http.Error(w, "Unable to crawl directory" ,500)
+			http.Error(w, "Unable to crawl directory", 500)
 		}
 	}))
 	resp, err := server.Client().Get(server.URL)
