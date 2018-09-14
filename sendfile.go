@@ -97,6 +97,7 @@ func getMime(f io.ReadSeeker, fi os.FileInfo) string {
 	return mime
 }
 
+// dirList serves a list of files present in a directory.
 func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	dirs, err := f.Readdirnames(0)
 	if err != nil {

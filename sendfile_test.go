@@ -24,26 +24,6 @@ func statOpen(path string) (*os.File, os.FileInfo, error) {
 	return file, finfo, nil
 }
 
-func Test_getMime(t *testing.T) {
-	file, finfo, err := statOpen("html/index.html")
-	if err != nil {
-		t.Fatal("Unable to read index file!")
-	}
-
-	if getMime(file, finfo) != "text/html; charset=utf-8" {
-		t.Fatal("getMime is not functioning correctly!")
-	}
-
-	file, finfo, err = statOpen("html/index.html.gz")
-	if err != nil {
-		t.Fatal("Unable to read index file!")
-	}
-
-	if getMime(file, finfo) != "application/gzip" {
-		t.Fatal("getMime is not functioning correctly!")
-	}
-}
-
 func Test_isZipped(t *testing.T) {
 	file, finfo, err := statOpen("html/index.html")
 	if err != nil {
@@ -77,6 +57,26 @@ func Test_isZipped(t *testing.T) {
 	}
 
 	os.Remove("html/test.txt")
+}
+
+func Test_getMime(t *testing.T) {
+	file, finfo, err := statOpen("html/index.html")
+	if err != nil {
+		t.Fatal("Unable to read index file!")
+	}
+
+	if getMime(file, finfo) != "text/html; charset=utf-8" {
+		t.Fatal("getMime is not functioning correctly!")
+	}
+
+	file, finfo, err = statOpen("html/index.html.gz")
+	if err != nil {
+		t.Fatal("Unable to read index file!")
+	}
+
+	if getMime(file, finfo) != "application/gzip" {
+		t.Fatal("getMime is not functioning correctly!")
+	}
 }
 
 func Test_StyledError(t *testing.T) {
@@ -118,14 +118,14 @@ func Test_dirList(t *testing.T) {
 	}
 
 	if resp.StatusCode != 200 || resp.Header.Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Fatal("DirList is not functioning correctly!")
+		t.Fatal("dirList is not functioning correctly!")
 	}
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if !strings.Contains(buf.String(), "localTest/html") || !strings.Contains(buf.String(), "index.html") || !strings.Contains(buf.String(), "DemoPass") || !strings.Contains(buf.String(), "special ^&#34;&#39;.test") {
 		Print(buf.String())
-		t.Fatal("DirList is not functioning correctly!")
+		t.Fatal("dirList is not functioning correctly!")
 	}
 
 	resp.Body.Close()
