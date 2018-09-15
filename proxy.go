@@ -133,10 +133,6 @@ func GetProxy(r *http.Request) (string, string) {
 		}
 	}
 
-	if len(urlp) == 0 {
-		return "", ""
-	}
-
 	if i := sort.SearchStrings(proxySort, urlp[1]); i < len(proxySort) && proxySort[i] == urlp[1] {
 		if val, ok := proxyMap.Load(urlp[1]); ok {
 			return val.(string), urlp[1]
