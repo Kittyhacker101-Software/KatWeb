@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -113,6 +114,23 @@ func Test_getMime(t *testing.T) {
 	if getMime(file, finfo) != "application/gzip" {
 		t.Fatal("getMime is not functioning correctly!")
 	}
+
+	file, err = os.Create("html/testFile")
+	if err != nil {
+		t.Error("Unable to create testing data!")
+	}
+	file.WriteString("Hello KatWeb!")
+
+	finfo, err = file.Stat()
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	if getMime(file, finfo) != "text/plain; charset=utf-8" {
+		t.Fatal("getMime is not functioning correctly!")
+	}
+
+	os.Remove("html/testFile")
 }
 
 func Test_StyledError(t *testing.T) {
@@ -145,7 +163,7 @@ func Test_dirList(t *testing.T) {
 			return
 		}
 		if dirList(w, *file, "localTest/html") != nil {
-			http.Error(w, "Unable to crawl directory", 500)
+			t.Fatal("dirList is not functioning correctly!")
 		}
 	}))
 	resp, err := server.Client().Get(server.URL)
@@ -159,10 +177,74 @@ func Test_dirList(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	if !strings.Contains(buf.String(), "localTest/html") || !strings.Contains(buf.String(), "index.html") || !strings.Contains(buf.String(), "DemoPass") || !strings.Contains(buf.String(), "special ^&#34;&#39;.test") {
-		Print(buf.String())
+	if !strings.Contains(buf.String(), "localTest/html") || !strings.Contains(buf.String(), "index.html") || strings.Contains(buf.String(), "index.html.br") || !strings.Contains(buf.String(), "DemoPass") || !strings.Contains(buf.String(), "special ^&#34;&#39;.test") {
 		t.Fatal("dirList is not functioning correctly!")
 	}
 
 	resp.Body.Close()
+}
+
+func Test_ServeFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		urlo, err := url.QueryUnescape(r.URL.EscapedPath())
+		if err != nil {
+			http.Error(w, "Bad request.", 400)
+		}
+		if ServeFile(w, r, "html/"+urlo, urlo) != nil {
+			http.Error(w, "An error has occurred.", 500)
+		}
+	}))
+
+	resp, err := server.Client().Get(server.URL + "/nonexistentfile")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	if resp.StatusCode != 500 {
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
+
+	resp, err = server.Client().Get(server.URL)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	data, err := ioutil.ReadFile("html/index.html")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if resp.StatusCode != 200 || string(data) != buf.String() {
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
+
+	resp, err = server.Client().Get(server.URL + `/special ^"'.test`)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	data, err = ioutil.ReadFile(`html/special ^"'.test`)
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	buf = new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if resp.StatusCode != 200 || string(data) != buf.String() {
+		Print(buf.String())
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
+
+	resp, err = server.Client().Get(server.URL + "/DemoPass/")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	buf = new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if resp.StatusCode != 200 || !strings.Contains(buf.String(), "/DemoPass/") || !strings.Contains(buf.String(), "passwd") {
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
 }
