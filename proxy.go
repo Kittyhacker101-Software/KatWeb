@@ -74,14 +74,13 @@ var (
 			prox, loc := GetProxy(r)
 			u, err := url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
 			if err != nil {
-				r.URL = fixProxy(r.URL, loc)
-				return
+				u = fixProxy(r.URL, loc)
 			}
 
-			if r.URL.Scheme == "https" {
-				u.Scheme = "wss://"
+			if u.Scheme == "https" {
+				u.Scheme = "wss"
 			} else {
-				u.Scheme = "ws://"
+				u.Scheme = "ws"
 			}
 
 			r.URL = u
