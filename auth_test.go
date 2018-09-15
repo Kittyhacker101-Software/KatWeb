@@ -1,3 +1,4 @@
+// KatWeb by kittyhacker101 - Auth Unit Tests
 package main
 
 import (
