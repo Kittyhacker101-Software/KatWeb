@@ -251,11 +251,7 @@ func Test_ServeFile(t *testing.T) {
 
 func Test_ServeFile_Compression(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		urlo, err := url.QueryUnescape(r.URL.EscapedPath())
-		if err != nil {
-			http.Error(w, "Bad request.", 400)
-		}
-		if ServeFile(w, r, "html/"+urlo, urlo) != nil {
+		if ServeFile(w, r, "html/"+r.URL.String(), r.URL.String()) != nil {
 			http.Error(w, "An error has occurred.", 500)
 		}
 	}))
