@@ -3,12 +3,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
-	"crypto/tls"
 	"testing"
+
+	"regexp"
 
 	"github.com/gorilla/websocket"
 )
@@ -114,7 +116,6 @@ func Test_ProxyRequest_HTTP(t *testing.T) {
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if buf.String() != "Hello client!" || resp.Header.Get("Content-Type") != "text/html; charset=utf-8" {
-		Print(buf.String())
 		t.Fatal("GetProxy is not functioning properly!")
 	}
 
@@ -126,7 +127,6 @@ func Test_ProxyRequest_HTTP(t *testing.T) {
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if resp.StatusCode != 502 {
-		Print(buf.String())
 		t.Fatal("GetProxy is not functioning properly!")
 	}
 
@@ -212,7 +212,6 @@ func Test_ProxyRequest_HTTPS(t *testing.T) {
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if buf.String() != "Hello client!" || resp.Header.Get("Content-Type") != "text/html; charset=utf-8" {
-		Print(buf.String())
 		t.Fatal("GetProxy is not functioning properly!")
 	}
 
@@ -224,7 +223,6 @@ func Test_ProxyRequest_HTTPS(t *testing.T) {
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if resp.StatusCode != 502 {
-		Print(buf.String())
 		t.Fatal("GetProxy is not functioning properly!")
 	}
 
@@ -267,7 +265,9 @@ func Test_ProxyRequest_WS(t *testing.T) {
 	c.WriteMessage(websocket.TextMessage, []byte("ping"))
 
 	for {
-		_, message, err := c.ReadMessage()
+		var message []byte
+
+		_, message, err = c.ReadMessage()
 		if err != nil {
 			t.Fatal("ProxyRequest is not functioning properly!")
 			return
@@ -344,7 +344,9 @@ func Test_ProxyRequest_WSS(t *testing.T) {
 	c.WriteMessage(websocket.TextMessage, []byte("ping"))
 
 	for {
-		_, message, err := c.ReadMessage()
+		var message []byte
+
+		_, message, err = c.ReadMessage()
 		if err != nil {
 			t.Fatal("ProxyRequest is not functioning properly!")
 			return
@@ -376,5 +378,56 @@ func Test_ProxyRequest_WSS(t *testing.T) {
 			c.Close()
 			break
 		}
+	}
+}
+
+func Test_GetRedir(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(GetRedir(r, r.URL.String())))
+	}))
+
+	parsedURL := strings.Split(server.URL, ":")
+	redirMap.Store("127.0.0.1:"+parsedURL[2]+"/testRedir", "https://google.com")
+	redirSort = append(redirSort, "testRedir")
+	redirMap.Store(`127.0.0.1:[0-9]+\/testRedir[1-9]`, "https://kittyhacker101.tk")
+	redirSort = append(redirSort, `127.0.0.1:[0-9]+\/testRedir[1-9]`)
+	regex, err := regexp.Compile(`127.0.0.1:[0-9]+\/testRedir[1-9]`)
+	if err == nil {
+		redirRegex = append(redirRegex, regex)
+	}
+
+	resp, err := server.Client().Get(server.URL + "/testRedir")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "https://google.com" {
+		Print(buf.String())
+		t.Fatal("GetRedir is not functioning properly!")
+	}
+
+	resp, err = server.Client().Get(server.URL + "/testRedir3")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	buf = new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "https://kittyhacker101.tk" {
+		t.Fatal("GetRedir is not functioning properly!")
+	}
+
+	resp, err = server.Client().Get(server.URL + "/testRedir0")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	buf = new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "" {
+		t.Fatal("GetRedir is not functioning properly!")
 	}
 }
