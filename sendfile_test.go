@@ -194,7 +194,6 @@ func Test_ServeFile(t *testing.T) {
 			http.Error(w, "An error has occurred.", 500)
 		}
 	}))
-
 	resp, err := server.Client().Get(server.URL + "/nonexistentfile")
 	if err != nil {
 		t.Fatal("Unable to get testing data!")
@@ -245,6 +244,64 @@ func Test_ServeFile(t *testing.T) {
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	if resp.StatusCode != 200 || !strings.Contains(buf.String(), "/DemoPass/") || !strings.Contains(buf.String(), "passwd") {
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
+
+}
+
+func Test_ServeFile_Compression(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		urlo, err := url.QueryUnescape(r.URL.EscapedPath())
+		if err != nil {
+			http.Error(w, "Bad request.", 400)
+		}
+		if ServeFile(w, r, "html/"+urlo, urlo) != nil {
+			http.Error(w, "An error has occurred.", 500)
+		}
+	}))
+	server.Client().Transport.(*http.Transport).DisableCompression = true
+
+	req, err := http.NewRequest("GET", server.URL, nil)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+	req.Header.Add("Accept-Encoding", "br")
+
+	resp, err := server.Client().Do(req)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	data, err := ioutil.ReadFile("html/index.html.br")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if resp.StatusCode != 200 || string(data) != buf.String() {
+		t.Fatal("ServeFile is not functioning correctly!")
+	}
+
+	req, err = http.NewRequest("GET", server.URL, nil)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+	req.Header.Add("Accept-Encoding", "gzip")
+
+	resp, err = server.Client().Do(req)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	data, err = ioutil.ReadFile("html/index.html.gz")
+	if err != nil {
+		t.Error("Unable to read testing data!")
+	}
+
+	buf = new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if resp.StatusCode != 200 || string(data) != buf.String() {
 		t.Fatal("ServeFile is not functioning correctly!")
 	}
 }
