@@ -27,24 +27,24 @@ func statOpen(path string) (*os.File, os.FileInfo, error) {
 	return file, finfo, nil
 }
 
-func readGzipFile(path string) ([]byte, error) {
-	fi, err := os.Open(path)
+func testReadGzipFile(t *testing.T) []byte {
+	fi, err := os.Open("html/index.html.gz")
 	if err != nil {
-		return nil, err
+		t.Fatal("Unable to read gzipped file!")
 	}
 	defer fi.Close()
 
 	fz, err := gzip.NewReader(fi)
 	if err != nil {
-		return nil, err
+		t.Fatal("Unable to read gzipped file!")
 	}
 	defer fz.Close()
 
 	s, err := ioutil.ReadAll(fz)
 	if err != nil {
-		return nil, err
+		t.Fatal("Unable to read gzipped file!")
 	}
-	return s, nil
+	return s
 }
 
 func Test_isZipped(t *testing.T) {
@@ -68,12 +68,7 @@ func Test_isZipped(t *testing.T) {
 		t.Error("Unable to read testing data!")
 	}
 
-	data1, err := readGzipFile("html/index.html.gz")
-	if err != nil {
-		t.Error("Unable to read gzipped file!")
-	}
-
-	if !bytes.Equal(data, data1) {
+	if !bytes.Equal(data, testReadGzipFile(t)) {
 		t.Fatal("isZipped is not functioning correctly!")
 	}
 

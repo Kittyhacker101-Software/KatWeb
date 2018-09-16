@@ -431,3 +431,55 @@ func Test_GetRedir(t *testing.T) {
 		t.Fatal("GetRedir is not functioning properly!")
 	}
 }
+
+func Test_CheckUpdate(t *testing.T) {
+	up, vers, err := CheckUpdate("v1.0")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	if up != 2 {
+		t.Fatal("CheckUpdate is not functioning properly!")
+	}
+
+	up, vers, err = CheckUpdate(vers)
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	if up != 0 {
+		t.Fatal("CheckUpdate is not functioning properly!")
+	}
+
+	up, vers, err = CheckUpdate(vers + "-dev")
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	if up != -1 {
+		t.Fatal("CheckUpdate is not functioning properly!")
+	}
+
+	latest, err := strconv.ParseFloat(vers[3:], 32)
+	if err != nil {
+		t.Error("Updater is not providing correct version numbers!")
+	}
+
+	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest+0.2, 'f', -1, 32))
+	if err != nil {
+		t.Fatal("Unable to get testing data!")
+	}
+
+	if up != -1 {
+		t.Fatal("CheckUpdate is not functioning properly!")
+	}
+
+	up, _, err = CheckUpdate("v1." + strconv.FormatFloat(latest-0.3, 'f', -1, 32))
+	if err != nil {
+		t.Fatal("Unable to run updater!")
+	}
+
+	if !(up == 1 || up == 2) {
+		t.Fatal("CheckUpdate is not functioning properly!")
+	}
+}
