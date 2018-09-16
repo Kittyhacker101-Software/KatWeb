@@ -69,6 +69,7 @@ func Test_isZipped(t *testing.T) {
 	}
 
 	if !bytes.Equal(data, testReadGzipFile(t)) {
+		Print(string(testReadGzipFile(t)))
 		t.Fatal("isZipped is not functioning correctly!")
 	}
 
