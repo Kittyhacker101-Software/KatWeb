@@ -27,6 +27,11 @@ func statOpen(path string) (*os.File, os.FileInfo, error) {
 	return file, finfo, nil
 }
 
+func TestMain(m *testing.M) {
+	conf.Adv.Dev = false
+	m.Run()
+}
+
 func testReadGzipFile(t *testing.T) []byte {
 	fi, err := os.Open("html/index.html.gz")
 	if err != nil {
