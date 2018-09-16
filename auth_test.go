@@ -41,7 +41,7 @@ func Test_DetectPasswd(t *testing.T) {
 	os.Mkdir("html/TestingPass", 0777)
 	file, err := os.Create("html/TestingPass/passwd")
 	if err != nil {
-		t.Error("Unable to create testing data!")
+		t.Fatal("Unable to create testing data!")
 	}
 	file.Close()
 	defer os.RemoveAll("html/TestingPass")
