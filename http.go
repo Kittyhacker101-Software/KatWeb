@@ -238,12 +238,7 @@ func loadHeaders(w http.ResponseWriter, r *http.Request) {
 
 // mainHandle handles all requests given to the http.Server
 func mainHandle(w http.ResponseWriter, r *http.Request) {
-	urlo, err := url.QueryUnescape(r.URL.EscapedPath())
-	if err != nil {
-		StyledError(w, "400 Bad Request", "The server cannot process the request due to an apparent client error", http.StatusBadRequest)
-		logr(r, "WebBad", "", r.URL.EscapedPath())
-		return
-	}
+	urlo := getFormattedURL(r)
 
 	path, url := detectPath(r.Host, urlo, r)
 	if url == typeProxy {
