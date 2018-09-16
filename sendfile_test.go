@@ -27,11 +27,6 @@ func statOpen(path string) (*os.File, os.FileInfo, error) {
 	return file, finfo, nil
 }
 
-func TestMain(m *testing.M) {
-	conf.Adv.Dev = false
-	m.Run()
-}
-
 func testReadGzipFile(t *testing.T) []byte {
 	fi, err := os.Open("html/index.html.gz")
 	if err != nil {
@@ -250,6 +245,8 @@ func Test_ServeFile(t *testing.T) {
 }
 
 func Test_ServeFile_Compression(t *testing.T) {
+	conf.Adv.Dev = false
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ServeFile(w, r, "html/"+r.URL.String(), r.URL.String()) != nil {
 			http.Error(w, "An error has occurred.", 500)

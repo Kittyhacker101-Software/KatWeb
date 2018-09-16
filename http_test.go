@@ -96,6 +96,7 @@ func Test_trimPort(t *testing.T) {
 }
 
 func Test_mainHandle(t *testing.T) {
+	ParseConfig("conf.json")
 	server := httptest.NewServer(http.HandlerFunc(mainHandle))
 
 	resp, err := server.Client().Get(server.URL + `//../`)
