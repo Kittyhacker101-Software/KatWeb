@@ -24,6 +24,9 @@ If you intend to modify KatWeb, please use the source code from one of the [rele
 - Want to help fund KatWeb's development? Consider donating to the Bitcoin address `1KyggZGHF4BfHoHEXxoGzDmLmcGLaHN2x2`.
 - Found a bug in KatWeb? Report it [here](https://github.com/kittyhacker101/KatWeb/issues).
 
+### KatWeb 2 / KatWebX
+The next release of KatWeb, named KatWebX, is currently in development. No new features will be added to KatWeb v1 during this time, although bug fixes and security patches will still be provided until 3 months after KatWebX is released. An beta of KatWebX will likely be available around Nov-Dec 2018.
+
 ## Features
 - High Peformance TLS 1.2 (v1.0+)
 - Let's Encrypt Integration (v1.9+)
