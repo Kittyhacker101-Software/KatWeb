@@ -5,8 +5,6 @@ You can download a packaged release of KatWeb from the [releases page](https://g
 
 ### Linux Packages
 - Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
-- Debian/Ubuntu packages are currently in development.
-- CentOS packages are currently in development
 
 ## Using KatWeb
 After you have extracted the compressed release, you can run the right build for your platform.
@@ -16,11 +14,7 @@ Documentation for KatWeb can be found on the [KatWeb Wiki](https://github.com/ki
 ### Running as root
 Running KatWeb as root is not recommended for security reasons. You can allow KatWeb to use to ports below 1024 on Linux by using this command: `sudo setcap cap_net_bind_service=+ep ./katweb-linux-*`
 
-### Modifying KatWeb
-If you intend to modify KatWeb, please use the source code from one of the [release tags](https://github.com/kittyhacker101/KatWeb/tags). The latest code in the repository is often unstable and has had very limited testing.
-
 ### Additional Info
-- Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
 - Want to help fund KatWeb's development? Consider donating to the Bitcoin address `1KyggZGHF4BfHoHEXxoGzDmLmcGLaHN2x2`.
 - Found a bug in KatWeb? Report it [here](https://github.com/kittyhacker101/KatWeb/issues).
 
