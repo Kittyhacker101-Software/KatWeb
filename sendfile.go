@@ -64,13 +64,13 @@ func ServeFile(w http.ResponseWriter, r *http.Request, loc string, folder string
 	w.Header().Set("Content-Type", getMime(file, finfo))
 
 	if !conf.Adv.Dev && r.Header.Get("Accept-Encoding") != "" {
-		if fin, err := os.Stat(location + ".br"); err == nil && fin.Size() < finfo.Size() && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
+		if _, err = os.Stat(location + ".br"); err == nil && strings.Contains(r.Header.Get("Accept-Encoding"), "br") {
 			if filen, err = os.Open(location + ".br"); err == nil {
 				file.Close()
 				file = filen
 				w.Header().Set("Content-Encoding", "br")
 			}
-		} else if isZipped(finfo, file, location) && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		} else if isZipped(w, finfo, file, location) && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			if filen, err = os.Open(location + ".gz"); err == nil {
 				file.Close()
 				file = filen
@@ -97,7 +97,6 @@ func getMime(f io.ReadSeeker, fi os.FileInfo) string {
 	return mime
 }
 
-// dirList serves a list of files present in a directory.
 func dirList(w http.ResponseWriter, f os.File, urln string) error {
 	dirs, err := f.Readdirnames(0)
 	if err != nil {
@@ -130,14 +129,13 @@ func StyledError(w http.ResponseWriter, title string, content string, status int
 // If a gzipped version of the file does not exist, it will attempt
 // to compress the file in real time, and return true if the
 // attempt is successful.
-func isZipped(finfo os.FileInfo, file *os.File, filePath string) bool {
-	if fin, err := os.Stat(filePath + ".gz"); err == nil {
-		return fin.Size() < finfo.Size()
+func isZipped(w http.ResponseWriter, finfo os.FileInfo, file io.ReadCloser, filePath string) bool {
+	if _, err := os.Stat(filePath + ".gz"); err == nil {
+		return true
 	}
 
-	mime := getMime(file, finfo)
-	if finfo.Size() < 100000 && finfo.Size() > 250 && mime != "application/gzip" {
-		ct := strings.Split(mime, ";")
+	if finfo.Size() < 100000 && finfo.Size() > 400 && w.Header().Get("Content-Type") != "application/gzip" {
+		ct := strings.Split(w.Header().Get("Content-Type"), ";")
 		i := sort.SearchStrings(gztypes, ct[0])
 		if i < len(gztypes) && gztypes[i] == ct[0] {
 			if filen, err := os.Create(filePath + ".gz"); err == nil {

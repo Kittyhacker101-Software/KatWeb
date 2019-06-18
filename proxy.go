@@ -74,13 +74,14 @@ var (
 			prox, loc := GetProxy(r)
 			u, err := url.Parse(prox + strings.TrimPrefix(r.URL.String(), "/"+loc))
 			if err != nil {
-				u = fixProxy(r.URL, loc)
+				r.URL = fixProxy(r.URL, loc)
+				return
 			}
 
-			if u.Scheme == "https" {
-				u.Scheme = "wss"
+			if r.URL.Scheme == "https" {
+				u.Scheme = "wss://"
 			} else {
-				u.Scheme = "ws"
+				u.Scheme = "ws://"
 			}
 
 			r.URL = u
@@ -130,6 +131,10 @@ func GetProxy(r *http.Request) (string, string) {
 		if val, ok := proxyMap.Load(r.Host); ok {
 			return val.(string), r.Host
 		}
+	}
+
+	if len(urlp) == 0 {
+		return "", ""
 	}
 
 	if i := sort.SearchStrings(proxySort, urlp[1]); i < len(proxySort) && proxySort[i] == urlp[1] {
