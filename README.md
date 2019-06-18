@@ -1,7 +1,7 @@
 <img src="https://kittyhacker101.tk/KatWeb.png" alt="KatWeb - A modern and lightweight webserver designed for the modern web."></img> 
 
 ## Getting KatWeb
-To download KatWeb, you can either download a packaged release from the [releases page](https://github.com/kittyhacker101/KatWeb/releases), or compile KatWeb from the source code in the repository (**not recommended, code in the repository is not suitable for production use**).
+You can download a packaged release of KatWeb from the [releases page](https://github.com/kittyhacker101/KatWeb/releases). **WARNING: KatWeb has reached the end of it's effective lifespan, and will only receive critical security patches if major security flaws are discovered. It is effectively discontinued, and should not be used in development or production environments.** Consider using [KatWebX](https://github.com/kittyhacker101/KatWebX) instead.
 
 ### Linux Packages
 - Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
@@ -23,10 +23,6 @@ If you intend to modify KatWeb, please use the source code from one of the [rele
 - Want to discuss KatWeb, or have any questions? Join [KatWeb's Discord server](https://discord.gg/Wy2kHBg).
 - Want to help fund KatWeb's development? Consider donating to the Bitcoin address `1KyggZGHF4BfHoHEXxoGzDmLmcGLaHN2x2`.
 - Found a bug in KatWeb? Report it [here](https://github.com/kittyhacker101/KatWeb/issues).
-
-### KatWeb 2 / KatWebX
-The next major release of KatWeb, named [KatWebX](https://github.com/kittyhacker101/KatWebX), is currently in development. No new features will be added to KatWeb v1 during this time, although KatWeb will still be supported and maintained until June 13, 2019.
-After KatWebX is released, upgrade support and critical security patches will be available until December 16, 2019. 
 
 ## Features
 - High Peformance TLS 1.2 (v1.0+)
