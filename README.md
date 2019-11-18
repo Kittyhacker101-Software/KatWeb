@@ -1,7 +1,7 @@
 <img src="https://kittyhacker101.tk/KatWeb.png" alt="KatWeb - A modern and lightweight webserver designed for the modern web."></img> 
 
 ## Getting KatWeb
-You can download a packaged release of KatWeb from the [releases page](https://github.com/kittyhacker101/KatWeb/releases). **WARNING: KatWeb has reached the end of it's effective lifespan, and will only receive critical security patches if major security flaws are discovered. It is effectively discontinued, and should not be used in development or production environments.** Consider using [KatWebX](https://github.com/kittyhacker101/KatWebX) instead.
+You can download a packaged release of KatWeb from the [releases page](https://github.com/kittyhacker101/KatWeb/releases). **WARNING: KatWeb has reached the end of it's lifespan, and will no longer receive updates of any kind. It should not be used in development or production environments.** Consider using [KatWebX](https://github.com/kittyhacker101/KatWebX) instead.
 
 ### Linux Packages
 - Arch Linux users can install the [katweb](https://aur.archlinux.org/packages/katweb/) AUR package.
